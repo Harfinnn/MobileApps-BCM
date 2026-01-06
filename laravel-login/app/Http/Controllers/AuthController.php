@@ -10,18 +10,15 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        // 1️⃣ VALIDASI INPUT + HUMAN NONCE
+        // 1️⃣ VALIDASI INPUT
         $request->validate([
             'username' => 'required',
             'password' => 'required',
-            'human_nonce' => 'required|numeric', // ⬅️ BARU
+            'human_verified' => 'required|boolean',
         ]);
 
-        // 2️⃣ HUMAN CHECK (ANTI BOT)
-        // Frontend menunggu ±2 detik sebelum submit
-        $elapsedSeconds = time() - intval($request->human_nonce / 1000);
-
-        if ($elapsedSeconds < 2) {
+        // 2️⃣ HUMAN CHECK (SIMPLE & STABIL)
+        if (!$request->boolean('human_verified')) {
             return response()->json([
                 'message' => 'Verifikasi manusia gagal'
             ], 422);
@@ -36,7 +33,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // 4️⃣ CEK PASSWORD (LEGACY AMAN)
+        // 4️⃣ CEK PASSWORD
         $hashedInput = PasswordHelper::encrypt($request->password);
 
         if ($hashedInput !== $user->user_pswd) {
@@ -57,12 +54,12 @@ class AuthController extends Controller
 
         // 7️⃣ UPDATE LAST LOGIN
         $user->update([
-            'user_last_login' => now()->format('Y-m-d')
+            'user_last_login' => now()->format('Y-m-d'),
         ]);
 
         return response()->json([
             'user' => $user,
-            'token' => $token
+            'token' => $token,
         ]);
     }
 

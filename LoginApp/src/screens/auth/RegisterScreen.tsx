@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
-import API from '../services/api';
-import RegisterForm from '../components/RegisterForm';
+import API from '../../services/api';
+import RegisterForm from '../../components/forms/RegisterForm';
 import { useNavigation } from '@react-navigation/native';
 
 const RegisterScreen: React.FC = () => {

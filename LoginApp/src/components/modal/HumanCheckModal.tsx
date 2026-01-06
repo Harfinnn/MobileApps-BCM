@@ -10,19 +10,42 @@ const HumanCheckModal: React.FC<Props> = ({ visible, onSuccess }) => {
   const [checked, setChecked] = useState(false);
   const [canContinue, setCanContinue] = useState(false);
 
+  // reset state tiap modal dibuka
   useEffect(() => {
-    if (checked) {
-      const timer = setTimeout(() => {
-        setCanContinue(true);
-      }, 2000); // delay 2 detik (anti bot)
-      return () => clearTimeout(timer);
+    if (visible) {
+      setChecked(false);
+      setCanContinue(false);
     }
+  }, [visible]);
+
+  // delay anti-bot (UX)
+  useEffect(() => {
+    if (!checked) return;
+
+    const timer = setTimeout(() => {
+      setCanContinue(true);
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, [checked]);
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }}>
-        <View style={{ margin: 20, padding: 20, backgroundColor: '#fff', borderRadius: 8 }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.6)',
+        }}
+      >
+        <View
+          style={{
+            margin: 20,
+            padding: 20,
+            backgroundColor: '#fff',
+            borderRadius: 8,
+          }}
+        >
           <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
             Verifikasi Manusia
           </Text>
@@ -36,7 +59,10 @@ const HumanCheckModal: React.FC<Props> = ({ visible, onSuccess }) => {
 
           <Pressable
             disabled={!canContinue}
-            onPress={onSuccess}
+            onPress={() => {
+              if (!canContinue) return;
+              onSuccess();
+            }}
             style={{
               marginTop: 20,
               padding: 12,

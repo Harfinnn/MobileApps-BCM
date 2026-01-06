@@ -5,49 +5,45 @@ import {
   Text,
   ActivityIndicator,
   TouchableOpacity,
+  Image,
 } from 'react-native';
-import styles from '../styles/registerStyles';
+import styles from '../../styles/loginStyles'
 
 interface Props {
-  nama: string;
   username: string;
-  hp: string;
   password: string;
   error: string;
   loading: boolean;
-  onChangeNama: (v: string) => void;
   onChangeUsername: (v: string) => void;
-  onChangeHp: (v: string) => void;
   onChangePassword: (v: string) => void;
   onSubmit: () => void;
+  onGoRegister: () => void;
 }
 
-const RegisterForm: React.FC<Props> = ({
-  nama,
+const LoginForm: React.FC<Props> = ({
   username,
-  hp,
   password,
   error,
   loading,
-  onChangeNama,
   onChangeUsername,
-  onChangeHp,
   onChangePassword,
   onSubmit,
+  onGoRegister,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>Register</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nama Lengkap"
-          value={nama}
-          onChangeText={onChangeNama}
+      <View style={styles.header}>
+        <Image
+          source={require('../../assets/newlogo.png')}
+          style={styles.headerImage}
+          resizeMode="contain"
         />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.title}>Login</Text>
 
         <TextInput
           style={styles.input}
@@ -55,14 +51,6 @@ const RegisterForm: React.FC<Props> = ({
           value={username}
           onChangeText={onChangeUsername}
           autoCapitalize="none"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="No HP"
-          value={hp}
-          onChangeText={onChangeHp}
-          keyboardType="phone-pad"
         />
 
         <View style={styles.passwordWrapper}>
@@ -74,7 +62,7 @@ const RegisterForm: React.FC<Props> = ({
             secureTextEntry={!showPassword}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Text style={styles.toggle}>
+            <Text style={styles.showText}>
               {showPassword ? 'Hide' : 'Show'}
             </Text>
           </TouchableOpacity>
@@ -86,12 +74,19 @@ const RegisterForm: React.FC<Props> = ({
           <ActivityIndicator size="large" />
         ) : (
           <TouchableOpacity style={styles.button} onPress={onSubmit}>
-            <Text style={styles.buttonText}>Register</Text>
+            <Text style={styles.buttonText}>Login</Text>
           </TouchableOpacity>
         )}
+
+        <Text style={styles.registerText}>
+          Belum punya akun?{' '}
+          <Text style={styles.registerLink} onPress={onGoRegister}>
+            Daftar
+          </Text>
+        </Text>
       </View>
     </View>
   );
 };
 
-export default RegisterForm;
+export default LoginForm;

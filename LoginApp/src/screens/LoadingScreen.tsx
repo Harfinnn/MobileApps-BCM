@@ -14,7 +14,7 @@ const LoadingScreen = ({ navigation }: any) => {
 
       setTimeout(() => {
         if (token) {
-          navigation.replace('Home');
+          navigation.replace('Main');
         } else {
           navigation.replace('Login');
         }

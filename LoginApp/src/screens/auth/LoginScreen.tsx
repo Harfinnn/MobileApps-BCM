@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import API from '../services/api';
-import LoginForm from '../components/LoginForm';
-import HumanCheckModal from '../components/HumanCheckModal';
+import API from '../../services/api';
+import LoginForm from '../../components/forms/LoginForm';
+import HumanCheckModal from '../../components/modal/HumanCheckModal';
 
 const LoginScreen: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -12,6 +12,7 @@ const LoginScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const [showHumanCheck, setShowHumanCheck] = useState(false);
+  const [isHumanVerified, setIsHumanVerified] = useState(false);
 
   const navigation = useNavigation<any>();
 
@@ -22,7 +23,13 @@ const LoginScreen: React.FC = () => {
     }
 
     setError('');
-    setShowHumanCheck(true);
+
+    if (!isHumanVerified) {
+      setShowHumanCheck(true);
+      return;
+    }
+
+    login();
   };
 
   const login = async () => {
@@ -32,20 +39,16 @@ const LoginScreen: React.FC = () => {
       const res = await API.post('/login', {
         username,
         password,
-        human_nonce: Date.now(),
+        human_verified: true, // 🔥 KUNCI UTAMA
       });
 
-      console.log('LOGIN RESPONSE:', res.data);
-
       await AsyncStorage.setItem('token', res.data.token);
-
       await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
 
       API.defaults.headers.common.Authorization = `Bearer ${res.data.token}`;
 
-      navigation.replace('Home');
+      navigation.replace('Main');
     } catch (err: any) {
-      console.log('LOGIN ERROR:', err.response?.data);
       setError(err.response?.data?.message || 'Login gagal');
     } finally {
       setLoading(false);
@@ -72,6 +75,7 @@ const LoginScreen: React.FC = () => {
       <HumanCheckModal
         visible={showHumanCheck}
         onSuccess={() => {
+          setIsHumanVerified(true);
           setShowHumanCheck(false);
           login();
         }}

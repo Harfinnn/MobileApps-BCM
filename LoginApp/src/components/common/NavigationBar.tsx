@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -7,13 +7,15 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { Star, MapPin, Home, FileArchive } from 'lucide-react-native';
-import { createStyles } from '../styles/navigationStyle';
+import { createStyles } from '../../styles/navigationStyle';
+import { useNavigation, useNavigationState } from '@react-navigation/native';
+import { useLayout } from '../../contexts/LayoutContext';
 
 const TABS = [
-  { icon: FileArchive, label: 'File', color: '#F8AD3CFF' },
-  { icon: Star, label: 'Favs', color: '#F8AD3CFF' },
-  { icon: MapPin, label: 'Maps', color: '#F8AD3CFF' },
-  { icon: Home, label: 'Home', color: '#F8AD3CFF' },
+  { icon: FileArchive, label: 'File', route: 'File', color: '#F8AD3CFF' },
+  { icon: Star, label: 'Favs', route: 'Favs', color: '#F8AD3CFF' },
+  { icon: MapPin, label: 'Maps', route: 'Maps', color: '#F8AD3CFF' },
+  { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },
 ];
 
 const TAB_WIDTH = 90;
@@ -27,6 +29,9 @@ const TIMING = {
   easing: Easing.out(Easing.cubic),
 };
 
+/**
+ * ICON TAB
+ */
 function IconTab({
   icon: Icon,
   index,
@@ -65,26 +70,59 @@ function IconTab({
   );
 }
 
-export default function FloatingNavbar() {
-  const [activeIndex, setActiveIndex] = useState(2);
+/**
+ * NAVIGATION BAR (FINAL & STABLE)
+ */
+export default function NavigationBar() {
+  const navigation = useNavigation<any>();
 
-  const translateX = useSharedValue(activeIndex * TAB_WIDTH);
+  /**
+   * 🔥 Ambil ACTIVE ROUTE dari MAIN STACK
+   * BUKAN dari useRoute()
+   */
+  const activeRouteName = useNavigationState(state => {
+    const mainRoute = state.routes.find(r => r.name === 'Main');
+
+    if (!mainRoute || !mainRoute.state) {
+      return 'Home';
+    }
+
+    const routes = mainRoute.state.routes;
+    return routes[routes.length - 1].name;
+  });
+
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const translateX = useSharedValue(0);
   const labelProgress = useSharedValue(1);
 
+  /**
+   * 🔥 SYNC ANIMATION DENGAN ROUTE AKTIF
+   */
+  useEffect(() => {
+    const index = TABS.findIndex(tab => tab.route === activeRouteName);
+
+    if (index !== -1) {
+      setActiveIndex(index);
+
+      const maxTranslate =
+        TAB_WIDTH * (TABS.length - 1) - (ACTIVE_WIDTH - TAB_WIDTH);
+
+      const targetX = Math.min(index * TAB_WIDTH, maxTranslate);
+
+      translateX.value = withTiming(targetX, TIMING);
+
+      labelProgress.value = 0;
+      labelProgress.value = withTiming(1, {
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+      });
+    }
+  }, [activeRouteName, translateX, labelProgress]);
+
   const onPressTab = (i: number) => {
-    setActiveIndex(i);
-
-    const maxTranslate =
-      TAB_WIDTH * (TABS.length - 1) - (ACTIVE_WIDTH - TAB_WIDTH);
-
-    const targetX = Math.min(i * TAB_WIDTH, maxTranslate);
-
-    translateX.value = withTiming(targetX, TIMING);
-
-    labelProgress.value = 0;
-    labelProgress.value = withTiming(1, {
-      duration: 180,
-      easing: Easing.out(Easing.cubic),
+    navigation.navigate('Main', {
+      screen: TABS[i].route,
     });
   };
 
@@ -104,6 +142,10 @@ export default function FloatingNavbar() {
   const ActiveIcon = TABS[activeIndex].icon;
   const ActiveLabel = TABS[activeIndex].label;
 
+  const { hideNavbar } = useLayout();
+
+  if (hideNavbar) return null; //
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.navbar}>
@@ -122,7 +164,7 @@ export default function FloatingNavbar() {
         {/* ICON TABS */}
         {TABS.map((tab, i) => (
           <IconTab
-            key={i}
+            key={tab.route}
             icon={tab.icon}
             index={i}
             activeIndex={activeIndex}
