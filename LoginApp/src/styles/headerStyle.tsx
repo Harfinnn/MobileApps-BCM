@@ -1,10 +1,15 @@
-  import { StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 16,
+    top: 0,
+    left: 0,
+    right: 0,
+    position: 'absolute',
     alignItems: 'center',
-    zIndex: 10,
+    zIndex: 100,
+    backgroundColor: 'transparent',
+    height: 70,
   },
 
   pill: {
@@ -15,9 +20,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 18,
     backgroundColor: '#FFFFFF',
-    borderRadius: 999,
+    borderColor: '#2CCABC',
     borderWidth: 2,
-    borderColor: 'rgba(18, 203, 236, 1)',
+    borderRadius: 999,
+    marginTop: 10,
   },
 
   title: {
@@ -51,6 +57,16 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
   },
 
+  greetingSmall: {
+    fontSize: 12,
+    color: '#F8AD3CFF',
+  },
+
+  greetingName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
 
   avatarPlaceholder: {
     width: 36,

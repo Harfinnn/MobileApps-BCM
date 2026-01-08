@@ -6,7 +6,6 @@ export const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginHorizontal: 18,
-    marginTop: 30,
   },
 
   menuItem: {
@@ -16,10 +15,18 @@ export const styles = StyleSheet.create({
   },
 
   menuText: {
-    fontSize: 16,
-    marginTop: 6,
+    fontSize: 12,
     textAlign: 'center',
-    color: '#000',
+    color: '#111827',
+    fontWeight: '600'
+  },
+
+  menuTextImage: {
+    fontWeight: '600',
+  },
+
+  menuTextSheet: {
+    fontSize: 11,
   },
 
   handle: {
@@ -61,5 +68,17 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
+  },
+
+  imageIcon: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
+  },
+
+  moreImageIcon: {
+    width: 80,
+    height: 80,
+    resizeMode: 'contain',
   },
 });

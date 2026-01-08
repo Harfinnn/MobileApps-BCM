@@ -48,6 +48,7 @@ const LoginForm: React.FC<Props> = ({
         <TextInput
           style={styles.input}
           placeholder="Username"
+          placeholderTextColor="#94A3B8"
           value={username}
           onChangeText={onChangeUsername}
           autoCapitalize="none"
@@ -57,6 +58,7 @@ const LoginForm: React.FC<Props> = ({
           <TextInput
             style={styles.passwordInput}
             placeholder="Password"
+            placeholderTextColor="#94A3B8"
             value={password}
             onChangeText={onChangePassword}
             secureTextEntry={!showPassword}

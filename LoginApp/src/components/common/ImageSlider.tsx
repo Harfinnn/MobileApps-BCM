@@ -1,13 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Image, Dimensions, StyleSheet, Animated } from 'react-native';
+import Slider1 from '../../assets/banners/newBanner1.jpg';
+import Slider2 from '../../assets/banners/newBanner2.jpg';
+import Slider3 from '../../assets/banners/newBanner3.jpg';
 
 const { width } = Dimensions.get('window');
-
-const IMAGES = [
-  'https://picsum.photos/id/1011/800/400',
-  'https://picsum.photos/id/1015/800/400',
-  'https://picsum.photos/id/1025/800/400',
-];
+const IMAGES = [Slider1, Slider2, Slider3];
 
 export default function ImageSlider() {
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -41,7 +39,7 @@ export default function ImageSlider() {
           scrollEventThrottle={16}
         >
           {IMAGES.map((img, i) => (
-            <Image key={i} source={{ uri: img }} style={styles.image} />
+            <Image key={i} source={img} style={styles.image} />
           ))}
         </Animated.ScrollView>
       </View>
@@ -51,12 +49,15 @@ export default function ImageSlider() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginHorizontal: 16,
-    marginTop: 12,
+    backgroundColor: '#2CCABC',
+    height: 340,
+    paddingTop: 65,
   },
 
   container: {
     borderRadius: 15, 
+    marginTop: 12,
+    marginHorizontal: 16,
     overflow: 'hidden', 
     borderWidth: 1, 
     borderColor: 'rgba(255,255,255,0.2)', 

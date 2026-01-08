@@ -1,24 +1,21 @@
 import { StyleSheet } from 'react-native';
 
-export const createStyles = (
-  TAB_WIDTH: number,
-  ACTIVE_WIDTH: number
-) =>
+export const createStyles = (TAB_WIDTH: number, ACTIVE_WIDTH: number) =>
   StyleSheet.create({
     wrapper: {
       position: 'absolute',
       bottom: 20,
       width: '100%',
       alignItems: 'center',
+      zIndex: 10, 
+      elevation: 10,
     },
 
     navbar: {
       flexDirection: 'row',
-      backgroundColor: 'rgba(255, 255, 255, 1)',
+      backgroundColor: '#2CCABC',
       borderRadius: 60,
       padding: 6,
-      borderWidth: 2,
-      borderColor: 'rgba(18, 203, 236, 1)',
     },
 
     tab: {

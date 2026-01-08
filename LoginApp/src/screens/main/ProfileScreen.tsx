@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
     padding: 16,
+    paddingTop: 60,
   },
 
   avatarWrapper: {

@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Star, MapPin, Home, FileArchive } from 'lucide-react-native';
+import { Star, Map, Home, FileArchive } from 'lucide-react-native';
 import { createStyles } from '../../styles/navigationStyle';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -14,7 +14,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 const TABS = [
   { icon: FileArchive, label: 'File', route: 'File', color: '#F8AD3CFF' },
   { icon: Star, label: 'Favs', route: 'Favs', color: '#F8AD3CFF' },
-  { icon: MapPin, label: 'Maps', route: 'Maps', color: '#F8AD3CFF' },
+  { icon: Map, label: 'Maps', route: 'Maps', color: '#F8AD3CFF' },
   { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },
 ];
 
@@ -29,9 +29,6 @@ const TIMING = {
   easing: Easing.out(Easing.cubic),
 };
 
-/**
- * ICON TAB
- */
 function IconTab({
   icon: Icon,
   index,
@@ -64,7 +61,7 @@ function IconTab({
         style={styles.tab}
         activeOpacity={0.8}
       >
-        <Icon size={22} color="#A99BC0" />
+        <Icon size={22} color="#ffffffff" />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -76,10 +73,6 @@ function IconTab({
 export default function NavigationBar() {
   const navigation = useNavigation<any>();
 
-  /**
-   * 🔥 Ambil ACTIVE ROUTE dari MAIN STACK
-   * BUKAN dari useRoute()
-   */
   const activeRouteName = useNavigationState(state => {
     const mainRoute = state.routes.find(r => r.name === 'Main');
 
@@ -96,9 +89,6 @@ export default function NavigationBar() {
   const translateX = useSharedValue(0);
   const labelProgress = useSharedValue(1);
 
-  /**
-   * 🔥 SYNC ANIMATION DENGAN ROUTE AKTIF
-   */
   useEffect(() => {
     const index = TABS.findIndex(tab => tab.route === activeRouteName);
 
@@ -147,7 +137,8 @@ export default function NavigationBar() {
   if (hideNavbar) return null; //
 
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.wrapper}
+          pointerEvents={hideNavbar ? 'none' : 'auto'}>
       <View style={styles.navbar}>
         {/* ACTIVE PILL */}
         <Animated.View style={[styles.activePill, pillStyle]}>

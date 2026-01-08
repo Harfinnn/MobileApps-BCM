@@ -6,18 +6,20 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from '../../services/api';
 import { useLayout } from '../../contexts/LayoutContext';
 import Toast from 'react-native-toast-message';
+import { launchImageLibrary } from 'react-native-image-picker';
 
 export default function EditProfileScreen({ navigation }: any) {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
-
   const [nama, setNama] = useState('');
   const [hp, setHp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [photo, setPhoto] = useState<any>(null);
 
   useEffect(() => {
     setTitle('Edit Profile');
@@ -39,7 +41,18 @@ export default function EditProfileScreen({ navigation }: any) {
       setHideNavbar(false);
       setShowBack(true);
     };
-  }, [ setTitle, setHideNavbar, setShowBack]);
+  }, [setTitle, setHideNavbar, setShowBack]);
+
+  const pickImage = async () => {
+    const res = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.8,
+    });
+
+    if (!res.didCancel && res.assets?.length) {
+      setPhoto(res.assets[0]);
+    }
+  };
 
   const submit = async () => {
     if (!nama || !hp) {
@@ -50,46 +63,52 @@ export default function EditProfileScreen({ navigation }: any) {
     setLoading(true);
 
     try {
-      // 🔥 1. UPDATE LOCAL USER DULU (OPTIMISTIC)
-      const oldUserString = await AsyncStorage.getItem('user');
-      const oldUser = oldUserString ? JSON.parse(oldUserString) : {};
+      const formData = new FormData();
+      formData.append('user_nama', nama);
+      formData.append('user_hp', hp);
 
-      const optimisticUser = {
-        ...oldUser,
-        user_nama: nama,
-        user_hp: hp,
-      };
+      if (photo) {
+        formData.append('user_foto', {
+          uri: photo.uri,
+          type: photo.type,
+          name: photo.fileName || 'profile.jpg',
+        } as any);
+      }
 
-      await AsyncStorage.setItem('user', JSON.stringify(optimisticUser));
-
-      // 🔥 2. BALIK KE PROFILE LANGSUNG
-      Toast.show({
-        type: 'success',
-        text1: 'Berhasil',
-        text2: 'Profile berhasil diperbarui',
-        position: 'top',
+      const res = await API.post('/profile/update', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      navigation.goBack();
+      // 🔥 SIMPAN KE LOCAL
+      await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
 
+      // 🔥 KIRIM KE PROFILE
       navigation.navigate({
         name: 'Profile',
         params: {
-          updatedUser: {
-            user_nama: nama,
-            user_hp: hp,
-          },
+          updatedUser: res.data.user,
         },
         merge: true,
       });
 
-      // 🔥 3. API JALAN DI BELAKANG
-      await API.post('/profile/update', {
-        user_nama: nama,
-        user_hp: hp,
+      Toast.show({
+        type: 'success',
+        text1: 'Berhasil',
+        text2: 'Profile berhasil diperbarui',
       });
+
+      navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Gagal', err.response?.data?.message ?? 'Terjadi kesalahan');
+      console.log('ERROR RESPONSE:', err.response?.data);
+      console.log('ERROR STATUS:', err.response?.status);
+      console.log('ERROR FULL:', err);
+
+      Alert.alert(
+        'Gagal',
+        err.response?.data?.message ??
+          JSON.stringify(err.response?.data) ??
+          'Terjadi kesalahan',
+      );
     } finally {
       setLoading(false);
     }
@@ -97,6 +116,19 @@ export default function EditProfileScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.avatarWrapper} onPress={pickImage}>
+        {photo ? (
+          <Image source={{ uri: photo.uri }} style={styles.avatar} />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Text style={styles.avatarText}>
+              {nama ? nama.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </View>
+        )}
+        <Text style={styles.changePhoto}>Ubah Foto</Text>
+      </TouchableOpacity>
+
       <Text style={styles.label}>Nama Lengkap</Text>
       <TextInput style={styles.input} value={nama} onChangeText={setNama} />
 
@@ -126,6 +158,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: '#F8FAFC',
+    paddingTop: 100,
   },
   label: {
     fontSize: 14,
@@ -151,5 +184,31 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontWeight: '600',
     fontSize: 16,
+  },
+  avatarWrapper: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarPlaceholder: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#374151',
+  },
+  changePhoto: {
+    marginTop: 8,
+    color: '#2563EB',
   },
 });

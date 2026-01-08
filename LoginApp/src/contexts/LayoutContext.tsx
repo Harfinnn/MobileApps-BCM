@@ -1,4 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+} from 'react';
 
 type LayoutContextType = {
   hideNavbar: boolean;
@@ -12,6 +16,10 @@ type LayoutContextType = {
 
   onBack?: () => void;
   setOnBack: (fn?: () => void) => void;
+
+  headerBg: string;                 
+  setHeaderBg: (v: string) => void; 
+
 };
 
 const LayoutContext = createContext<LayoutContextType>({
@@ -26,13 +34,22 @@ const LayoutContext = createContext<LayoutContextType>({
 
   onBack: undefined,
   setOnBack: () => {},
+
+  headerBg: '#00A39D',
+  setHeaderBg: () => {}, 
+
 });
 
-export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
+export const LayoutProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   const [hideNavbar, setHideNavbar] = useState(false);
-  const [title, setTitle] = React.useState('Home');
+  const [title, setTitle] = useState('Home');
   const [showBack, setShowBack] = useState(false);
   const [onBack, setOnBack] = useState<(() => void) | undefined>();
+  const [headerBg, setHeaderBg] = useState('#00A39D');
 
   return (
     <LayoutContext.Provider
@@ -45,6 +62,8 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
         setShowBack,
         onBack,
         setOnBack,
+        headerBg,
+        setHeaderBg,
       }}
     >
       {children}

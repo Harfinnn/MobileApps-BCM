@@ -1,14 +1,17 @@
-import React, { useRef, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import {
   BottomSheetModal,
-  BottomSheetBackdrop,
   BottomSheetScrollView,
+  BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
-import { Grid } from 'lucide-react-native';
 import { MAIN_MENU, MORE_MENU } from '../../data/menu';
-import { useLayout } from '../../contexts/LayoutContext';
 import { styles } from '../../styles/menuStyle';
+import { useNavigation } from '@react-navigation/native';
+
+type Props = {
+  onDashboardPress: () => void;
+};
 
 type MenuItemProps = {
   item: any;
@@ -19,40 +22,78 @@ type MenuItemProps = {
 
 const MenuItem = ({ item, iconColor, onPress, boxed }: MenuItemProps) => {
   const Icon = item.icon;
+  const isImage = !!item.image;
+  const isSheet = !!boxed;
 
-  return (
-    <TouchableOpacity
-      style={boxed ? styles.sheetItem : styles.menuItem}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={item.title}
-    >
-      {boxed ? (
-        <View style={styles.iconBox}>
-          <Icon size={24} color={iconColor} />
-        </View>
-      ) : (
-        <Icon size={30} color={iconColor} />
-      )}
+  const titleStyle = [
+    styles.menuText,
+    isImage && styles.menuTextImage,
+    isSheet && styles.menuTextSheet,
+  ];
 
-      <Text style={styles.menuText}>{item.title}</Text>
-    </TouchableOpacity>
-  );
+  // IMAGE
+  if (item.image) {
+    return (
+      <TouchableOpacity
+        style={isSheet ? styles.sheetItem : styles.menuItem}
+        onPress={onPress}
+      >
+        <Image source={item.image} style={styles.imageIcon} />
+        <Text style={titleStyle}>{item.title}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // ICON
+  if (Icon) {
+    return (
+      <TouchableOpacity
+        style={isSheet ? styles.sheetItem : styles.menuItem}
+        onPress={onPress}
+      >
+        {boxed ? (
+          <View style={styles.iconBox}>
+            <Icon size={22} color={iconColor} />
+          </View>
+        ) : (
+          <Icon size={30} color={iconColor} />
+        )}
+        <Text style={titleStyle}>{item.title}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return null;
 };
 
-const HomeMenu = () => {
+function hasRoute(item: { route?: string }): item is { route: string } {
+  return typeof item.route === 'string';
+}
+
+export default function HomeMenu({ onDashboardPress }: Props) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['70%', '80%'], []);
-  const { setHideNavbar } = useLayout();
+  const navigation = useNavigation<any>();
 
   const openMore = useCallback(() => {
-    setHideNavbar(true);
     bottomSheetRef.current?.present();
-  }, [setHideNavbar]);
+  }, []);
 
   const closeMore = useCallback(() => {
-    setHideNavbar(false);
-  }, [setHideNavbar]);
+    bottomSheetRef.current?.dismiss();
+  }, []);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        opacity={0.4} // ⬅️ efek blur palsu
+        pressBehavior="close" // klik luar = close
+      />
+    ),
+    [],
+  );
 
   return (
     <>
@@ -63,29 +104,35 @@ const HomeMenu = () => {
             key={item.id}
             item={item}
             iconColor="#F8AD3C"
+            onPress={() => {
+              if (item.type === 'dashboard') {
+                onDashboardPress();
+                return;
+              }
+
+              if (hasRoute(item)) {
+                navigation.navigate(item.route);
+              }
+            }}
           />
         ))}
 
         <TouchableOpacity style={styles.menuItem} onPress={openMore}>
-          <Grid size={30} color="#12CBEC" />
+          <Image
+            source={require('../../assets/icons/More2.png')}
+            style={styles.moreImageIcon}
+          />
           <Text style={styles.menuText}>More</Text>
         </TouchableOpacity>
       </View>
 
-      {/* BOTTOM SHEET */}
+      {/* MORE POPUP */}
       <BottomSheetModal
         ref={bottomSheetRef}
-        snapPoints={snapPoints}
+        snapPoints={['70%', '80%']}
         enablePanDownToClose
         onDismiss={closeMore}
-        handleIndicatorStyle={styles.handle}
-        backdropComponent={props => (
-          <BottomSheetBackdrop
-            {...props}
-            appearsOnIndex={0}
-            disappearsOnIndex={-1}
-          />
-        )}
+        backdropComponent={renderBackdrop}
       >
         <View style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>All Features</Text>
@@ -93,19 +140,25 @@ const HomeMenu = () => {
 
         <BottomSheetScrollView>
           <View style={styles.sheetGrid}>
-            {[...MAIN_MENU, ...MORE_MENU].map(item => (
-              <MenuItem
-                key={item.id}
-                item={item}
-                iconColor="#F8AD3C"
-                boxed
-              />
-            ))}
+            {[...MAIN_MENU.filter(item => !item.hideInMore), ...MORE_MENU].map(
+              item => (
+                <MenuItem
+                  key={item.id}
+                  item={item}
+                  iconColor="#F8AD3C"
+                  boxed
+                  onPress={() => {
+                    if (hasRoute(item)) {
+                      bottomSheetRef.current?.dismiss();
+                      navigation.navigate(item.route);
+                    }
+                  }}
+                />
+              ),
+            )}
           </View>
         </BottomSheetScrollView>
       </BottomSheetModal>
     </>
   );
-};
-
-export default HomeMenu;
+}

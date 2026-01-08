@@ -8,26 +8,21 @@ import {
   Text,
 } from 'react-native';
 
+import Banner1 from '../../assets/banners/rescue1.jpg';
+import Banner2 from '../../assets/banners/rescue2.jpg';
+import Banner3 from '../../assets/banners/rescue3.jpg';
+
 const BANNERS = [
-  {
-    id: '1',
-    image: 'https://i.imgur.com/V8Z8FQe.jpg',
-  },
-  {
-    id: '2',
-    image: 'https://i.imgur.com/6LZ9QkK.jpg',
-  },
-  {
-    id: '3',
-    image: 'https://i.imgur.com/0Yk9FhT.jpg',
-  },
+  { id: '1', image: Banner1 },
+  { id: '2', image: Banner2 },
+  { id: '3', image: Banner3 },
 ];
 
 export default function SmallBanner() {
   return (
     <View style={styles.wrapper}>
       
-      <Text style={styles.title}>Informasi & Edukasi</Text>
+      <Text style={styles.title}>Edukasi</Text>
       
       <FlatList
         data={BANNERS}
@@ -38,7 +33,7 @@ export default function SmallBanner() {
         renderItem={({ item }) => (
           <TouchableOpacity activeOpacity={0.9}>
             <Image
-              source={{ uri: item.image }}
+              source={item.image}
               style={styles.image}
               resizeMode="cover"
             />
@@ -51,7 +46,7 @@ export default function SmallBanner() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 20,
+    marginTop: 10,
   },
   image: {
     width: 260,

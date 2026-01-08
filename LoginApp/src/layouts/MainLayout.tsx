@@ -1,7 +1,6 @@
-import React from 'react';
-import { View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import React, { useRef } from 'react';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useLayout } from '../contexts/LayoutContext';
 import { useNavigation } from '@react-navigation/native';
 
@@ -15,38 +14,72 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const navigation = useNavigation<any>();
-  const { title, hideNavbar } = useLayout();
 
-  const handleLogout = async () => {
-    // 1. Hapus auth data
-    await AsyncStorage.multiRemove(['token', 'user']);
+  const { title, hideNavbar, setHideNavbar, headerBg} = useLayout();
 
-    // 2. Reset navigation (ANTI BACK)
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Login' }],
-    });
+  const dashboardSheetRef = useRef<BottomSheetModal>(null);
+
+  const closeDashboard = () => {
+    setHideNavbar(false);
+    dashboardSheetRef.current?.dismiss();
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <View style={{ flex: 1 }}>
-          <DashboardHeader
-            title={title}
-            onProfilePress={() =>
-              navigation.navigate('Main', {
-                screen: 'Profile',
-              })
-            }
-            onLogoutPress={handleLogout}
+    <View style={{ flex: 1 }}>
+      <DashboardHeader
+        title={title}
+        backgroundColor={headerBg}
+        onProfilePress={() =>
+          navigation.navigate('Main', { screen: 'Profile' })
+        }
+        onLogoutPress={async () => {
+          await AsyncStorage.multiRemove(['token', 'user']);
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+          });
+        }}
+      />
+
+      <View style={{ flex: 1 }}>{children}</View>
+
+      {hideNavbar ? null : <NavigationBar />}
+
+      {/* 🔥 DASHBOARD POPUP */}
+      <BottomSheetModal
+        ref={dashboardSheetRef}
+        snapPoints={['40%']}
+        enablePanDownToClose
+        onDismiss={closeDashboard}
+        backdropComponent={props => (
+          <BottomSheetBackdrop
+            {...props}
+            appearsOnIndex={0}
+            disappearsOnIndex={-1}
           />
+        )}
+      >
+        <View style={{ padding: 20 }}>
+          <TouchableOpacity
+            style={{ marginBottom: 16 }}
+            onPress={() => {
+              closeDashboard();
+              navigation.navigate('DashboardIT');
+            }}
+          >
+            <Text>Dashboard IT</Text>
+          </TouchableOpacity>
 
-          <View style={{ flex: 1 }}>{children}</View>
-
-          {!hideNavbar && <NavigationBar />}
+          <TouchableOpacity
+            onPress={() => {
+              closeDashboard();
+              navigation.navigate('DashboardNonIT');
+            }}
+          >
+            <Text>Dashboard Non-IT</Text>
+          </TouchableOpacity>
         </View>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+      </BottomSheetModal>
+    </View>
   );
 }

@@ -13,10 +13,10 @@ type Props = {
   title?: string;
   onProfilePress?: () => void;
   onLogoutPress?: () => void;
+  backgroundColor?: string;
 };
 
 export default function DashboardHeader({
-  title = 'Test',
   onProfilePress,
   onLogoutPress,
 }: Props) {
@@ -24,6 +24,7 @@ export default function DashboardHeader({
   const [userFoto, setUserFoto] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showNotif, setShowNotif] = useState(false);
+  const [greeting, setGreeting] = useState('Good Morning');
 
   const navigation = useNavigation<any>();
   const { showBack } = useLayout();
@@ -36,6 +37,7 @@ export default function DashboardHeader({
         setUserNama(user.user_nama);
         setUserFoto(user.user_foto ?? null);
       }
+      setGreeting(getGreeting());
     };
     loadUser();
   }, []);
@@ -45,6 +47,15 @@ export default function DashboardHeader({
     const parts = nama.trim().split(' ');
     if (parts.length === 1) return parts[0][0].toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+
+    if (hour >= 4 && hour < 12) return 'Good Morning';
+    if (hour >= 12 && hour < 17) return 'Good Afternoon';
+    if (hour >= 17 && hour < 21) return 'Good Evening';
+    return 'Good Night';
   };
 
   const goToProfile = () => {
@@ -64,24 +75,25 @@ export default function DashboardHeader({
         <View style={styles.pill}>
           {/* LEFT: BACK + TITLE */}
           <View style={styles.left}>
-            {showBack && (
+            {showBack ? (
               <TouchableOpacity
                 style={styles.backBtn}
                 onPress={() => {
                   if (navigation.canGoBack()) {
                     navigation.goBack();
                   } else {
-                    navigation.navigate('Main', {
-                      screen: 'Home',
-                    });
+                    navigation.navigate('Main', { screen: 'Home' });
                   }
                 }}
               >
                 <ArrowLeft size={20} color="#111827" />
               </TouchableOpacity>
+            ) : (
+              <View>
+                <Text style={styles.greetingSmall}>{greeting},</Text>
+                <Text style={styles.greetingName}>{userNama ?? 'User'}</Text>
+              </View>
             )}
-
-            <Text style={styles.title}>{title}</Text>
           </View>
 
           {/* RIGHT: ACTIONS */}
