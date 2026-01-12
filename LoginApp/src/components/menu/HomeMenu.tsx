@@ -8,6 +8,7 @@ import {
 import { MAIN_MENU, MORE_MENU } from '../../data/menu';
 import { styles } from '../../styles/menuStyle';
 import { useNavigation } from '@react-navigation/native';
+import { LayoutGrid } from 'lucide-react-native';
 
 type Props = {
   onDashboardPress: () => void;
@@ -20,50 +21,45 @@ type MenuItemProps = {
   boxed?: boolean;
 };
 
-const MenuItem = ({ item, iconColor, onPress, boxed }: MenuItemProps) => {
-  const Icon = item.icon;
-  const isImage = !!item.image;
-  const isSheet = !!boxed;
+const MenuItem = ({ item, onPress, boxed }: MenuItemProps) => {
+  return (
+    <TouchableOpacity
+      style={boxed ? styles.sheetItem : styles.menuItem}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={{ alignItems: 'center' }}>
+        <View style={styles.iconWrapper}>
+          {/* Background frame */}
+          <View
+            style={[
+              styles.iconFrame,
+              { backgroundColor: item.color || '#E9EBF7' },
+            ]}
+          />
 
-  const titleStyle = [
-    styles.menuText,
-    isImage && styles.menuTextImage,
-    isSheet && styles.menuTextSheet,
-  ];
+          {/* Floating image */}
+          <Image
+            source={item.image}
+            style={[
+              styles.floatingIcon,
+              {
+                width: item.iconWidth || 85,
+                height: item.iconHeight || 85,
+                bottom: item.offsetBottom || -30,
+                right: item.offsetRight || -30,
+              },
+            ]}
+            resizeMode="contain"
+          />
+        </View>
 
-  // IMAGE
-  if (item.image) {
-    return (
-      <TouchableOpacity
-        style={isSheet ? styles.sheetItem : styles.menuItem}
-        onPress={onPress}
-      >
-        <Image source={item.image} style={styles.imageIcon} />
-        <Text style={titleStyle}>{item.title}</Text>
-      </TouchableOpacity>
-    );
-  }
-
-  // ICON
-  if (Icon) {
-    return (
-      <TouchableOpacity
-        style={isSheet ? styles.sheetItem : styles.menuItem}
-        onPress={onPress}
-      >
-        {boxed ? (
-          <View style={styles.iconBox}>
-            <Icon size={22} color={iconColor} />
-          </View>
-        ) : (
-          <Icon size={30} color={iconColor} />
-        )}
-        <Text style={titleStyle}>{item.title}</Text>
-      </TouchableOpacity>
-    );
-  }
-
-  return null;
+        <Text style={styles.menuText} numberOfLines={2}>
+          {item.title}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 };
 
 function hasRoute(item: { route?: string }): item is { route: string } {
@@ -88,8 +84,8 @@ export default function HomeMenu({ onDashboardPress }: Props) {
         {...props}
         appearsOnIndex={0}
         disappearsOnIndex={-1}
-        opacity={0.4} // ⬅️ efek blur palsu
-        pressBehavior="close" // klik luar = close
+        opacity={0.4}
+        pressBehavior="close"
       />
     ),
     [],
@@ -118,10 +114,10 @@ export default function HomeMenu({ onDashboardPress }: Props) {
         ))}
 
         <TouchableOpacity style={styles.menuItem} onPress={openMore}>
-          <Image
-            source={require('../../assets/icons/More2.png')}
-            style={styles.moreImageIcon}
-          />
+          <View style={[styles.iconBox, { backgroundColor: '#2CCABC' }]}>
+            <LayoutGrid size={30} color="#F8AD3CFF" />
+          </View>
+
           <Text style={styles.menuText}>More</Text>
         </TouchableOpacity>
       </View>

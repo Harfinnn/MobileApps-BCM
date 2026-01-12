@@ -14,13 +14,6 @@ export const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  menuText: {
-    fontSize: 12,
-    textAlign: 'center',
-    color: '#111827',
-    fontWeight: '600'
-  },
-
   menuTextImage: {
     fontWeight: '600',
   },
@@ -61,13 +54,12 @@ export const styles = StyleSheet.create({
   },
 
   iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: '#ECFEFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
   },
 
   imageIcon: {
@@ -80,5 +72,36 @@ export const styles = StyleSheet.create({
     width: 80,
     height: 80,
     resizeMode: 'contain',
+  },
+
+  // styles/menuStyle.ts
+  iconWrapper: {
+    width: 55,
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+
+  iconFrame: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+
+  floatingIcon: {
+    position: 'absolute',
+    zIndex: 2,
+  },
+
+  menuText: {
+    fontSize: 12,
+    marginTop: 6,
+    textAlign: 'center',
+    color: '#111827',
+    fontWeight: '600',
   },
 });

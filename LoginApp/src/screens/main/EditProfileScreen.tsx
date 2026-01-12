@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   Image,
 } from 'react-native';
@@ -12,19 +11,51 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from '../../services/api';
 import { useLayout } from '../../contexts/LayoutContext';
 import Toast from 'react-native-toast-message';
+import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useUser } from '../../contexts/UserContext';
+import { styles } from '../../styles/editProfileStyle';
+import { BackHandler } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function EditProfileScreen({ navigation }: any) {
-  const { setTitle, setHideNavbar, setShowBack } = useLayout();
+  const { setTitle, setHideNavbar, setShowBack, setOnBack } = useLayout();
+  const { setUser } = useUser();
+
   const [nama, setNama] = useState('');
   const [hp, setHp] = useState('');
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<any>(null);
 
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          navigation.navigate('Main', { screen: 'Profile' });
+          return true; 
+        },
+      );
+
+      return () => {
+        subscription.remove();
+      };
+    }, [navigation]),
+  );
+
   useEffect(() => {
     setTitle('Edit Profile');
     setHideNavbar(true);
     setShowBack(true);
+
+    const goToProfile = () => {
+      navigation.navigate('Main', {
+        screen: 'Profile',
+      });
+      return true;
+    };
+
+    setOnBack(() => goToProfile);
 
     const loadUser = async () => {
       const userString = await AsyncStorage.getItem('user');
@@ -38,10 +69,11 @@ export default function EditProfileScreen({ navigation }: any) {
     loadUser();
 
     return () => {
+      setOnBack(undefined);
       setHideNavbar(false);
-      setShowBack(true);
+      setShowBack(false);
     };
-  }, [setTitle, setHideNavbar, setShowBack]);
+  }, [navigation, setTitle, setHideNavbar, setShowBack, setOnBack]);
 
   const pickImage = async () => {
     const res = await launchImageLibrary({
@@ -56,7 +88,7 @@ export default function EditProfileScreen({ navigation }: any) {
 
   const submit = async () => {
     if (!nama || !hp) {
-      Alert.alert('Error', 'Nama dan hp wajib diisi');
+      Alert.alert('Error', 'Nama dan no hp wajib diisi');
       return;
     }
 
@@ -79,17 +111,8 @@ export default function EditProfileScreen({ navigation }: any) {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      // 🔥 SIMPAN KE LOCAL
+      setUser(res.data.user);
       await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
-
-      // 🔥 KIRIM KE PROFILE
-      navigation.navigate({
-        name: 'Profile',
-        params: {
-          updatedUser: res.data.user,
-        },
-        merge: true,
-      });
 
       Toast.show({
         type: 'success',
@@ -97,12 +120,10 @@ export default function EditProfileScreen({ navigation }: any) {
         text2: 'Profile berhasil diperbarui',
       });
 
-      navigation.goBack();
+      navigation.navigate('Main', {
+        screen: 'Profile',
+      });
     } catch (err: any) {
-      console.log('ERROR RESPONSE:', err.response?.data);
-      console.log('ERROR STATUS:', err.response?.status);
-      console.log('ERROR FULL:', err);
-
       Alert.alert(
         'Gagal',
         err.response?.data?.message ??
@@ -115,7 +136,12 @@ export default function EditProfileScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#009B97', '#F8AD3C']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <TouchableOpacity style={styles.avatarWrapper} onPress={pickImage}>
         {photo ? (
           <Image source={{ uri: photo.uri }} style={styles.avatar} />
@@ -129,16 +155,18 @@ export default function EditProfileScreen({ navigation }: any) {
         <Text style={styles.changePhoto}>Ubah Foto</Text>
       </TouchableOpacity>
 
-      <Text style={styles.label}>Nama Lengkap</Text>
-      <TextInput style={styles.input} value={nama} onChangeText={setNama} />
+      <View style={styles.card}>
+        <Text style={styles.label}>Nama Lengkap</Text>
+        <TextInput style={styles.input} value={nama} onChangeText={setNama} />
 
-      <Text style={styles.label}>No Handphone</Text>
-      <TextInput
-        style={styles.input}
-        value={hp}
-        onChangeText={setHp}
-        keyboardType="phone-pad"
-      />
+        <Text style={styles.label}>No Handphone</Text>
+        <TextInput
+          style={styles.input}
+          value={hp}
+          onChangeText={setHp}
+          keyboardType="phone-pad"
+        />
+      </View>
 
       <TouchableOpacity
         style={[styles.btn, loading && { opacity: 0.6 }]}
@@ -149,66 +177,6 @@ export default function EditProfileScreen({ navigation }: any) {
           {loading ? 'Menyimpan...' : 'Simpan'}
         </Text>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: '#F8FAFC',
-    paddingTop: 100,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 6,
-    color: '#374151',
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  btn: {
-    backgroundColor: '#F8AD3CFF',
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  btnText: {
-    textAlign: 'center',
-    color: '#111827',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  avatarWrapper: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  avatarPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#374151',
-  },
-  changePhoto: {
-    marginTop: 8,
-    color: '#2563EB',
-  },
-});

@@ -8,8 +8,8 @@ import Animated, {
 
 import styles from '../../styles/dashboardMenuStyle';
 
-const IT_ICON = require('../../assets/icons/DashboardIT.png');
-const NON_IT_ICON = require('../../assets/icons/DashboardNonIT.png');
+const IT_ICON = require('../../assets/gambar_icon/dashboard_it .png');
+const NON_IT_ICON = require('../../assets/gambar_icon/dashboard_non_it.png');
 
 type Props = {
   visible: boolean;

@@ -33,7 +33,7 @@ const DashboardMenuStyles = StyleSheet.create({
   },
 
   item: {
-    width: '48%',
+    width: '50%',
     alignItems: 'center',
     paddingVertical: 10,
     borderRadius: 16,
@@ -44,8 +44,8 @@ const DashboardMenuStyles = StyleSheet.create({
   },
 
   iconImage: {
-    width: 60,
-    height: 60,
+    width: 100,
+    height: 100,
     resizeMode: 'contain',
   },
 

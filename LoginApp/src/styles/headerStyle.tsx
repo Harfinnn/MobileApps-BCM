@@ -13,17 +13,15 @@ export const styles = StyleSheet.create({
   },
 
   pill: {
-    width: '93%',
-    height: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 18,
+    marginLeft: 4,
+    height: 50,
     backgroundColor: '#FFFFFF',
     borderColor: '#2CCABC',
     borderWidth: 2,
     borderRadius: 999,
-    marginTop: 10,
   },
 
   title: {
@@ -38,7 +36,7 @@ export const styles = StyleSheet.create({
   },
 
   iconBtn: {
-    marginLeft: 12,
+    marginRight: 8,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -53,8 +51,10 @@ export const styles = StyleSheet.create({
   },
 
   backBtn: {
-    paddingRight: 12,
-    paddingVertical: 8,
+    width: 50,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   greetingSmall: {
@@ -78,9 +78,11 @@ export const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#2CCABC',
   },
 
   avatarInitial: {
@@ -93,5 +95,62 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#F8AD3CFF',
     backgroundColor: 'rgba(248,173,60,0.15)',
+  },
+
+  headerRow: {
+    width: '93%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between', // 👈 PENTING
+    marginTop: 10,
+  },
+
+  rightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    width: 130, // 👈 FIXED WIDTH
+    justifyContent: 'flex-end',
+  },
+
+  bellWrapper: {
+    borderRadius: 20,
+    width: 35,
+    height: 35,
+    backgroundColor: 'rgba(251, 251, 251, 1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: '#2CCABC',
+    borderWidth: 2,
+  },
+
+  searchBtn: {
+    width: 35,
+    height: 35,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderColor: '#2CCABC',
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+  },
+
+  searchPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    height: 40,
+    width: 200,
+    gap: 8,
+    marginLeft: -12,
+  },
+
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    paddingVertical: 0,
+    color: '#111827',
   },
 });

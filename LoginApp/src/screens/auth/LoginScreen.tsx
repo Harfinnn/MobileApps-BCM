@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import API from '../../services/api';
 import LoginForm from '../../components/forms/LoginForm';
 import HumanCheckModal from '../../components/modal/HumanCheckModal';
+import { useUser } from '../../contexts/UserContext';
 
 const LoginScreen: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -15,6 +16,7 @@ const LoginScreen: React.FC = () => {
   const [isHumanVerified, setIsHumanVerified] = useState(false);
 
   const navigation = useNavigation<any>();
+  const { setUser } = useUser();
 
   const handleSubmit = () => {
     if (!username || !password) {
@@ -42,6 +44,10 @@ const LoginScreen: React.FC = () => {
         human_verified: true, // 🔥 KUNCI UTAMA
       });
 
+      // 🔥 SET KE USER CONTEXT (BIAR HEADER LANGSUNG UPDATE)
+      setUser(res.data.user);
+
+      // 🔥 SIMPAN KE STORAGE (PERSISTENCE)
       await AsyncStorage.setItem('token', res.data.token);
       await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
 

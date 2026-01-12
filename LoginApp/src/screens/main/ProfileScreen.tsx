@@ -1,19 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, Image, TouchableOpacity, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useLayout } from '../../contexts/LayoutContext';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { styles } from '../../styles/profileStyle';
 
 export default function ProfileScreen() {
-  const { setTitle, setHideNavbar, setShowBack } = useLayout();
+  const { setTitle, setHideNavbar, setShowBack, setOnBack } = useLayout();
   const [user, setUser] = useState<any>(null);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
+  /* =====================
+     LAYOUT SETUP
+  ===================== */
   useEffect(() => {
     setTitle('Profile');
     setHideNavbar(true);
     setShowBack(true);
+
+    // back via HEADER -> Home
+    setOnBack(() => () => {
+      navigation.navigate('Main', {
+        screen: 'Home',
+      });
+    });
 
     const loadUser = async () => {
       const userString = await AsyncStorage.getItem('user');
@@ -27,13 +43,25 @@ export default function ProfileScreen() {
     return () => {
       setHideNavbar(false);
       setShowBack(false);
+      setOnBack(undefined);
     };
-  }, [setTitle, setHideNavbar, setShowBack]);
+  }, [navigation, setTitle, setHideNavbar, setShowBack, setOnBack]);
 
-  const getInitial = (name?: string) => {
-    if (!name) return 'U';
-    return name.charAt(0).toUpperCase();
-  };
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          navigation.navigate('Main', { screen: 'Home' });
+          return true;
+        },
+      );
+
+      return () => {
+        subscription.remove();
+      };
+    }, [navigation]),
+  );
 
   useEffect(() => {
     if (route.params?.updatedUser) {
@@ -44,9 +72,18 @@ export default function ProfileScreen() {
     }
   }, [route.params?.updatedUser]);
 
+  const getInitial = (name?: string) => {
+    if (!name) return 'U';
+    return name.charAt(0).toUpperCase();
+  };
+
   return (
-    <View style={styles.container}>
-      {/* AVATAR */}
+    <LinearGradient
+      colors={['#009B97', '#F8AD3C']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <View style={styles.avatarWrapper}>
         {user?.user_foto ? (
           <Image source={{ uri: user.user_foto }} style={styles.avatar} />
@@ -60,89 +97,24 @@ export default function ProfileScreen() {
         <Text style={styles.email}>{user?.user_email ?? '-'}</Text>
       </View>
 
-      {/* MENU */}
-      <View style={styles.menu}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('EditProfile')}
-        >
-          <Text style={styles.menuText}>Edit Profile</Text>
-        </TouchableOpacity>
+      <View style={styles.menuCard}>
+        <View style={styles.menu}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
+            <Text style={styles.menuText}>Edit Profile</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Atur Alamat</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Text style={styles.menuText}>Atur Alamat</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Ganti Password</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem}>
+            <Text style={styles.menuText}>Ganti Password</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    padding: 16,
-    paddingTop: 60,
-  },
-
-  avatarWrapper: {
-    alignItems: 'center',
-    marginVertical: 24,
-  },
-
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    marginBottom: 12,
-  },
-
-  avatarPlaceholder: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-
-  avatarText: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#374151',
-  },
-
-  name: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  email: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 4,
-  },
-
-  menu: {
-    marginTop: 32,
-  },
-
-  menuItem: {
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-
-  menuText: {
-    fontSize: 16,
-    color: '#111827',
-  },
-});
