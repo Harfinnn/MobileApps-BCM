@@ -8,14 +8,22 @@ use Illuminate\Support\Facades\Storage;
 
 class ProfileController extends Controller
 {
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json(
+            $user->load('jabatan', 'selindo')
+        );
+    }
+
+
     public function update(Request $request)
     {
         $user = Auth::user();
 
         if (!$user) {
-            return response()->json([
-                'message' => 'Unauthorized'
-            ], 401);
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $request->validate([
@@ -24,35 +32,32 @@ class ProfileController extends Controller
             'user_foto' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // 🔥 HANDLE FOTO
+        // FOTO
         if ($request->hasFile('user_foto')) {
 
-            // hapus foto lama jika ada
-            if ($user->user_foto) {
-                Storage::disk('public')->delete($user->user_foto);
+            $file = $request->file('user_foto');
+
+            $filename = time() . '_' . $file->getClientOriginalName();
+
+            // pastikan folder ada
+            $destinationPath = public_path('storage/profile');
+
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
             }
 
-            // simpan foto baru
-            $path = $request->file('user_foto')->store('profile', 'public');
-            $user->user_foto = $path;
+            $file->move($destinationPath, $filename);
+
+            // simpan path relatif ke DB
+            $user->user_foto = 'profile/' . $filename;
         }
 
-        // 🔥 UPDATE DATA
-        $user->update([
-            'user_nama' => $request->user_nama,
-            'user_hp' => $request->user_hp,
-        ]);
+        $user->user_nama = $request->user_nama;
+        $user->user_hp = $request->user_hp;
+        $user->save();
 
         return response()->json([
-            'message' => 'Profile berhasil diperbarui',
-            'user' => [
-                'user_id' => $user->user_id,
-                'user_nama' => $user->user_nama,
-                'user_hp' => $user->user_hp,
-                'user_foto' => $user->user_foto
-                    ? asset('storage/' . $user->user_foto)
-                    : null,
-            ],
+            'message' => 'Profile berhasil diperbarui'
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {
@@ -33,6 +34,7 @@ class User extends Authenticatable
         'user_drp',
         'user_kegiatan',
         'user_insiden',
+        'fcm_token',
     ];
 
     protected $hidden = [
@@ -42,5 +44,38 @@ class User extends Authenticatable
     public function getAuthPassword()
     {
         return $this->user_pswd;
+    }
+
+    public function jabatan()
+    {
+        return $this->belongsTo(
+            \App\Models\MJabatan::class,
+            'user_jabatan',
+            'jab_id'
+        );
+    }
+
+    public function isLocked()
+    {
+        if ($this->user_salah < 5) {
+            return false;
+        }
+
+        if (!$this->user_salah_wkt) {
+            return false;
+        }
+
+        return Carbon::parse($this->user_salah_wkt)
+            ->addMinutes(15)
+            ->isFuture();
+    }
+
+    public function selindo()
+    {
+        return $this->belongsTo(
+            \App\Models\MJaringanSelindo::class,
+            'user_selindo',
+            'mjs_id'
+        );
     }
 }

@@ -1,58 +1,92 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
+  Text,
+  ActivityIndicator,
   Image,
-  StyleSheet,
+  Animated,
+  StatusBar,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import { useUser } from '../contexts/UserContext';
+import styles from '../styles/auth/loadingStyle';
 
-const LoadingScreen = ({ navigation }: any) => {
+export default function LoadingScreen() {
+  const navigation = useNavigation<any>();
+  const { user, loading } = useUser();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
-    const checkToken = async () => {
-      const token = await AsyncStorage.getItem('token');
+    // 🔹 Animasi Logo
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-      setTimeout(() => {
-        if (token) {
-          navigation.replace('Main');
-        } else {
-          navigation.replace('Login');
-        }
-      }, 1200);
-    };
+    if (loading) return;
 
-    checkToken();
-  }, [navigation]);
+    const timeout = setTimeout(() => {
+      // 🚨 Cek apakah masih di screen Loading
+      const state = navigation.getState();
+      const currentRoute = state?.routes?.[state.index]?.name;
+
+      // Kalau sudah bukan Loading (misal sudah ke Detail dari notif)
+      if (currentRoute !== 'Loading') {
+        return;
+      }
+
+      if (user) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+      }
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+  }, [loading, user]);
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/newfavicon.png')}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <StatusBar barStyle="light-content" backgroundColor="#00A39D" />
+
+      <View style={styles.circleTop} />
+
+      <Animated.View
+        style={[
+          styles.content,
+          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+        ]}
+      >
+        <Image
+          source={require('../assets/newfavicon.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        <View style={styles.loadingWrapper}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.loadingText}>Menyiapkan data...</Text>
+        </View>
+      </Animated.View>
+
+      <Text style={styles.footerText}>Secure & Trusted System</Text>
+      <View style={styles.circleBottom} />
     </View>
   );
-};
-
-export default LoadingScreen;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#00A39D',
-  },
-  logo: {
-    width: 200,
-    height: 200,
-    marginBottom: 30,
-  },
-  text: {
-    marginTop: 12,
-    color: '#FFFFFF',
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-});
+}

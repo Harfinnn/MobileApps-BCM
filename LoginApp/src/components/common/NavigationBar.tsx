@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useCallback, useState, useMemo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -6,14 +6,17 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Star, Map, Home, FileArchive } from 'lucide-react-native';
-import { createStyles } from '../../styles/navigationStyle';
+import { CloudSun, Map, Home, FileArchive } from 'lucide-react-native';
+import { createStyles } from '../../styles/navigation/navigationStyle';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useLayout } from '../../contexts/LayoutContext';
 
+/* =======================
+   CONFIG
+======================= */
 const TABS = [
   { icon: FileArchive, label: 'File', route: 'File', color: '#F8AD3CFF' },
-  { icon: Star, label: 'Favs', route: 'Favs', color: '#F8AD3CFF' },
+  { icon: CloudSun, label: 'F3D', route: 'F3d', color: '#F8AD3CFF', size: 25 },
   { icon: Map, label: 'Maps', route: 'Maps', color: '#F8AD3CFF' },
   { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },
 ];
@@ -29,122 +32,153 @@ const TIMING = {
   easing: Easing.out(Easing.cubic),
 };
 
-function IconTab({
-  icon: Icon,
-  index,
-  activeIndex,
-  onPress,
-}: {
-  icon: any;
-  index: number;
-  activeIndex: number;
-  onPress: () => void;
-}) {
-  const style = useAnimatedStyle(() => {
-    let offset = 0;
-    if (index < activeIndex) offset = -EXTRA;
-    if (index > activeIndex) offset = EXTRA;
+/* =======================
+   HELPERS
+======================= */
+const getTabIndexByRoute = (routeName: string) => {
+  const index = TABS.findIndex(tab => tab.route === routeName);
+  return index === -1 ? TABS.length - 1 : index;
+};
 
-    return {
-      transform: [
-        {
-          translateX: withTiming(offset, TIMING),
-        },
-      ],
-    };
-  });
+/* =======================
+   ICON TAB (MEMO)
+======================= */
+const IconTab = React.memo(
+  ({
+    icon: Icon,
+    index,
+    activeIndexShared,
+    onPress,
+  }: {
+    icon: any;
+    index: number;
+    activeIndexShared: any;
+    onPress: () => void;
+  }) => {
+    const style = useAnimatedStyle(() => {
+      let offset = 0;
+      if (index < activeIndexShared.value) offset = -EXTRA;
+      if (index > activeIndexShared.value) offset = EXTRA;
 
-  return (
-    <Animated.View style={style}>
-      <TouchableOpacity
-        onPress={onPress}
-        style={styles.tab}
-        activeOpacity={0.8}
-      >
-        <Icon size={22} color="#ffffffff" />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
+      return {
+        transform: [{ translateX: withTiming(offset, TIMING) }],
+      };
+    });
 
-/**
- * NAVIGATION BAR (FINAL & STABLE)
- */
-export default function NavigationBar() {
+    return (
+      <Animated.View style={style}>
+        <TouchableOpacity
+          onPress={onPress}
+          style={styles.tab}
+          activeOpacity={0.8}
+        >
+          <Icon size={TABS[index].size ?? 22} color="#ffffff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  },
+);
+
+/* =======================
+   NAVIGATION BAR (FINAL)
+======================= */
+function NavigationBar() {
   const navigation = useNavigation<any>();
+  const { hideNavbar } = useLayout();
 
+  /* === ACTIVE ROUTE === */
   const activeRouteName = useNavigationState(state => {
-    const mainRoute = state.routes.find(r => r.name === 'Main');
-
-    if (!mainRoute || !mainRoute.state) {
-      return 'Home';
-    }
-
-    const routes = mainRoute.state.routes;
+    const main = state.routes.find(r => r.name === 'Main');
+    if (!main || !main.state) return 'Home';
+    const routes = main.state.routes;
     return routes[routes.length - 1].name;
   });
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  /* === INITIAL INDEX === */
+  const initialIndex = getTabIndexByRoute(activeRouteName);
 
-  const translateX = useSharedValue(0);
+  /* === REACT STATE (RENDER) === */
+  const [activeIndexState, setActiveIndexState] = useState(initialIndex);
+
+  /* === SHARED VALUES (ANIMATION ONLY) === */
+  const activeIndexShared = useSharedValue(initialIndex);
+
+  const maxTranslate =
+    TAB_WIDTH * (TABS.length - 1) - (ACTIVE_WIDTH - TAB_WIDTH);
+
+  const translateX = useSharedValue(
+    Math.min(initialIndex * TAB_WIDTH, maxTranslate),
+  );
+
   const labelProgress = useSharedValue(1);
 
+  /* === UPDATE ON ROUTE CHANGE === */
   useEffect(() => {
-    const index = TABS.findIndex(tab => tab.route === activeRouteName);
+    const index = getTabIndexByRoute(activeRouteName);
 
-    if (index !== -1) {
-      setActiveIndex(index);
+    // React render
+    setActiveIndexState(index);
 
-      const maxTranslate =
-        TAB_WIDTH * (TABS.length - 1) - (ACTIVE_WIDTH - TAB_WIDTH);
+    // Animation
+    activeIndexShared.value = index;
 
-      const targetX = Math.min(index * TAB_WIDTH, maxTranslate);
+    translateX.value = withTiming(
+      Math.min(index * TAB_WIDTH, maxTranslate),
+      TIMING,
+    );
 
-      translateX.value = withTiming(targetX, TIMING);
-
-      labelProgress.value = 0;
-      labelProgress.value = withTiming(1, {
-        duration: 180,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-  }, [activeRouteName, translateX, labelProgress]);
-
-  const onPressTab = (i: number) => {
-    navigation.navigate('Main', {
-      screen: TABS[i].route,
+    labelProgress.value = 0;
+    labelProgress.value = withTiming(1, {
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
     });
-  };
+  }, [
+    activeRouteName,
+    activeIndexShared,
+    translateX,
+    labelProgress,
+    maxTranslate,
+  ]);
 
+  const onPressTab = useCallback(
+    (index: number) => {
+      navigation.navigate('Main', {
+        screen: TABS[index].route,
+      });
+    },
+    [navigation],
+  );
+
+  /* === ANIMATED STYLES === */
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
 
   const labelStyle = useAnimatedStyle(() => ({
     opacity: labelProgress.value,
-    transform: [
-      {
-        translateX: (1 - labelProgress.value) * -6,
-      },
-    ],
+    transform: [{ translateX: (1 - labelProgress.value) * -6 }],
   }));
 
-  const ActiveIcon = TABS[activeIndex].icon;
-  const ActiveLabel = TABS[activeIndex].label;
+  const ActiveIcon = useMemo(
+    () => TABS[activeIndexState].icon,
+    [activeIndexState],
+  );
 
-  const { hideNavbar } = useLayout();
+  const ActiveLabel = useMemo(
+    () => TABS[activeIndexState].label,
+    [activeIndexState],
+  );
 
-  if (hideNavbar) return null; //
+  if (hideNavbar) return null;
 
   return (
-    <View style={styles.wrapper}
-          pointerEvents={hideNavbar ? 'none' : 'auto'}>
+    <View style={styles.wrapper}>
       <View style={styles.navbar}>
         {/* ACTIVE PILL */}
         <Animated.View style={[styles.activePill, pillStyle]}>
           <ActiveIcon
-            size={22}
-            color={TABS[activeIndex].color}
+            size={TABS[activeIndexState].size ?? 22}
+            color={TABS[activeIndexState].color}
             strokeWidth={2.4}
           />
           <Animated.Text style={[styles.activeLabel, labelStyle]}>
@@ -158,7 +192,7 @@ export default function NavigationBar() {
             key={tab.route}
             icon={tab.icon}
             index={i}
-            activeIndex={activeIndex}
+            activeIndexShared={activeIndexShared}
             onPress={() => onPressTab(i)}
           />
         ))}
@@ -166,3 +200,5 @@ export default function NavigationBar() {
     </View>
   );
 }
+
+export default React.memo(NavigationBar);

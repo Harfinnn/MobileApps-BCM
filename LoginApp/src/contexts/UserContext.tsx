@@ -1,47 +1,71 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import API, { setAuthToken } from '../services/api';
 
 export type User = {
-  user_nama?: string;
-  user_foto?: string | null;
+  user_id: number;
+  user_nama: string;
 };
 
 type UserContextType = {
   user: User | null;
-  setUser: (user: User | null) => void;
+  setUser: (user: User | null) => Promise<void>;
   loading: boolean;
 };
 
 const UserContext = createContext<UserContextType>({
   user: null,
-  setUser: () => {},
+  setUser: async () => {},
   loading: true,
 });
 
 export const UserProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 🔥 RESTORE LOGIN SAAT APP START
   useEffect(() => {
-    const restoreUser = async () => {
+    const restore = async () => {
       try {
-        const userString = await AsyncStorage.getItem('user');
-        if (userString) {
-          setUser(JSON.parse(userString));
+        const token = await AsyncStorage.getItem('token');
+        const rawUser = await AsyncStorage.getItem('user');
+
+        if (token) {
+          setAuthToken(token);
+        }
+
+        if (rawUser) {
+          setUserState(JSON.parse(rawUser));
         }
       } finally {
         setLoading(false);
       }
     };
 
-    restoreUser();
+    restore();
   }, []);
 
-  return (
-    <UserContext.Provider value={{ user, setUser, loading }}>
-      {children}
-    </UserContext.Provider>
-  );
+  const setUser = async (newUser: User | null) => {
+    if (!newUser) {
+      await AsyncStorage.multiRemove(['user', 'token']);
+      setAuthToken(null);
+      setUserState(null);
+      return;
+    }
+
+    setUserState(newUser);
+    await AsyncStorage.setItem('user', JSON.stringify(newUser));
+  };
+
+  const value = useMemo(() => ({ user, setUser, loading }), [user, loading]);
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 };
 
 export const useUser = () => useContext(UserContext);

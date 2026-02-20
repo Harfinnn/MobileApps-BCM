@@ -6,9 +6,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import styles from '../../styles/dashboardMenuStyle';
+import styles from '../../styles/dashboard/dashboardMenuStyle';
 
-const IT_ICON = require('../../assets/gambar_icon/dashboard_it .png');
+const IT_ICON = require('../../assets/gambar_icon/dashboard_it.png');
 const NON_IT_ICON = require('../../assets/gambar_icon/dashboard_non_it.png');
 
 type Props = {
@@ -30,7 +30,7 @@ export default function DashboardMenu({
   useEffect(() => {
     translateY.value = withTiming(visible ? 0 : 40, { duration: 180 });
     opacity.value = withTiming(visible ? 1 : 0, { duration: 180 });
-  }, [visible]);
+  }, [visible, opacity, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

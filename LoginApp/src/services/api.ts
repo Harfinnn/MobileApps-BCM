@@ -1,21 +1,21 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../config/env';
 
 const API = axios.create({
-  baseURL: 'http://10.10.101.157:8000/api'
+  baseURL: `${BASE_URL}/api`,
+  timeout: 15000,
 });
 
-API.interceptors.request.use(
-  async config => {
-    const token = await AsyncStorage.getItem('token');
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-
-    return config;
-  },
-  error => Promise.reject(error),
-);
+/**
+ * 🔐 SET / CLEAR AUTH TOKEN
+ * WAJIB dipanggil saat app start & login
+ */
+export function setAuthToken(token: string | null) {
+  if (token) {
+    API.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete API.defaults.headers.common.Authorization;
+  }
+}
 
 export default API;

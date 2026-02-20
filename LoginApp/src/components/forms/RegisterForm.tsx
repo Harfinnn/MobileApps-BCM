@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
-import styles from '../../styles/registerStyles';
+import styles from '../../styles/auth/registerStyles';
 
 const RegisterForm = ({
   nama,

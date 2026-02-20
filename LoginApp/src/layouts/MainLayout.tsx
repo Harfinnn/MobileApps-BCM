@@ -4,7 +4,7 @@ import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import DashboardHeader from '../components/common/DashboardHeader';
+import DashboardHeader from '../components/common/Header/DashboardHeader';
 import NavigationBar from '../components/common/NavigationBar';
 import { useLayout } from '../contexts/LayoutContext';
 import { useUser } from '../contexts/UserContext';

@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import API from '../../services/api';
+
 import LoginForm from '../../components/forms/LoginForm';
 import HumanCheckModal from '../../components/modal/HumanCheckModal';
+
 import { useUser } from '../../contexts/UserContext';
+import { registerFcmToken } from '../../services/fcm';
 
 const LoginScreen: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -17,6 +20,8 @@ const LoginScreen: React.FC = () => {
 
   const navigation = useNavigation<any>();
   const { setUser } = useUser();
+
+  /* ================= SUBMIT ================= */
 
   const handleSubmit = () => {
     if (!username || !password) {
@@ -34,24 +39,26 @@ const LoginScreen: React.FC = () => {
     login();
   };
 
+  /* ================= LOGIN ================= */
+
   const login = async () => {
     setLoading(true);
-
     try {
       const res = await API.post('/login', {
         username,
         password,
-        human_verified: true, // 🔥 KUNCI UTAMA
+        human_verified: true,
       });
 
-      // 🔥 SET KE USER CONTEXT (BIAR HEADER LANGSUNG UPDATE)
-      setUser(res.data.user);
+      const { token, user } = res.data;
 
-      // 🔥 SIMPAN KE STORAGE (PERSISTENCE)
-      await AsyncStorage.setItem('token', res.data.token);
-      await AsyncStorage.setItem('user', JSON.stringify(res.data.user));
+      await AsyncStorage.setItem('token', token);
+      API.defaults.headers.common.Authorization = `Bearer ${token}`;
 
-      API.defaults.headers.common.Authorization = `Bearer ${res.data.token}`;
+      await setUser(user);
+
+      // 🔥 INI WAJIB
+      await registerFcmToken();
 
       navigation.replace('Main');
     } catch (err: any) {
@@ -61,8 +68,10 @@ const LoginScreen: React.FC = () => {
     }
   };
 
-  const goToRegister = () => {
-    navigation.navigate('Register');
+  /* ================= LUPA PASSWORD ================= */
+
+  const goToForgotPassword = () => {
+    navigation.navigate('ForgotPassword');
   };
 
   return (
@@ -75,7 +84,7 @@ const LoginScreen: React.FC = () => {
         onChangeUsername={setUsername}
         onChangePassword={setPassword}
         onSubmit={handleSubmit}
-        onGoRegister={goToRegister}
+        onForgotPassword={goToForgotPassword}
       />
 
       <HumanCheckModal
