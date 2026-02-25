@@ -47,10 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/selindo/search', [MJaringanSelindoController::class, 'search']);
     Route::get('/selindo/{id}', [MJaringanSelindoController::class, 'show']);
 
-    // 🔔 LAPOR BENCANA (KIRIM NOTIF)
+    // ðŸ”” LAPOR BENCANA (KIRIM NOTIF)
     Route::post('/lapor-bencana', [LaporBencanaController::class, 'store']);
 
-    // 🔔 NOTIFICATIONS
+    // ðŸ”” NOTIFICATIONS
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
@@ -73,5 +73,25 @@ Route::middleware('auth:sanctum')->group(function () {
         return response()->json(['success' => true]);
     });
 
+    Route::post('/user-location', function (Request $request) {
+
+        $request->validate([
+            'adm4_id' => 'required|exists:adm4,id'
+        ]);
+
+        $user = $request->user();
+
+        \App\Models\UserAdm4History::updateOrCreate(
+            [
+                'user_id' => $user->user_id, // 🔥 INI YANG BENAR
+                'adm4_id' => $request->adm4_id
+            ],
+            [
+                'last_accessed_at' => now()
+            ]
+        );
+
+        return response()->json(['success' => true]);
+    });
 
 });

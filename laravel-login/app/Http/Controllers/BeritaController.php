@@ -12,7 +12,13 @@ class BeritaController extends Controller
         return response()->json(
             DataBerita::where('dbe_status', 1)
                 ->orderBy('dbe_id', 'desc')
-                ->get()
+                ->limit(5)
+                ->get([
+                    'dbe_id',
+                    'dbe_judul',
+                    'dbe_gambar',
+                    'dbe_tgl'
+                ])
         );
     }
 

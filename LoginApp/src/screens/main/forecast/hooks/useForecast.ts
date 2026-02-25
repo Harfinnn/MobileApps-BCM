@@ -14,6 +14,7 @@ import {
   getCurrentPosition,
   requestLocationPermission,
 } from '../../../../services/locationService';
+import API from '../../../../services/api';
 
 const DEFAULT_ADM4 = '31.71.03.1001';
 
@@ -34,6 +35,16 @@ export const useForecast = () => {
   const lastAdm4Ref = useRef<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+
+  const saveUserLocation = async (adm4Id: number) => {
+    try {
+      await API.post('/user-location', {
+        adm4_id: adm4Id,
+      });
+    } catch (e) {
+      console.log('Save location error', e);
+    }
+  };
 
   /* ==========================================
      CORE LOAD (ANTI DOUBLE FETCH)
@@ -109,9 +120,16 @@ export const useForecast = () => {
       const coords = await getCurrentPosition();
 
       const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
+      await saveUserLocation(nearest.data.id);
+        console.log('NEAREST RESPONSE:', nearest);
 
-      if (nearest?.data?.adm4 && nearest.data.adm4 !== DEFAULT_ADM4) {
-        await loadForecast(nearest.data.adm4, nearest.data);
+      if (nearest?.data?.id) {
+         console.log('ADM4 ID:', nearest.data.id);
+        await saveUserLocation(nearest.data.id);
+
+        if (nearest?.data?.adm4 && nearest.data.adm4 !== DEFAULT_ADM4) {
+          await loadForecast(nearest.data.adm4, nearest.data);
+        }
       }
     } catch (error) {
       console.log('INIT ERROR:', error);

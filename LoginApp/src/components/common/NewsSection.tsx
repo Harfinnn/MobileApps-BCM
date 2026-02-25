@@ -17,11 +17,13 @@ type Props = {
   onPressAll?: () => void;
 };
 
-const NewsSection = ({ data, onItemPress, onPressAll }: Props) => {
-  if (!data || data.length === 0) return null;
+const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
+  const safeData = Array.isArray(data) ? data : [];
 
-  const featuredNews = data[0];
-  const otherNews = data.slice(1, 5);
+  if (safeData.length === 0) return null;
+
+  const featuredNews = safeData[0];
+  const otherNews = safeData.slice(1, 5);
 
   return (
     <View style={styles.container}>
@@ -66,29 +68,30 @@ const NewsSection = ({ data, onItemPress, onPressAll }: Props) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {otherNews.map(item => (
-          <TouchableOpacity
-            key={item.dbe_id}
-            style={styles.miniCard}
-            onPress={() => onItemPress?.(item)}
-            activeOpacity={0.8}
-          >
-            <Image
-              source={{
-                uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
-              }}
-              style={styles.miniThumbnail}
-            />
+        {Array.isArray(otherNews) &&
+          otherNews.map(item => (
+            <TouchableOpacity
+              key={item.dbe_id}
+              style={styles.miniCard}
+              onPress={() => onItemPress?.(item)}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{
+                  uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
+                }}
+                style={styles.miniThumbnail}
+              />
 
-            <View style={styles.miniContent}>
-              <Text style={styles.miniTitle} numberOfLines={2}>
-                {item.dbe_judul}
-              </Text>
+              <View style={styles.miniContent}>
+                <Text style={styles.miniTitle} numberOfLines={2}>
+                  {item.dbe_judul}
+                </Text>
 
-              <Text style={styles.miniDate}>{item.dbe_tgl}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+                <Text style={styles.miniDate}>{item.dbe_tgl}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
       </ScrollView>
     </View>
   );

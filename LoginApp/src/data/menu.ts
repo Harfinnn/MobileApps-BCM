@@ -31,7 +31,7 @@ export const MAIN_MENU: MenuItemType[] = [
   },
   {
     id: 2,
-    title: 'Info Gempa Bumi',
+    title: 'Gempa Bumi',
     image: require('../assets/gambar_icon/info-gempa.png'),
     route: 'InfoGempaBumi',
     color: 'rgba(248, 173, 60, 0.3)',

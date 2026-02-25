@@ -25,8 +25,6 @@ import API from '../../../services/api';
 
 import styles from '../../../styles/dashboard/homeStyle';
 
-const HEADER_HEIGHT = 70;
-
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
   const { setShowBack, setHideNavbar, setShowSearch } = useLayout();
@@ -45,7 +43,12 @@ const HomeScreen = () => {
   const fetchNews = async () => {
     try {
       const res = await API.get('/berita');
-      setNewsData(res.data);
+
+      const beritaArray = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data ?? [];
+
+      setNewsData(beritaArray);
     } catch (error) {
       console.log('Error fetch berita:', error);
     } finally {
@@ -126,11 +129,15 @@ const HomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        bounces={false}
+        overScrollMode="never"
+        alwaysBounceVertical={false}
+        contentInsetAdjustmentBehavior="never"
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            progressViewOffset={HEADER_HEIGHT}
             colors={['#2CCABC']}
             tintColor="#2CCABC"
             progressBackgroundColor="#FFFFFF"

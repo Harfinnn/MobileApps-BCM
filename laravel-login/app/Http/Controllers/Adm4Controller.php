@@ -22,26 +22,30 @@ class Adm4Controller extends Controller
             ->whereBetween('lat', [$lat - $range, $lat + $range])
             ->whereBetween('lon', [$lon - $range, $lon + $range])
             ->selectRaw("
-            adm4,
-            kecamatan,
-            kelurahan,
-            kotkab,
-            provinsi,
-            lat,
-            lon,
-            (
-                6371 * acos(
-                    cos(radians(?)) *
-                    cos(radians(lat)) *
-                    cos(radians(lon) - radians(?)) +
-                    sin(radians(?)) *
-                    sin(radians(lat))
-                )
-            ) AS distance
-        ", [$lat, $lon, $lat])
+                id,
+                adm4,
+                kecamatan,
+                kelurahan,
+                kotkab,
+                provinsi,
+                lat,
+                lon,
+                (
+                    6371 * acos(
+                        cos(radians(?)) *
+                        cos(radians(lat)) *
+                        cos(radians(lon) - radians(?)) +
+                        sin(radians(?)) *
+                        sin(radians(lat))
+                    )
+                ) AS distance
+            ", [$lat, $lon, $lat])
             ->orderBy('distance')
             ->first();
 
-        return response()->json($nearest);
+        return response()->json([
+            'success' => true,
+            'data' => $nearest
+        ]);
     }
 }

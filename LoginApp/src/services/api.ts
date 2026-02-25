@@ -3,7 +3,7 @@ import { BASE_URL } from '../config/env';
 
 const API = axios.create({
   baseURL: `${BASE_URL}/api`,
-  timeout: 15000,
+  timeout: 10000,
 });
 
 /**

@@ -67,42 +67,50 @@ class LaporBencanaController extends Controller
         ]);
 
         /* ================= NOTIFIKASI ================= */
-        $receivers = NotificationHelper::getReceivers($sender);
 
-        if (empty($receivers)) {
-            Log::warning('NO RECEIVER FOUND', [
-                'sender_id' => $sender->user_id,
-            ]);
-        }
+        $receivers = NotificationHelper::getReceivers($sender) ?? [];
 
         foreach ($receivers as $receiverId) {
 
-            // 1️⃣ SIMPAN NOTIFIKASI KE DATABASE
-            Notification::create([
-                'sender_id' => $sender->user_id,
-                'receiver_id' => $receiverId,
-                'type' => 'bencana',
-                'reference_id' => $laporan->id,
-                'title' => $request->unit_kerja_nama,
-                'message' => $laporan->bencana->mbe_nama ?? 'Laporan Bencana',
-            ]);
+            try {
 
-            // 2️⃣ KIRIM PUSH NOTIFICATION (FCM)
-            $receiver = User::where('user_id', $receiverId)
-                ->whereNotNull('fcm_token')
-                ->first();
+                // 1️⃣ Simpan notifikasi ke database
+                Notification::create([
+                    'sender_id' => $sender->user_id,
+                    'receiver_id' => $receiverId,
+                    'type' => 'bencana',
+                    'reference_id' => $laporan->id,
+                    'title' => $request->unit_kerja_nama,
+                    'message' => optional($laporan->bencana)->mbe_nama ?? 'Laporan Bencana',
+                ]);
 
-            if ($receiver && $receiver->fcm_token) {
-                FcmService::send(
-                    $receiver->fcm_token,
-                    '🚨 Laporan Bencana Baru',
-                    $request->unit_kerja_nama,
-                    [
-                        'type' => 'bencana',
-                        'lapor_id' => (string) $laporan->id,
-                        'sender_id' => (string) $sender->user_id,
-                    ]
-                );
+                // 2️⃣ Ambil user penerima
+                $receiver = User::where('user_id', $receiverId)
+                    ->whereNotNull('fcm_token')
+                    ->first();
+
+                if ($receiver && $receiver->fcm_token) {
+                    FcmService::send(
+                        $receiver->fcm_token,
+                        '🚨 Laporan Bencana Baru',
+                        $request->unit_kerja_nama,
+                        [
+                            'type' => 'bencana',
+                            'lapor_id' => (string) $laporan->id,
+                            'sender_id' => (string) $sender->user_id,
+                        ]
+                    );
+                }
+
+            } catch (\Exception $e) {
+
+                Log::error('NOTIFIKASI ERROR', [
+                    'receiver_id' => $receiverId,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Jangan return apa-apa di sini!
+                // Supaya laporan tetap sukses walaupun notif gagal
             }
         }
 

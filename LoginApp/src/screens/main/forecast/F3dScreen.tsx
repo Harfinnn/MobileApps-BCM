@@ -71,7 +71,7 @@ export default function F3dScreen() {
     return (
       <LinearGradient colors={['#f8fafc', '#ffffff']} style={styles.container}>
         <SafeAreaView style={styles.center}>
-          {' '}
+          <View style={{ height: 10 }} />
           <Text>Tidak ada data cuaca tersedia</Text>
           <TouchableOpacity onPress={refetch}>
             <Text
