@@ -45,6 +45,7 @@ function MainStackScreen() {
         <MainStack.Screen name="F3d" component={F3dScreen} />
         <MainStack.Screen name="Maps" component={MapScreen} />
 
+
         <MainStack.Screen name="Profile" component={ProfileScreen} />
         <MainStack.Screen name="EditProfile" component={EditProfileScreen} />
 

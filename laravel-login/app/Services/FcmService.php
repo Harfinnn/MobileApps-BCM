@@ -9,115 +9,121 @@ use App\Models\User;
 
 class FcmService
 {
+    /**
+     * Ambil OAuth Access Token Firebase
+     */
     protected static function getAccessToken()
     {
-        try {
-            $client = new GoogleClient();
-            $client->setAuthConfig(
-                base_path(config('services.firebase.credentials'))
-            );
-            $client->addScope(
-                'https://www.googleapis.com/auth/firebase.messaging'
-            );
+        $client = new GoogleClient();
+        $client->setAuthConfig(base_path(config('services.firebase.credentials')));
+        $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
 
-            $token = $client->fetchAccessTokenWithAssertion();
+        $token = $client->fetchAccessTokenWithAssertion();
 
-            return $token['access_token'] ?? null;
-
-        } catch (\Exception $e) {
-
-            Log::error('FCM TOKEN ERROR', [
-                'error' => $e->getMessage()
-            ]);
-
-            return null;
-        }
+        return $token['access_token'];
     }
 
+    /**
+     * Kirim Notifikasi ke 1 FCM Token
+     */
     public static function send(
         string $fcmToken,
         string $title,
         string $body,
         array $data = []
     ) {
-        try {
+        $accessToken = self::getAccessToken();
 
-            $accessToken = self::getAccessToken();
+        // ðŸ”’ FCM WAJIB DATA STRING
+        $safeData = [];
+        foreach ($data as $key => $value) {
+            $safeData[$key] = (string) $value;
+        }
 
-            if (!$accessToken) {
-                Log::error('FCM ACCESS TOKEN NULL');
-                return;
-            }
+        $response = Http::withToken($accessToken)->post(
+            'https://fcm.googleapis.com/v1/projects/' .
+            config('services.firebase.project_id') .
+            '/messages:send',
+            [
+                'message' => [
+                    'token' => $fcmToken,
 
-            // Semua data harus string
-            $safeData = [];
-            foreach ($data as $key => $value) {
-                $safeData[$key] = (string) $value;
-            }
+                    'data' => array_merge($safeData, [
+                        'title' => $title,
+                        'body' => $body,
+                    ]),
 
-            Log::info('FCM REQUEST', [
-                'project_id' => config('services.firebase.project_id'),
-                'token' => $fcmToken,
-            ]);
-
-            $response = Http::withToken($accessToken)->post(
-                'https://fcm.googleapis.com/v1/projects/' .
-                config('services.firebase.project_id') .
-                '/messages:send',
-                [
-                    'message' => [
-                        'token' => $fcmToken,
-
-                        // 🔥 WAJIB ADA NOTIFICATION
-                        'notification' => [
-                            'title' => $title,
-                            'body' => $body,
-                        ],
-
-                        // Data tambahan
-                        'data' => $safeData,
-
-                        'android' => [
-                            'priority' => 'HIGH',
-                            'notification' => [
-                                'sound' => 'default',
-                                'channel_id' => 'default',
-                            ],
-                        ],
+                    'android' => [
+                        'priority' => 'HIGH',
                     ],
-                ]
-            );
+                ],
+            ]
+        );
 
-            if ($response->failed()) {
+        if ($response->failed()) {
+            $bodyResponse = $response->json();
 
-                Log::error('FCM FAILED', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                $bodyResponse = $response->json();
-
-                // Token expired / logout
-                if (
-                    isset($bodyResponse['error']['details'][0]['errorCode']) &&
-                    $bodyResponse['error']['details'][0]['errorCode'] === 'UNREGISTERED'
-                ) {
-                    User::where('fcm_token', $fcmToken)
-                        ->update(['fcm_token' => null]);
-                }
-
-            } else {
-
-                Log::info('FCM SUCCESS', [
-                    'status' => $response->status(),
-                ]);
+            // ðŸ”¥ Token tidak valid / sudah logout
+            if (
+                isset($bodyResponse['error']['details'][0]['errorCode']) &&
+                $bodyResponse['error']['details'][0]['errorCode'] === 'UNREGISTERED'
+            ) {
+                User::where('fcm_token', $fcmToken)
+                    ->update(['fcm_token' => null]);
             }
 
-        } catch (\Exception $e) {
-
-            Log::error('FCM EXCEPTION', [
-                'error' => $e->getMessage(),
+            Log::error('FCM FAILED', [
+                'status' => $response->status(),
+                'body' => $response->body(),
             ]);
+        }
+    }
+
+    /**
+     * Kirim Notifikasi ke User Tertentu
+     */
+    public static function sendToUser(
+        User $user,
+        string $title,
+        string $body,
+        array $data = []
+    ) {
+        if (!$user->fcm_token)
+            return;
+
+        self::send($user->fcm_token, $title, $body, $data);
+    }
+
+    /**
+     * Kirim Notifikasi ke Role/Jabatan Tertentu
+     */
+    public static function sendToRole(
+        int $jabatan,
+        string $title,
+        string $body,
+        array $data = []
+    ) {
+        $users = User::where('user_jabatan', $jabatan)
+            ->whereNotNull('fcm_token')
+            ->get();
+
+        foreach ($users as $user) {
+            self::send($user->fcm_token, $title, $body, $data);
+        }
+    }
+
+    /**
+     * Kirim Notifikasi ke Semua User
+     */
+    public static function sendToAll(
+        string $title,
+        string $body,
+        array $data = []
+    ) {
+        $users = User::whereNotNull('fcm_token')->get();
+
+        foreach ($users as $user) {
+            self::send($user->fcm_token, $title, $body, $data);
         }
     }
 }

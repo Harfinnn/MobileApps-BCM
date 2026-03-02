@@ -33,11 +33,13 @@ const HomeScreen = () => {
   const [showDashboard, setShowDashboard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newsData, setNewsData] = useState<any[]>([]);
+  const [panduan, setPanduan] = useState([]);
 
   const { user } = useUser();
   const isSuperAdmin = user?.jabatan?.jab_id === 1;
 
   const backPressedOnce = useRef(false);
+  const { setHideHeader } = useLayout();
 
   /* ================= FETCH NEWS ================= */
   const fetchNews = async () => {
@@ -59,6 +61,27 @@ const HomeScreen = () => {
 
   useEffect(() => {
     fetchNews();
+  }, []);
+
+  useEffect(() => {
+    setHideHeader(false);
+  }, []);
+
+  /* ================= FETCH PANDUAN ================= */
+
+  useEffect(() => {
+    const fetchPanduan = async () => {
+      try {
+        const res = await API.get('/panduan');
+        if (res.data?.status) {
+          setPanduan(res.data.data);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    fetchPanduan();
   }, []);
 
   /* ================= EXIT APP ================= */
@@ -167,7 +190,7 @@ const HomeScreen = () => {
                 <HomeMenu onDashboardPress={handleDashboardPress} />
               </View>
 
-              <SmallBanner />
+              <SmallBanner panduan={panduan} />
 
               <NewsSection
                 data={newsData}

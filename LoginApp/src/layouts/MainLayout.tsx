@@ -9,10 +9,15 @@ import NavigationBar from '../components/common/NavigationBar';
 import { useLayout } from '../contexts/LayoutContext';
 import { useUser } from '../contexts/UserContext';
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const navigation = useNavigation<any>();
-  const { hideNavbar, setHideNavbar } = useLayout();
+  const { hideNavbar, setHideNavbar, hideHeader} = useLayout();
   const { loading, setUser } = useUser();
+  
 
   const dashboardSheetRef = useRef<BottomSheetModal>(null);
 
@@ -24,7 +29,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   return (
     <View style={{ flex: 1 }}>
       {/* 🔥 HEADER HANYA MUNCUL SETELAH USER READY */}
-      {!loading && (
+      {!loading && !hideHeader && (
         <DashboardHeader
           onProfilePress={() =>
             navigation.navigate('Main', { screen: 'Profile' })

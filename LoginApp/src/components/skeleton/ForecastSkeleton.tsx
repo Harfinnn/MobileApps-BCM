@@ -51,7 +51,7 @@ const ForecastSkeleton = () => {
   return (
     <View style={{ padding: 20 }}>
       {/* Header */}
-      <SkeletonBlock height={20} style={{ width: 100, marginBottom: 20 }} />
+      <SkeletonBlock height={20} style={{ width: 100, marginBottom: 20, marginTop: 20 }} />
 
       {/* Hero */}
       <SkeletonBlock height={270} style={{ marginBottom: 20 }} />

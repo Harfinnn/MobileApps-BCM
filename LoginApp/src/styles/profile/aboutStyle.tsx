@@ -16,7 +16,7 @@ export default StyleSheet.create({
 
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 20,
   },
 
   logoPlaceholder: {
@@ -76,7 +76,6 @@ export default StyleSheet.create({
   description: {
     fontSize: 15,
     color: '#4B5563',
-    textAlign: 'center',
     lineHeight: 24,
   },
 

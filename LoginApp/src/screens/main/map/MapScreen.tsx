@@ -31,6 +31,8 @@ const MapScreen = () => {
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
 
+  const { setHideHeader } = useLayout();
+
   /* ================= INIT ================= */
   useEffect(() => {
     setTitle('Peta Unit Kerja');
@@ -78,6 +80,10 @@ const MapScreen = () => {
       }),
     );
   };
+
+   useEffect(() => {
+      setHideHeader(true);
+    }, []);
 
   /* ================= RENDER ================= */
   return (

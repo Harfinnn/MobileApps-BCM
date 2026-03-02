@@ -4,6 +4,9 @@ type LayoutContextType = {
   hideNavbar: boolean;
   setHideNavbar: (v: boolean) => void;
 
+  hideHeader: boolean;
+  setHideHeader: (v: boolean) => void;
+
   title: string;
   setTitle: (title: string) => void;
 
@@ -28,6 +31,9 @@ type LayoutContextType = {
 const LayoutContext = createContext<LayoutContextType>({
   hideNavbar: false,
   setHideNavbar: () => {},
+
+  hideHeader: false,
+  setHideHeader: () => {},
 
   title: 'Home',
   setTitle: () => {},
@@ -58,6 +64,7 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
   const [onBack, setOnBack] = useState<(() => void) | undefined>();
   const [headerBg, setHeaderBg] = useState('transparent');
   const [hideHeaderLeft, setHideHeaderLeft] = useState(false);
+  const [hideHeader, setHideHeader] = useState(false);
 
   const resetLayout = () => {
     setHideNavbar(false);
@@ -71,6 +78,8 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
     () => ({
       hideNavbar,
       setHideNavbar,
+      hideHeader,
+      setHideHeader,
       title,
       setTitle,
       showBack,
@@ -83,9 +92,9 @@ export const LayoutProvider = ({ children }: { children: React.ReactNode }) => {
       showSearch,
       setShowSearch,
       hideHeaderLeft,
-      setHideHeaderLeft
+      setHideHeaderLeft,
     }),
-    [hideNavbar, title, showBack, onBack, headerBg, showSearch, hideHeaderLeft],
+    [hideNavbar, title, showBack, onBack, headerBg, showSearch, hideHeaderLeft, hideHeader],
   );
 
   return (

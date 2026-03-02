@@ -49,7 +49,7 @@ export default function EditProfileScreen({ navigation }: any) {
       setShowBack(true);
       setShowSearch(false);
       setOnBack(() => () => {
-        navigation.navigate('Main', { screen: 'Profile' });
+        navigation.goBack();
         return true;
       });
       return () => {
@@ -124,8 +124,8 @@ export default function EditProfileScreen({ navigation }: any) {
       });
       const me = await API.get('/profile');
       await setUser(me.data);
-      
-      navigation.navigate('Main', { screen: 'Profile' });
+
+      navigation.goBack();
     } catch (err: any) {
       Alert.alert('Gagal', err?.response?.data?.message ?? 'Terjadi kesalahan');
     } finally {

@@ -1,30 +1,44 @@
 // ================================
-// FORECAST CACHE
+// WEATHER CACHE (CURRENT + FORECAST)
 // ================================
 
 import { BASE_URL } from '../config/env';
 
-let FORECAST_CACHE: Record<string, any> = {};
+let WEATHER_CACHE: Record<string, any> = {};
 
-export const fetchForecastAPI = async (adm4: string) => {
-  // ✅ 1. Kalau sudah ada di cache → langsung return
-  if (FORECAST_CACHE[adm4]) {
-    console.log('⚡ FORECAST FROM CACHE');
-    return FORECAST_CACHE[adm4];
+export const fetchWeatherAPI = async (
+  lat: number,
+  lon: number,
+  adm4: string,
+) => {
+  const roundedLat = Number(lat.toFixed(2));
+  const roundedLon = Number(lon.toFixed(2));
+
+  const cacheKey = `${roundedLat}_${roundedLon}_${adm4}`;
+
+  if (WEATHER_CACHE[cacheKey]) {
+    console.log('⚡ WEATHER FROM CACHE');
+    return WEATHER_CACHE[cacheKey];
   }
 
-  console.log('🌐 FETCH FORECAST FROM API');
+  console.log('🌐 FETCH WEATHER FROM API');
 
-  const res = await fetch(`${BASE_URL}/api/weather?adm4=${adm4}`);
+  const res = await fetch(
+    `${BASE_URL}/api/weather?lat=${roundedLat}&lon=${roundedLon}&adm4=${adm4}`,
+  );
+
+  console.log('STATUS:', res.status);
+
+  const text = await res.text();
+  console.log('RESPONSE RAW:', text);
 
   if (!res.ok) {
     throw new Error('Weather API error');
   }
 
-  const json = await res.json();
+  const json = JSON.parse(text);
 
-  // ✅ 2. Simpan ke cache
-  FORECAST_CACHE[adm4] = json.data;
+  WEATHER_CACHE[cacheKey] = json.data;
 
   return json.data;
 };

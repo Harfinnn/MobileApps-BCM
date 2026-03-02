@@ -1,25 +1,24 @@
 import { AppRegistry } from 'react-native';
-import App from './App';
-import { name as appName } from './app.json';
-
 import messaging from '@react-native-firebase/messaging';
 import notifee, { EventType } from '@notifee/react-native';
+import App from './App';
+import { name as appName } from './app.json';
 import { markOpenedFromNotification } from './src/navigation/navigationRef';
 
-// 🔔 DISPLAY NOTIF (BACKGROUND / KILL)
-messaging().setBackgroundMessageHandler(async msg => {
+// 🔔 BACKGROUND & KILL STATE MESSAGE
+messaging().setBackgroundMessageHandler(async remoteMessage => {
   await notifee.displayNotification({
-    title: String(msg.data?.title ?? 'Notifikasi'),
-    body: String(msg.data?.body ?? ''),
-    data: msg.data,
+    title: remoteMessage.data?.title ?? 'Notifikasi',
+    body: remoteMessage.data?.body ?? '',
+    data: remoteMessage.data,
     android: {
-      channelId: 'default',
+      channelId: 'custom-sound-v2',
       pressAction: { id: 'default' },
-    },
+    }
   });
 });
 
-// 🔔 SIMPAN INTENT SAAT KLIK (JANGAN NAVIGATE)
+// 🔔 HANDLE CLICK SAAT BACKGROUND / KILL
 notifee.onBackgroundEvent(async ({ type, detail }) => {
   if (type === EventType.PRESS) {
     markOpenedFromNotification(detail.notification?.data);

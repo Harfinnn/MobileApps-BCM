@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,25 +7,30 @@ import {
   RefreshControl,
   TouchableOpacity,
   FlatList,
+  Platform,
+  UIManager,
+  Animated,
+  Easing,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import {
-  Droplets,
-  Wind,
-  Calendar,
-  AlertTriangle,
-  CheckCircle,
-} from 'lucide-react-native';
+import { AlertTriangle, CheckCircle } from 'lucide-react-native';
 import LottieView from 'lottie-react-native';
 import styles from '../../../styles/forecast/f3dStyle';
 import { useForecast } from './hooks/useForecast';
-import {
-  getWeatherAnimation,
-  getWeatherIcon,
-} from '../../../utils/weatherHelper';
+import { getWeatherAnimation } from '../../../utils/weatherHelper';
 import ForecastSkeleton from '../../../components/skeleton/ForecastSkeleton';
 import AnimatedTemp from './components/AnimatedTemp';
 import WeatherEffect from '../../../components/common/WeatherEffect';
+import ForecastItem from '../../../components/forecast/ForecastItem';
+import AnalyticsCard from '../../../components/forecast/AnalyticsCard';
+import { useLayout } from '../../../contexts/LayoutContext';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function F3dScreen() {
   const { weatherData, warning, loading, refetch, locationName } =
@@ -34,6 +39,15 @@ export default function F3dScreen() {
   const [expandedIndex, setExpandedIndex] = React.useState<number | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
   const [showAnimation, setShowAnimation] = React.useState(false);
+  const [showDetailInfo, setShowDetailInfo] = React.useState(false);
+
+  const { setHideHeader } = useLayout();
+
+  const humidityAnim = React.useRef(new Animated.Value(0)).current;
+  const floatAnim = React.useRef(new Animated.Value(0)).current;
+
+  const windAnim = React.useRef(new Animated.Value(0)).current;
+  const windShakeAnim = React.useRef(new Animated.Value(0)).current;
 
   /* ===============================
      DELAY ANIMATION (ANTI LAG)
@@ -45,6 +59,7 @@ export default function F3dScreen() {
 
     return () => clearTimeout(timer);
   }, []);
+  
 
   const animationSource = React.useMemo(() => {
     if (!weatherData.length) return null;
@@ -56,6 +71,88 @@ export default function F3dScreen() {
     await refetch();
     setRefreshing(false);
   };
+
+  const getHumidityStatus = (humidity: number) => {
+    if (humidity < 40) return 'Udara cenderung kering';
+    if (humidity <= 70) return 'Kelembaban normal';
+    return 'Udara cukup lembab';
+  };
+
+  const getWindStatus = (wind: number) => {
+    if (wind < 10) return 'Angin tenang';
+    if (wind <= 25) return 'Angin sedang';
+    return 'Angin cukup kencang';
+  };
+
+  /* ===============================
+      DROPDOWN ENTRANCE ANIMATION
+  =============================== */
+  React.useEffect(() => {
+    if (showDetailInfo) {
+      Animated.stagger(100, [
+        Animated.timing(humidityAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(windAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      humidityAnim.setValue(0);
+      windAnim.setValue(0);
+    }
+  }, [showDetailInfo]);
+
+  React.useEffect(() => {
+    Animated.parallel([
+      // Loop Kelembaban (Naik Turun)
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(floatAnim, {
+            toValue: 1,
+            duration: 1500,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(floatAnim, {
+            toValue: 0,
+            duration: 1500,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+      // Loop Angin (Kiri Kanan + Skew)
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(windShakeAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(windShakeAnim, {
+            toValue: -1,
+            duration: 1200,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+    ]).start();
+
+    // Delay Lottie biar gak lag
+    const timer = setTimeout(() => setShowAnimation(true), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+   useEffect(() => {
+      setHideHeader(true);
+    }, []);
 
   if (loading) {
     return (
@@ -94,7 +191,7 @@ export default function F3dScreen() {
         <FlatList
           data={weatherData}
           keyExtractor={(item, index) => `forecast-${index}`}
-          contentContainerStyle={{ paddingBottom: 40 }} // Memberi ruang di bawah
+          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -107,10 +204,7 @@ export default function F3dScreen() {
             <View style={styles.headerContainer}>
               {/* HEADER: Date & Location */}
               <View style={styles.headerTop}>
-                <View style={styles.dateBadge}>
-                  <Calendar size={14} color="#64748b" />
-                  <Text style={styles.headerDate}>{main.day}</Text>
-                </View>
+                <Text style={styles.headerDate}>{main.day}</Text>
                 {locationName && (
                   <Text style={styles.headerLocation}>{locationName}</Text>
                 )}
@@ -178,102 +272,26 @@ export default function F3dScreen() {
               )}
 
               {/* ANALYTICS CARD */}
-              <View style={styles.analyticsCard}>
-                <View style={styles.analyticsHeader}>
-                  <Text style={styles.analyticsTitle}>Detail Kondisi</Text>
-                  <View style={styles.liveIndicator}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>LIVE</Text>
-                  </View>
-                </View>
-                <View style={styles.statsGrid}>
-                  <View style={styles.statBox}>
-                    <View
-                      style={[
-                        styles.iconCircle,
-                        { backgroundColor: '#f0f9ff' },
-                      ]}
-                    >
-                      <Droplets size={18} color="#0ea5e9" />
-                    </View>
-                    <View>
-                      <Text style={styles.statLabel}>Kelembaban</Text>
-                      <Text style={styles.statValue}>
-                        {main.summary.humidity}%
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.dividerV} />
-                  <View style={styles.statBox}>
-                    <View
-                      style={[
-                        styles.iconCircle,
-                        { backgroundColor: '#f0fdf4' },
-                      ]}
-                    >
-                      <Wind size={18} color="#10b981" />
-                    </View>
-                    <View>
-                      <Text style={styles.statLabel}>Angin</Text>
-                      <Text style={styles.statValue}>
-                        {main.summary.wind}{' '}
-                        <Text style={styles.unitText}>km/h</Text>
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
+              <AnalyticsCard
+                humidity={main.summary.humidity}
+                wind={main.summary.wind}
+                getHumidityStatus={getHumidityStatus}
+                getWindStatus={getWindStatus}
+              />
 
               <Text style={styles.sectionTitle}>Prakiraan Harian</Text>
             </View>
           }
-          renderItem={({ item, index }) => {
-            const isOpen = expandedIndex === index;
-            return (
-              <View
-                style={[
-                  styles.forecastCard,
-                  isOpen && styles.forecastCardActive,
-                ]}
-              >
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => setExpandedIndex(isOpen ? null : index)}
-                >
-                  <View style={styles.forecastSummaryRow}>
-                    <View style={styles.forecastLeft}>
-                      <View style={styles.forecastIconBg}>
-                        {getWeatherIcon(item.summary.condition, 24)}
-                      </View>
-                      <View>
-                        <Text style={styles.forecastDay}>
-                          {index === 0 ? 'Hari Ini' : item.day}
-                        </Text>
-                        <Text style={styles.forecastConditionText}>
-                          {item.summary.condition}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.forecastTempText}>
-                      {item.summary.temp}°
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {isOpen && (
-                  <View style={styles.hourlyList}>
-                    {item.hourly.slice(0, 5).map((hour, i) => (
-                      <View key={i} style={styles.hourlyItem}>
-                        <Text style={styles.hourlyTimeText}>{hour.time}</Text>
-                        {getWeatherIcon(hour.condition, 18)}
-                        <Text style={styles.hourlyTempText}>{hour.temp}°</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            );
-          }}
+          renderItem={({ item, index }) => (
+            <ForecastItem
+              item={item}
+              index={index}
+              isOpen={expandedIndex === index}
+              onToggle={() =>
+                setExpandedIndex(expandedIndex === index ? null : index)
+              }
+            />
+          )}
         />
       </SafeAreaView>
     </LinearGradient>

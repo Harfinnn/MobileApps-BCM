@@ -2,8 +2,8 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
 
 export default StyleSheet.create({
-  container: { flex: 1, paddingBottom: 70},
-  headerContainer: { paddingHorizontal: 20, paddingTop: 90 },
+  container: { flex: 1, paddingBottom: 70 },
+  headerContainer: { paddingHorizontal: 20, paddingTop: 20 },
 
   headerTop: { marginBottom: 20 },
   dateBadge: {
@@ -20,12 +20,12 @@ export default StyleSheet.create({
     color: '#000000',
     fontSize: 15,
     fontWeight: '700',
-    textTransform: 'uppercase',
+    marginLeft: 10,
     letterSpacing: 1.5,
   },
 
   tempBig: {
-    fontSize: 84, 
+    fontSize: 84,
     fontWeight: '400',
     color: '#1E293B',
     letterSpacing: -2,
@@ -75,43 +75,70 @@ export default StyleSheet.create({
   alertTitle: { color: '#991b1b', fontWeight: '700', fontSize: 14 },
 
   analyticsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 28,
     padding: 20,
-    marginBottom: 30,
-    shadowColor: '#000',
+    marginBottom: 25,
+    shadowColor: '#64748b',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 20,
-    elevation: 2,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
+
   analyticsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  analyticsTitle: { fontWeight: '700', color: '#1e293b' },
+
+  analyticsTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1e293b',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  statBox: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+
+  statBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+
   iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    // Efek glassmorphism tipis pada ikon
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
   },
-  statLabel: { fontSize: 12, color: '#94a3b8', fontWeight: '600' },
-  statValue: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
-  dividerV: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#f1f5f9',
-    marginHorizontal: 15,
+
+  statLabel: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+
+  statValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#0f172a',
   },
 
   // Forecast List
@@ -162,10 +189,6 @@ export default StyleSheet.create({
   hourlyTimeText: { fontSize: 10, color: '#94a3b8', fontWeight: '600' },
   hourlyTempText: { fontSize: 13, fontWeight: '700', color: '#1e293b' },
 
-  liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981' },
-  liveText: { fontSize: 10, fontWeight: '800', color: '#94a3b8' },
-
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -187,5 +210,166 @@ export default StyleSheet.create({
     fontSize: 12,
     color: '#94a3b8',
     fontWeight: '400',
+  },
+
+  tempWrapper: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+
+  minMaxRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 2,
+  },
+
+  minTempText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#3b82f6',
+  },
+
+  maxTempText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#ef4444',
+    marginTop: 2,
+  },
+
+  detailDropdown: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    gap: 10,
+  },
+
+  insightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+
+  insightIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    // Soft shadow untuk icon kecil
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+
+  insightBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    paddingVertical: 14,
+    paddingRight: 14,
+    paddingLeft: 0,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+    overflow: 'hidden',
+  },
+
+  statusIndicator: {
+    width: 5,
+    height: '100%',
+    marginRight: 15,
+  },
+
+  insightContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+
+  detailLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94a3b8',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+
+  detailValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#334155',
+  },
+
+  detailText: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  humidityCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    backgroundColor: '#eff6ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  humidityBadge: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+
+  humidityBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+
+  windCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 22,
+    backgroundColor: '#f0fdf4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    shadowColor: '#22c55e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  windBadge: {
+    backgroundColor: '#22c55e',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
   },
 });

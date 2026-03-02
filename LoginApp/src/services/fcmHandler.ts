@@ -43,19 +43,25 @@ export function registerFcmHandlers() {
       body: String(msg.data?.body ?? ''),
       data: msg.data,
       android: {
-        channelId: 'default',
+        channelId: 'custom-sound-v2',
         pressAction: { id: 'default' },
       },
     });
 
-    // 🔥 REFRESH HEADER REALTIME
     if (onNotificationReceived) {
       onNotificationReceived();
     }
   });
 
-  // 🔔 CLICK FOREGROUND
+  // 🔔 CLICK (FOREGROUND)
   notifee.onForegroundEvent(({ type, detail }) => {
+    if (type === EventType.PRESS) {
+      handleNotificationNavigation(detail.notification?.data);
+    }
+  });
+
+  // 🔔 CLICK (BACKGROUND)
+  notifee.onBackgroundEvent(async ({ type, detail }) => {
     if (type === EventType.PRESS) {
       handleNotificationNavigation(detail.notification?.data);
     }

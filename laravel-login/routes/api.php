@@ -11,6 +11,7 @@ use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\WeatherController;
+use App\Http\Controllers\API\AppConfigController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,9 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::get('/panduan', [PanduanController::class, 'index']);
 Route::get('/panduan/{id}', [PanduanController::class, 'show']);
 
+Route::get('/app-config', [AppConfigController::class, 'index']);
+
+
 // BERITA (PUBLIC)
 Route::get('/berita', [BeritaController::class, 'index']);
 Route::get('/berita/{id}', [BeritaController::class, 'show']);
@@ -30,7 +34,7 @@ Route::get('/berita/{id}', [BeritaController::class, 'show']);
 Route::get('/adm4/nearest', [Adm4Controller::class, 'nearest']);
 
 // WEATHER
-Route::get('/weather', [WeatherController::class, 'forecast']);
+Route::get('/weather', [WeatherController::class, 'index']);
 
 // AUTHENTICATED APIs
 Route::middleware('auth:sanctum')->group(function () {
@@ -41,16 +45,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [ProfileController::class, 'me']);
     Route::post('/profile/update', [ProfileController::class, 'update']);
 
+    // INFO SETTINGS
+    Route::post('/app-config', [AppConfigController::class, 'update']);
+
     // MASTER DATA
     Route::get('/bencana', [BencanaController::class, 'index']);
     Route::get('/selindo', [MJaringanSelindoController::class, 'index']);
     Route::get('/selindo/search', [MJaringanSelindoController::class, 'search']);
     Route::get('/selindo/{id}', [MJaringanSelindoController::class, 'show']);
 
-    // ðŸ”” LAPOR BENCANA (KIRIM NOTIF)
+    // LAPOR BENCANA (KIRIM NOTIF)
     Route::post('/lapor-bencana', [LaporBencanaController::class, 'store']);
 
-    // ðŸ”” NOTIFICATIONS
+    // NOTIFICATIONS
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
@@ -83,7 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         \App\Models\UserAdm4History::updateOrCreate(
             [
-                'user_id' => $user->user_id, // 🔥 INI YANG BENAR
+                'user_id' => $user->user_id,
                 'adm4_id' => $request->adm4_id
             ],
             [

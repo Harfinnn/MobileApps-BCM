@@ -4,9 +4,9 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   User,
-  MapPin,
+  Settings,
   Lock,
-  Bell,
+  Info,
   ChevronRight,
   LogOut,
 } from 'lucide-react-native';
@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
   const { user, loading, setUser } = useUser();
+  const isAdmin = Number(user?.user_jabatan) === 1;
 
   useFocusEffect(
     useCallback(() => {
@@ -132,19 +133,24 @@ export default function ProfileScreen() {
           label="Edit Profile"
           onPress={() => navigation.navigate('EditProfile')}
         />
-        <MenuItem
-          icon={<MapPin size={18} color="#009B97" />}
-          label="Atur Alamat"
-        />
-        <MenuItem
-          icon={<Bell size={18} color="#009B97" />}
-          label="Notifikasi"
-        />
+        {/* {isAdmin && (
+          <MenuItem
+            icon={<Settings size={18} color="#009B97" />}
+            label="Pengaturan Info Aplikasi"
+            onPress={() => navigation.navigate('EditInfo')}
+          />
+        )} */}
 
         <Text style={styles.sectionLabel}>PRIVASI & KEAMANAN</Text>
         <MenuItem
           icon={<Lock size={18} color="#009B97" />}
           label="Ganti Password"
+        />
+
+        <MenuItem
+          icon={<Info size={18} color="#009B97" />}
+          label="Tentang"
+          onPress={() => navigation.navigate('About')}
         />
 
         {/* LOGOUT */}

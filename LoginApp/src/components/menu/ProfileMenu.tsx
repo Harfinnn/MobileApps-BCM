@@ -67,20 +67,7 @@ export default function ProfileMenu({ visible, onClose }: Props) {
           }}
         >
           <View style={styles.dotIcon} />
-          <Text style={styles.menuLabel}>Profil Saya</Text>
-        </TouchableOpacity>
-
-        {/* ITEM: ABOUT */}
-        <TouchableOpacity
-          activeOpacity={0.6}
-          style={styles.menuItem}
-          onPress={() => {
-            onClose();
-            navigation.navigate('Main', { screen: 'About' });
-          }}
-        >
-          <View style={styles.dotIcon} />
-          <Text style={styles.menuLabel}>Tentang</Text>
+          <Text style={styles.menuLabel}>Pengaturan</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />

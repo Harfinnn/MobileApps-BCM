@@ -28,10 +28,17 @@ export const parseForecast = (bmkgJson: any): DailyForecast[] => {
       });
     }
 
+    // 🔥 FORMAT TANGGAL FULL
+    const dateObj = new Date(mid.local_datetime);
+
+    const formattedDate = dateObj.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+
     result.push({
-      day: new Date(mid.local_datetime).toLocaleDateString('id-ID', {
-        weekday: 'short',
-      }),
+      day: formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1),
       summary: {
         temp: Math.round(mid.t),
         condition: mid.weather_desc,

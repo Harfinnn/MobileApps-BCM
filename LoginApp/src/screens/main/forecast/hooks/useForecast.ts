@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import Geolocation from '@react-native-community/geolocation';
 
 import {
-  fetchForecastAPI,
+  fetchWeatherAPI,
   fetchCAPAPI,
   fetchNearestADM4,
 } from '../../../../services/weatherService';
@@ -49,33 +49,49 @@ export const useForecast = () => {
   /* ==========================================
      CORE LOAD (ANTI DOUBLE FETCH)
   ========================================== */
-  const loadForecast = useCallback(async (adm4: string, locationInfo?: any) => {
-    try {
-      if (lastAdm4Ref.current === adm4) return;
+  const loadForecast = useCallback(
+    async (lat: number, lon: number, adm4: string, locationInfo?: any) => {
+      try {
+        const res = await fetchWeatherAPI(lat, lon, adm4);
 
-      lastAdm4Ref.current = adm4;
+        // 🔥 CEK FALLBACK / STALE DATA
+        if (res.current?.stale) {
+          console.log('⚠️ Weather data is stale');
 
-      const forecastRes = await fetchForecastAPI(adm4);
-      const parsed = parseForecast(forecastRes);
+          setWarning({
+            type: 'alert',
+            title: 'Data Terakhir Digunakan',
+            description: 'Koneksi ke server cuaca sedang bermasalah.',
+          });
+        }
 
-      if (!isMountedRef.current) return;
+        const parsed = parseForecast(res.forecast);
 
-      setWeatherData(parsed);
+        if (!isMountedRef.current) return;
 
-      if (locationInfo) {
-        const parts = [
-          locationInfo.kelurahan,
-          locationInfo.kecamatan,
-          locationInfo.kotkab,
-        ].filter(Boolean);
+        // 🔥 override suhu hari ini pakai realtime
+        if (res.current && parsed.length > 0) {
+          parsed[0].summary.temp = Math.floor(res.current.temperature_2m);
+          parsed[0].summary.wind = Math.floor(res.current.wind_speed_10m ?? 0);
+        }
 
-        setLocationName(parts.join(', '));
+        setWeatherData(parsed);
+
+        if (locationInfo) {
+          const parts = [
+            locationInfo.kelurahan,
+            locationInfo.kecamatan,
+            locationInfo.kotkab,
+          ].filter(Boolean);
+
+          setLocationName(parts.join(', '));
+        }
+      } catch (err) {
+        console.log('LOAD WEATHER ERROR:', err);
       }
-    } catch (err) {
-      console.log('LOAD FORECAST ERROR:', err);
-    }
-  }, []);
-
+    },
+    [],
+  );
   /* ==========================================
      INITIAL LOAD (INSTANT RENDER STRATEGY)
   ========================================== */
@@ -85,12 +101,57 @@ export const useForecast = () => {
         setLoading(true);
       }
 
-      // 🔥 1️⃣ LOAD DEFAULT DULU (SUPER CEPAT)
-      loadForecast(DEFAULT_ADM4);
+      const granted = await requestLocationPermission();
+      if (!granted) {
+        setLoading(false);
+        return;
+      }
+
+      const coords = await getCurrentPosition();
+      const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
+
+      if (!nearest?.data?.adm4) {
+        console.log('⚠️ ADM4 tidak ditemukan, fallback ke current only');
+
+        const res = await fetchWeatherAPI(
+          coords.latitude,
+          coords.longitude,
+          DEFAULT_ADM4, // hanya supaya endpoint tetap valid
+        );
+
+        if (res?.current) {
+          const fallbackData: DailyForecast[] = [
+            {
+              summary: {
+                temp: Math.floor(res.current.temperature_2m),
+                wind: Math.floor(res.current.wind_speed_10m ?? 0),
+                humidity: res.current.relative_humidity_2m ?? 0,
+                condition: 'Data model global (Open-Meteo)',
+                icon: 'cloud',
+              },
+            } as DailyForecast,
+          ];
+
+          setWeatherData(fallbackData);
+        }
+
+        setLocationName('Wilayah belum terdaftar di database');
+        setLoading(false);
+        return;
+      }
+
+      await loadForecast(
+        coords.latitude,
+        coords.longitude,
+        nearest.data.adm4,
+        nearest.data,
+      );
+
+      await saveUserLocation(nearest.data.id);
 
       setLoading(false);
 
-      // 🔥 2️⃣ FETCH CAP (NON BLOCKING)
+      // 🔥 CAP non blocking
       fetchCAPAPI()
         .then(capRes => {
           if (!isMountedRef.current) return;
@@ -104,33 +165,12 @@ export const useForecast = () => {
           );
         })
         .catch(() => {
-          if (!isMountedRef.current) return;
-
           setWarning({
             type: 'safe',
             title: 'Tidak Ada Peringatan Cuaca Aktif',
             description: 'Kondisi cuaca dalam keadaan normal.',
           });
         });
-
-      // 🔥 3️⃣ BACKGROUND UPDATE VIA GPS
-      const granted = await requestLocationPermission();
-      if (!granted) return;
-
-      const coords = await getCurrentPosition();
-
-      const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
-      await saveUserLocation(nearest.data.id);
-        console.log('NEAREST RESPONSE:', nearest);
-
-      if (nearest?.data?.id) {
-         console.log('ADM4 ID:', nearest.data.id);
-        await saveUserLocation(nearest.data.id);
-
-        if (nearest?.data?.adm4 && nearest.data.adm4 !== DEFAULT_ADM4) {
-          await loadForecast(nearest.data.adm4, nearest.data);
-        }
-      }
     } catch (error) {
       console.log('INIT ERROR:', error);
       setLoading(false);
@@ -151,7 +191,12 @@ export const useForecast = () => {
         const nearest = await fetchNearestADM4(latitude, longitude);
 
         if (nearest?.data?.adm4) {
-          await loadForecast(nearest.data.adm4, nearest.data);
+          await loadForecast(
+            latitude,
+            longitude,
+            nearest.data.adm4,
+            nearest.data,
+          );
         }
       },
       error => {
@@ -175,11 +220,15 @@ export const useForecast = () => {
       if (!granted) return;
 
       const coords = await getCurrentPosition();
-
       const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
 
       if (nearest?.data?.adm4) {
-        await loadForecast(nearest.data.adm4, nearest.data);
+        await loadForecast(
+          coords.latitude,
+          coords.longitude,
+          nearest.data.adm4,
+          nearest.data,
+        );
       }
     } catch (e) {
       console.log('GPS ERROR:', e);
