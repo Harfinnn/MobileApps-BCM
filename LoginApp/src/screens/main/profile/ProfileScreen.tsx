@@ -1,5 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, BackHandler, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  BackHandler,
+  Alert,
+  ScrollView,
+} from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -97,10 +104,6 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await setUser(null);
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-          });
         },
       },
     ]);
@@ -125,7 +128,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* ===== CONTENT ===== */}
-      <View style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* MENU */}
         <Text style={styles.sectionLabel}>AKUN & INFORMASI</Text>
         <MenuItem
@@ -133,15 +136,17 @@ export default function ProfileScreen() {
           label="Edit Profile"
           onPress={() => navigation.navigate('EditProfile')}
         />
-        {/* {isAdmin && (
+
+        {isAdmin && (
           <MenuItem
             icon={<Settings size={18} color="#009B97" />}
             label="Pengaturan Info Aplikasi"
-            onPress={() => navigation.navigate('EditInfo')}
+            onPress={() => navigation.navigate('EditAbout')}
           />
-        )} */}
+        )}
 
         <Text style={styles.sectionLabel}>PRIVASI & KEAMANAN</Text>
+
         <MenuItem
           icon={<Lock size={18} color="#009B97" />}
           label="Ganti Password"
@@ -158,7 +163,7 @@ export default function ProfileScreen() {
           <LogOut size={18} color="#EF4444" />
           <Text style={styles.logoutText}>Keluar Akun</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 }

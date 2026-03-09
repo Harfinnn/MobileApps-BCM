@@ -62,17 +62,53 @@ export default StyleSheet.create({
 
   alertBanner: {
     flexDirection: 'row',
-    padding: 16,
-    borderRadius: 20,
-    marginBottom: 20,
-    alignItems: 'center',
-    borderWidth: 1,
+    padding: 14,
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    alignItems: 'flex-start',
   },
-  safeBanner: { backgroundColor: '#f0fdf4', borderColor: '#dcfce7' },
-  dangerBanner: { backgroundColor: '#fef2f2', borderColor: '#fee2e2' },
-  alertTextWrapper: { marginLeft: 12, flex: 1 },
-  safeTitle: { color: '#166534', fontWeight: '700', fontSize: 14 },
-  alertTitle: { color: '#991b1b', fontWeight: '700', fontSize: 14 },
+
+  safeBanner: {
+    backgroundColor: '#ECFDF5',
+    borderLeftColor: '#10B981',
+  },
+
+  infoBanner: {
+    backgroundColor: '#EFF6FF',
+    borderLeftColor: '#3B82F6',
+  },
+
+  warningBanner: {
+    backgroundColor: '#FFFBEB',
+    borderLeftColor: '#F59E0B',
+  },
+
+  dangerBanner: {
+    backgroundColor: '#FEF2F2',
+    borderLeftColor: '#EF4444',
+  },
+
+  alertIconWrapper: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+
+  alertTextWrapper: {
+    flex: 1,
+  },
+
+  safeTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#065F46',
+  },
+
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#7F1D1D',
+  },
 
   analyticsCard: {
     backgroundColor: '#ffffff',
@@ -196,14 +232,15 @@ export default StyleSheet.create({
   },
 
   safeDesc: {
-    color: '#15803d',
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 4,
+    color: '#047857',
   },
+
   alertDesc: {
-    color: '#b91c1c',
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 4,
+    color: '#991B1B',
   },
 
   unitText: {
@@ -234,6 +271,12 @@ export default StyleSheet.create({
     fontWeight: '700',
     color: '#ef4444',
     marginTop: 2,
+  },
+
+  tempPlaceholder: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: '#94A3B8',
   },
 
   detailDropdown: {
@@ -280,6 +323,16 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
     overflow: 'hidden',
+  },
+
+  humidityBorder: {
+    borderWidth: 1.5,
+    borderColor: '#3b82f6',
+  },
+
+  windBorder: {
+    borderWidth: 1.5,
+    borderColor: '#22c55e',
   },
 
   statusIndicator: {

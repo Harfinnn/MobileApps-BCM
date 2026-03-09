@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class MLabel extends Model
 {
-    protected $table = 'm_label'; 
+    protected $table = 'm_label';
 
-    protected $primaryKey = 'mla_id'; 
+    protected $primaryKey = 'mla_id';
 
-    public $timestamps = false; 
+    public $timestamps = false;
     protected $fillable = [
         'mla_nama_perusahaan',
         'mla_nama_aplikasi',
@@ -22,5 +22,7 @@ class MLabel extends Model
         'mla_versi',
         'mla_tahun',
         'mla_status',
+        'mla_fitur',
+        'mla_sign',
     ];
 }

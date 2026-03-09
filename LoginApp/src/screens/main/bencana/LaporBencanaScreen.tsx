@@ -38,8 +38,8 @@ type FormState = {
   unitKerjaNama: string;
   jenisBencana: number | null;
   lokasi: string;
-  terdampak: boolean;
-  adaKerusakan: boolean;
+  terdampak: boolean | null;
+  adaKerusakan: boolean | null;
 };
 
 type AlertState = {
@@ -61,8 +61,8 @@ const LaporBencanaScreen = () => {
     unitKerjaNama: '',
     jenisBencana: null,
     lokasi: '',
-    terdampak: false,
-    adaKerusakan: false,
+    terdampak: null,
+    adaKerusakan: null,
   });
 
   const [bencanaList, setBencanaList] = useState<Bencana[]>([]);
@@ -187,8 +187,26 @@ const LaporBencanaScreen = () => {
   };
 
   const handleSubmit = async () => {
+    const newErrors: Record<string, string> = {};
+
     if (!form.jenisBencana) {
-      setErrors({ jenisBencana: 'Harap pilih jenis bencana' });
+      newErrors.jenisBencana = 'Harap pilih jenis bencana';
+    }
+
+    if (form.terdampak === null) {
+      newErrors.terdampak = 'Harap pilih Ya atau Tidak';
+    }
+
+    if (form.adaKerusakan === null) {
+      newErrors.adaKerusakan = 'Harap pilih Ya atau Tidak';
+    }
+
+    if (form.adaKerusakan === true && !foto) {
+      newErrors.foto = 'Foto kerusakan wajib diambil';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     setIsSubmitting(true);
@@ -197,8 +215,8 @@ const LaporBencanaScreen = () => {
       formData.append('unit_kerja_id', String(form.unitKerjaId));
       formData.append('unit_kerja_nama', form.unitKerjaNama);
       formData.append('mbe_id', String(form.jenisBencana));
-      formData.append('terdampak', form.terdampak ? '1' : '0');
-      formData.append('ada_kerusakan', form.adaKerusakan ? '1' : '0');
+      formData.append('terdampak', form.terdampak === true ? '1' : '0');
+      formData.append('ada_kerusakan', form.adaKerusakan === true ? '1' : '0');
       formData.append('lokasi', form.lokasi || '');
       if (foto)
         formData.append('foto', {
@@ -263,7 +281,6 @@ const LaporBencanaScreen = () => {
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Detail Kejadian</Text>
-          <Text style={styles.fieldLabel}>Jenis Bencana</Text>
           <TouchableOpacity
             style={[styles.selector, errors.jenisBencana && styles.errorBorder]}
             onPress={() => setShowJenisModal(true)}
@@ -296,54 +313,86 @@ const LaporBencanaScreen = () => {
             </Text>
           </View>
 
-          <View style={styles.toggleRow}>
+          {/* ================= TERDAMPAK ================= */}
+          <View
+            style={[
+              styles.toggleWrapper,
+              errors.terdampak && styles.errorBorder,
+            ]}
+          >
             <View>
               <Text style={styles.toggleLabel}>Apakah terdampak?</Text>
-              <Text style={styles.toggleSub}>
-                Centang jika Anda terkena imbas
-              </Text>
             </View>
+
             <YesNoToggle
               value={form.terdampak}
-              onChange={v => onChange('terdampak', v)}
-            />
-          </View>
-
-          <View style={styles.toggleRow}>
-            <View>
-              <Text style={styles.toggleLabel}>Apakah ada kerusakan?</Text>
-              <Text style={styles.toggleSub}>Bangunan/Fasilitas Kantor</Text>
-            </View>
-            <YesNoToggle
-              value={form.adaKerusakan}
               onChange={v => {
-                onChange('adaKerusakan', v);
-                if (!v) setFoto(null);
+                onChange('terdampak', v);
+                setErrors(prev => ({ ...prev, terdampak: '' }));
               }}
             />
           </View>
 
-          {form.adaKerusakan && (
-            <View style={styles.photoContainer}>
-              <TouchableOpacity style={styles.uploadBox} onPress={ambilFoto}>
-                {foto ? (
-                  <Image
-                    source={{ uri: foto.uri }}
-                    style={styles.photoPreview}
-                  />
-                ) : (
-                  <View style={styles.uploadPlaceholder}>
-                    <Text style={{ fontSize: 28 }}>📷</Text>
-                    <Text style={styles.uploadText}>Ambil Foto Kerusakan</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              {foto && (
-                <TouchableOpacity onPress={() => setFoto(null)}>
-                  <Text style={styles.removePhoto}>Hapus & Foto Ulang</Text>
-                </TouchableOpacity>
-              )}
+          {errors.terdampak && (
+            <Text style={styles.errorText}>{errors.terdampak}</Text>
+          )}
+
+          {/* ================= KERUSAKAN ================= */}
+
+          <View
+            style={[
+              styles.toggleWrapper,
+              errors.adaKerusakan && styles.errorBorder,
+            ]}
+          >
+            <View>
+              <Text style={styles.toggleLabel}>Apakah ada kerusakan?</Text>
             </View>
+
+            <YesNoToggle
+              value={form.adaKerusakan}
+              onChange={v => {
+                onChange('adaKerusakan', v);
+                setErrors(prev => ({ ...prev, adaKerusakan: '' }));
+                if (!v) setFoto(null);
+              }}
+            />
+          </View>
+          
+          {errors.adaKerusakan && (
+            <Text style={styles.errorText}>{errors.adaKerusakan}</Text>
+          )}
+
+          {form.adaKerusakan && (
+            <>
+              <View style={styles.photoContainer}>
+                <TouchableOpacity style={styles.uploadBox} onPress={ambilFoto}>
+                  {foto ? (
+                    <Image
+                      source={{ uri: foto.uri }}
+                      style={styles.photoPreview}
+                    />
+                  ) : (
+                    <View style={styles.uploadPlaceholder}>
+                      <Text style={{ fontSize: 28 }}>📷</Text>
+                      <Text style={styles.uploadText}>
+                        Ambil Foto Kerusakan
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {foto && (
+                  <TouchableOpacity onPress={() => setFoto(null)}>
+                    <Text style={styles.removePhoto}>Hapus & Foto Ulang</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {errors.foto && (
+                <Text style={styles.errorText}>{errors.foto}</Text>
+              )}
+            </>
           )}
         </View>
 

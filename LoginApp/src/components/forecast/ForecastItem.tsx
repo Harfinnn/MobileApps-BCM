@@ -77,7 +77,7 @@ export default function ForecastItem({
 
           <View style={styles.tempWrapper}>
             <View style={styles.minMaxRow}>
-              <Text style={styles.minTempText}>{minTemp}° /</Text>
+              <Text style={styles.minTempText}>{minTemp}°</Text>
               <Text style={styles.maxTempText}>{maxTemp}°</Text>
             </View>
           </View>

@@ -7,14 +7,30 @@ use App\Models\User;
 class NotificationHelper
 {
     public static function getReceivers(User $sender): array
-{
-    if ((int) $sender->user_status !== 1) {
-        return [];
-    }
+    {
+        // user_status:
+        // 1 = Super Administrator
+        // 3 = Viewer
+        // 4 = Unit Kerja
+        // 5 = Pengelola Gedung
 
-    return User::where('user_status', 1)
-        ->where('user_jabatan', 1)
-        ->pluck('user_id')
-        ->toArray();
-}
+
+        // Pastikan akun pengirim aktif
+        if ((int) $sender->user_status !== 1) {
+            return [];
+        }
+
+        // Role yang BOLEH mengirim notif
+        $allowedSenderJabatan = [3, 4, 5]; // Viewer, Unit Kerja, Pengelola Gedung
+
+        if (!in_array((int) $sender->user_jabatan, $allowedSenderJabatan, true)) {
+            return [];
+        }
+
+        // Semua notif dikirim ke Super Administrator
+        return User::where('user_status', 1)          // akun aktif
+            ->where('user_jabatan', 1)               // Super Administrator
+            ->pluck('user_id')
+            ->toArray();
+    }
 }

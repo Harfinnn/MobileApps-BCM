@@ -5,7 +5,7 @@ export const sendMessage = async (message: string) => {
     message,
   });
 
-  return response.data.reply;
+  return response.data;
 };
 
 export const getChatHistory = async () => {
@@ -15,4 +15,9 @@ export const getChatHistory = async () => {
 
 export const clearChatHistory = async () => {
   await API.delete('/chat/clear');
+};
+
+export const getRemainingChat = async () => {
+  const response = await API.get('/chat/remaining');
+  return response.data;
 };

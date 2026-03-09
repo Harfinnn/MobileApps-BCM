@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Adm4Controller;
 use App\Http\Controllers\BeritaController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardBencanaController;
 use App\Http\Controllers\LaporBencanaController;
 use App\Http\Controllers\MJaringanSelindoController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PanduanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WeatherController;
 use App\Http\Controllers\API\AppConfigController;
 use Illuminate\Http\Request;
@@ -19,12 +21,14 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
+// ADMIN ACTION
+Route::post('/users/{id}/disable', [UserController::class, 'disable']);
+
 // PANDUAN BENCANA
 Route::get('/panduan', [PanduanController::class, 'index']);
 Route::get('/panduan/{id}', [PanduanController::class, 'show']);
 
 Route::get('/app-config', [AppConfigController::class, 'index']);
-
 
 // BERITA (PUBLIC)
 Route::get('/berita', [BeritaController::class, 'index']);
@@ -37,16 +41,23 @@ Route::get('/adm4/nearest', [Adm4Controller::class, 'nearest']);
 Route::get('/weather', [WeatherController::class, 'index']);
 
 // AUTHENTICATED APIs
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum','check.user.status'])->group(function () {
 
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/update-fcm-token', [UserController::class, 'updateFcmToken']);
 
     // PROFILE
     Route::get('/profile', [ProfileController::class, 'me']);
     Route::post('/profile/update', [ProfileController::class, 'update']);
 
     // INFO SETTINGS
-    Route::post('/app-config', [AppConfigController::class, 'update']);
+    Route::put('/app-config', [AppConfigController::class, 'update']);
+
+    // CHATBOT
+    Route::get('/chat/remaining', [ChatController::class, 'remaining']);
+    Route::post('/chat', [ChatController::class, 'ask']);
+    Route::get('/chat/history', [ChatController::class, 'history']);
+    Route::delete('/chat/clear', [ChatController::class, 'clearHistory']);
 
     // MASTER DATA
     Route::get('/bencana', [BencanaController::class, 'index']);

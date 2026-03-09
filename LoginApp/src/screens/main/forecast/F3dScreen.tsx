@@ -1,28 +1,31 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useCallback, useState } from 'react';
 import {
   View,
   Text,
   SafeAreaView,
   StatusBar,
   RefreshControl,
-  TouchableOpacity,
-  FlatList,
   Platform,
   UIManager,
-  Animated,
-  Easing,
+  LayoutAnimation,
+  FlatList,
+  InteractionManager,
 } from 'react-native';
+
+import { AlertTriangle, CheckCircle, Info } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { AlertTriangle, CheckCircle } from 'lucide-react-native';
 import LottieView from 'lottie-react-native';
+
 import styles from '../../../styles/forecast/f3dStyle';
 import { useForecast } from './hooks/useForecast';
 import { getWeatherAnimation } from '../../../utils/weatherHelper';
+
 import ForecastSkeleton from '../../../components/skeleton/ForecastSkeleton';
 import AnimatedTemp from './components/AnimatedTemp';
 import WeatherEffect from '../../../components/common/WeatherEffect';
 import ForecastItem from '../../../components/forecast/ForecastItem';
 import AnalyticsCard from '../../../components/forecast/AnalyticsCard';
+
 import { useLayout } from '../../../contexts/LayoutContext';
 
 if (
@@ -36,35 +39,165 @@ export default function F3dScreen() {
   const { weatherData, warning, loading, refetch, locationName } =
     useForecast();
 
-  const [expandedIndex, setExpandedIndex] = React.useState<number | null>(null);
-  const [refreshing, setRefreshing] = React.useState(false);
-  const [showAnimation, setShowAnimation] = React.useState(false);
-  const [showDetailInfo, setShowDetailInfo] = React.useState(false);
+  const main = weatherData?.[0];
+
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   const { setHideHeader } = useLayout();
 
-  const humidityAnim = React.useRef(new Animated.Value(0)).current;
-  const floatAnim = React.useRef(new Animated.Value(0)).current;
+  /* ===============================
+     ICON + STYLE
+  =============================== */
 
-  const windAnim = React.useRef(new Animated.Value(0)).current;
-  const windShakeAnim = React.useRef(new Animated.Value(0)).current;
+  const getWarningIcon = useCallback((type: string) => {
+    switch (type) {
+      case 'safe':
+        return <CheckCircle size={20} color="#10B981" />;
+      case 'info':
+        return <Info size={20} color="#3B82F6" />;
+      case 'warning':
+        return <AlertTriangle size={20} color="#F59E0B" />;
+      case 'alert':
+        return <AlertTriangle size={20} color="#EF4444" />;
+      default:
+        return <AlertTriangle size={20} color="#64748B" />;
+    }
+  }, []);
+
+  const getWarningStyle = useCallback((type: string) => {
+    switch (type) {
+      case 'safe':
+        return styles.safeBanner;
+      case 'info':
+        return styles.infoBanner;
+      case 'warning':
+        return styles.warningBanner;
+      case 'alert':
+        return styles.dangerBanner;
+      default:
+        return styles.infoBanner;
+    }
+  }, []);
 
   /* ===============================
-     DELAY ANIMATION (ANTI LAG)
+     MEMO DATA
   =============================== */
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowAnimation(true);
-    }, 1200); // 🔥 lebih aman untuk device mid-range
 
-    return () => clearTimeout(timer);
+  const animationSource = useMemo(() => {
+    if (!showAnimation || !main?.summary?.condition) return null;
+    return getWeatherAnimation(main.summary.condition);
+  }, [main, showAnimation]);
+
+  const getHumidityStatus = useCallback((humidity: number) => {
+    if (humidity < 40) return 'Udara cenderung kering';
+    if (humidity <= 70) return 'Kelembaban normal';
+    return 'Udara cukup lembab';
   }, []);
-  
 
-  const animationSource = React.useMemo(() => {
-    if (!weatherData.length) return null;
-    return getWeatherAnimation(weatherData[0].summary.condition);
-  }, [weatherData]);
+  const getWindStatus = useCallback((wind: number) => {
+    if (wind < 10) return 'Angin tenang';
+    if (wind <= 25) return 'Angin sedang';
+    return 'Angin cukup kencang';
+  }, []);
+
+  const toggleItem = useCallback((index: number) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedIndex(prev => (prev === index ? null : index));
+  }, []);
+
+  const renderItem = useCallback(
+    ({ item, index }: any) => (
+      <ForecastItem
+        item={item}
+        index={index}
+        isOpen={expandedIndex === index}
+        onToggle={() => toggleItem(index)}
+      />
+    ),
+    [expandedIndex, toggleItem],
+  );
+
+  /* ===============================
+     HEADER COMPONENT
+  =============================== */
+
+  const headerComponent = useMemo(() => {
+    if (!main) return null;
+
+    return (
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerDate}>{main.day}</Text>
+
+          {locationName && (
+            <Text style={styles.headerLocation}>{locationName}</Text>
+          )}
+        </View>
+
+        <View style={styles.heroSection}>
+          <View style={styles.heroTextContent}>
+            <AnimatedTemp value={main.summary.temp} />
+            <Text style={styles.heroCondition}>{main.summary.condition}</Text>
+          </View>
+
+          {showAnimation && animationSource && (
+            <View style={styles.animationContainer}>
+              <WeatherEffect condition={main.summary.condition} />
+
+              <LottieView
+                source={animationSource}
+                autoPlay
+                loop
+                renderMode="HARDWARE"
+                style={styles.lottieHero}
+              />
+            </View>
+          )}
+        </View>
+
+        {warning && (
+          <View style={[styles.alertBanner, getWarningStyle(warning.type)]}>
+            <View style={styles.alertIconWrapper}>
+              {getWarningIcon(warning.type)}
+            </View>
+
+            <View style={styles.alertTextWrapper}>
+              <Text style={styles.alertTitle}>{warning.title}</Text>
+
+              {warning.description && (
+                <Text style={styles.alertDesc}>{warning.description}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
+        <AnalyticsCard
+          humidity={main.summary.humidity}
+          wind={main.summary.wind}
+          getHumidityStatus={getHumidityStatus}
+          getWindStatus={getWindStatus}
+        />
+
+        <Text style={styles.sectionTitle}>Prakiraan Harian</Text>
+      </View>
+    );
+  }, [
+    main,
+    warning,
+    showAnimation,
+    animationSource,
+    locationName,
+    getWarningIcon,
+    getWarningStyle,
+    getHumidityStatus,
+    getWindStatus,
+  ]);
+
+  /* ===============================
+     FUNCTIONS
+  =============================== */
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -72,87 +205,25 @@ export default function F3dScreen() {
     setRefreshing(false);
   };
 
-  const getHumidityStatus = (humidity: number) => {
-    if (humidity < 40) return 'Udara cenderung kering';
-    if (humidity <= 70) return 'Kelembaban normal';
-    return 'Udara cukup lembab';
-  };
-
-  const getWindStatus = (wind: number) => {
-    if (wind < 10) return 'Angin tenang';
-    if (wind <= 25) return 'Angin sedang';
-    return 'Angin cukup kencang';
-  };
-
   /* ===============================
-      DROPDOWN ENTRANCE ANIMATION
+     EFFECT
   =============================== */
-  React.useEffect(() => {
-    if (showDetailInfo) {
-      Animated.stagger(100, [
-        Animated.timing(humidityAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(windAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      humidityAnim.setValue(0);
-      windAnim.setValue(0);
-    }
-  }, [showDetailInfo]);
 
-  React.useEffect(() => {
-    Animated.parallel([
-      // Loop Kelembaban (Naik Turun)
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(floatAnim, {
-            toValue: 1,
-            duration: 1500,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(floatAnim, {
-            toValue: 0,
-            duration: 1500,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-      // Loop Angin (Kiri Kanan + Skew)
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(windShakeAnim, {
-            toValue: 1,
-            duration: 1200,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(windShakeAnim, {
-            toValue: -1,
-            duration: 1200,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    ]).start();
+  useEffect(() => {
+    setHideHeader(true);
+  }, [setHideHeader]);
 
-    // Delay Lottie biar gak lag
-    const timer = setTimeout(() => setShowAnimation(true), 1200);
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setShowAnimation(true);
+    });
+
+    return () => task.cancel();
   }, []);
 
-   useEffect(() => {
-      setHideHeader(true);
-    }, []);
+  /* ===============================
+     LOADING
+  =============================== */
 
   if (loading) {
     return (
@@ -168,31 +239,32 @@ export default function F3dScreen() {
     return (
       <LinearGradient colors={['#f8fafc', '#ffffff']} style={styles.container}>
         <SafeAreaView style={styles.center}>
-          <View style={{ height: 10 }} />
           <Text>Tidak ada data cuaca tersedia</Text>
-          <TouchableOpacity onPress={refetch}>
-            <Text
-              style={{ color: '#0ea5e9', marginTop: 10, fontWeight: '600' }}
-            >
-              Coba Lagi
-            </Text>
-          </TouchableOpacity>
         </SafeAreaView>
       </LinearGradient>
     );
   }
 
-  const main = weatherData[0];
+  /* ===============================
+     UI
+  =============================== */
 
   return (
     <LinearGradient colors={['#f8fafc', '#ffffff']} style={styles.container}>
       <StatusBar barStyle="dark-content" />
+
       <SafeAreaView style={{ flex: 1 }}>
         <FlatList
           data={weatherData}
+          renderItem={renderItem}
           keyExtractor={(item, index) => `forecast-${index}`}
+          ListHeaderComponent={headerComponent}
+          initialNumToRender={2}
+          maxToRenderPerBatch={2}
+          windowSize={3}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews
           contentContainerStyle={{ paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -200,98 +272,6 @@ export default function F3dScreen() {
               tintColor="#0ea5e9"
             />
           }
-          ListHeaderComponent={
-            <View style={styles.headerContainer}>
-              {/* HEADER: Date & Location */}
-              <View style={styles.headerTop}>
-                <Text style={styles.headerDate}>{main.day}</Text>
-                {locationName && (
-                  <Text style={styles.headerLocation}>{locationName}</Text>
-                )}
-              </View>
-
-              {/* HERO SECTION */}
-              <View style={styles.heroSection}>
-                <View style={styles.heroTextContent}>
-                  <AnimatedTemp value={main.summary.temp} />
-                  <Text style={styles.heroCondition}>
-                    {main.summary.condition}
-                  </Text>
-                </View>
-
-                {showAnimation && !loading && animationSource && (
-                  <View style={styles.animationContainer}>
-                    <WeatherEffect condition={main.summary.condition} />
-                    <LottieView
-                      source={animationSource}
-                      autoPlay
-                      loop
-                      renderMode="HARDWARE"
-                      style={styles.lottieHero}
-                    />
-                  </View>
-                )}
-              </View>
-
-              {/* WARNING BANNER */}
-              {warning && (
-                <View
-                  style={[
-                    styles.alertBanner,
-                    warning.type === 'safe'
-                      ? styles.safeBanner
-                      : styles.dangerBanner,
-                  ]}
-                >
-                  {warning.type === 'safe' ? (
-                    <CheckCircle size={20} color="#10b981" />
-                  ) : (
-                    <AlertTriangle size={20} color="#ef4444" />
-                  )}
-                  <View style={styles.alertTextWrapper}>
-                    <Text
-                      style={
-                        warning.type === 'safe'
-                          ? styles.safeTitle
-                          : styles.alertTitle
-                      }
-                    >
-                      {warning.title}
-                    </Text>
-                    <Text
-                      style={
-                        warning.type === 'safe'
-                          ? styles.safeDesc
-                          : styles.alertDesc
-                      }
-                    >
-                      {warning.description}
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              {/* ANALYTICS CARD */}
-              <AnalyticsCard
-                humidity={main.summary.humidity}
-                wind={main.summary.wind}
-                getHumidityStatus={getHumidityStatus}
-                getWindStatus={getWindStatus}
-              />
-
-              <Text style={styles.sectionTitle}>Prakiraan Harian</Text>
-            </View>
-          }
-          renderItem={({ item, index }) => (
-            <ForecastItem
-              item={item}
-              index={index}
-              isOpen={expandedIndex === index}
-              onToggle={() =>
-                setExpandedIndex(expandedIndex === index ? null : index)
-              }
-            />
-          )}
         />
       </SafeAreaView>
     </LinearGradient>

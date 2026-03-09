@@ -1,11 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Animated,
-  Easing,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
 import { Droplets, Wind } from 'lucide-react-native';
 import styles from '../../styles/forecast/f3dStyle';
 
@@ -100,12 +94,7 @@ export default function AnalyticsCard({
       <View style={styles.statsGrid}>
         {/* HUMIDITY */}
         <View style={styles.statBox}>
-          <View
-            style={[
-              styles.iconCircle,
-              { backgroundColor: '#eff6ff' },
-            ]}
-          >
+          <View style={[styles.iconCircle, { backgroundColor: '#eff6ff' }]}>
             <Animated.View
               style={{
                 transform: [
@@ -130,12 +119,7 @@ export default function AnalyticsCard({
 
         {/* WIND */}
         <View style={styles.statBox}>
-          <View
-            style={[
-              styles.iconCircle,
-              { backgroundColor: '#f0fdf4' },
-            ]}
-          >
+          <View style={[styles.iconCircle, { backgroundColor: '#f0fdf4' }]}>
             <Animated.View
               style={{
                 transform: [
@@ -173,6 +157,7 @@ export default function AnalyticsCard({
           <Animated.View
             style={[
               styles.insightBox,
+              styles.humidityBorder,
               {
                 opacity: humidityAnim,
                 transform: [
@@ -186,18 +171,13 @@ export default function AnalyticsCard({
               },
             ]}
           >
-            <View
-              style={[
-                styles.statusIndicator,
-                { backgroundColor: '#3b82f6' },
-              ]}
-            />
+            <View style={styles.statusIndicator} />
             <View style={styles.insightContent}>
-              <Text style={styles.detailLabel}>
-                Analisis Kelembaban
-              </Text>
+              <Text style={styles.detailLabel}>Analisis Kelembaban</Text>
               <Text style={styles.detailValue}>
-                {getHumidityStatus(humidity)}
+                {typeof getHumidityStatus === 'function'
+                  ? getHumidityStatus(humidity)
+                  : ''}
               </Text>
             </View>
           </Animated.View>
@@ -205,6 +185,7 @@ export default function AnalyticsCard({
           <Animated.View
             style={[
               styles.insightBox,
+              styles.windBorder,
               {
                 opacity: windAnim,
                 transform: [
@@ -218,16 +199,11 @@ export default function AnalyticsCard({
               },
             ]}
           >
-            <View
-              style={[
-                styles.statusIndicator,
-                { backgroundColor: '#22c55e' },
-              ]}
-            />
+            <View style={styles.statusIndicator} />
             <View style={styles.insightContent}>
               <Text style={styles.detailLabel}>Kondisi Angin</Text>
               <Text style={styles.detailValue}>
-                {getWindStatus(wind)}
+                {typeof getWindStatus === 'function' ? getWindStatus(wind) : ''}
               </Text>
             </View>
           </Animated.View>

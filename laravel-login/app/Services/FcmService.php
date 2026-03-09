@@ -15,8 +15,14 @@ class FcmService
     protected static function getAccessToken()
     {
         $client = new GoogleClient();
-        $client->setAuthConfig(base_path(config('services.firebase.credentials')));
-        $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+
+        $client->setAuthConfig(
+            base_path(config('services.firebase.credentials'))
+        );
+
+        $client->addScope(
+            'https://www.googleapis.com/auth/firebase.messaging'
+        );
 
         $token = $client->fetchAccessTokenWithAssertion();
 
@@ -24,7 +30,7 @@ class FcmService
     }
 
     /**
-     * Kirim Notifikasi ke 1 FCM Token
+     * Kirim Notifikasi ke 1 device
      */
     public static function send(
         string $fcmToken,
@@ -32,55 +38,72 @@ class FcmService
         string $body,
         array $data = []
     ) {
-        $accessToken = self::getAccessToken();
+        try {
 
-        // ðŸ”’ FCM WAJIB DATA STRING
-        $safeData = [];
-        foreach ($data as $key => $value) {
-            $safeData[$key] = (string) $value;
-        }
+            $accessToken = self::getAccessToken();
 
-        $response = Http::withToken($accessToken)->post(
-            'https://fcm.googleapis.com/v1/projects/' .
-            config('services.firebase.project_id') .
-            '/messages:send',
-            [
-                'message' => [
-                    'token' => $fcmToken,
+            // 🔒 semua data harus string
+            $safeData = [];
 
-                    'data' => array_merge($safeData, [
-                        'title' => $title,
-                        'body' => $body,
-                    ]),
-
-                    'android' => [
-                        'priority' => 'HIGH',
-                    ],
-                ],
-            ]
-        );
-
-        if ($response->failed()) {
-            $bodyResponse = $response->json();
-
-            // ðŸ”¥ Token tidak valid / sudah logout
-            if (
-                isset($bodyResponse['error']['details'][0]['errorCode']) &&
-                $bodyResponse['error']['details'][0]['errorCode'] === 'UNREGISTERED'
-            ) {
-                User::where('fcm_token', $fcmToken)
-                    ->update(['fcm_token' => null]);
+            foreach ($data as $key => $value) {
+                $safeData[$key] = (string) $value;
             }
 
-            Log::error('FCM FAILED', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+            $response = Http::withToken($accessToken)
+                ->post(
+                    'https://fcm.googleapis.com/v1/projects/' .
+                    config('services.firebase.project_id') .
+                    '/messages:send',
+                    [
+                        'message' => [
+
+                            'token' => $fcmToken,
+
+                            'data' => array_merge($safeData, [
+                                'title' => $title,
+                                'body' => $body,
+                            ]),
+
+                            'android' => [
+                                'priority' => 'HIGH',
+                            ],
+
+                        ],
+                    ]
+                );
+
+            if ($response->failed()) {
+
+                Log::error('FCM FAILED', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                $bodyResponse = $response->json();
+
+                // 🔥 token invalid
+                if (
+                    isset($bodyResponse['error']['details'][0]['errorCode']) &&
+                    $bodyResponse['error']['details'][0]['errorCode'] === 'UNREGISTERED'
+                ) {
+
+                    User::where('fcm_token', $fcmToken)
+                        ->update(['fcm_token' => null]);
+
+                }
+            }
+
+        } catch (\Throwable $e) {
+
+            Log::error('FCM ERROR', [
+                'message' => $e->getMessage()
             ]);
+
         }
     }
 
     /**
-     * Kirim Notifikasi ke User Tertentu
+     * Kirim ke user tertentu
      */
     public static function sendToUser(
         User $user,
@@ -88,42 +111,40 @@ class FcmService
         string $body,
         array $data = []
     ) {
-        if (!$user->fcm_token)
+
+        if (!$user->fcm_token) {
             return;
-
-        self::send($user->fcm_token, $title, $body, $data);
-    }
-
-    /**
-     * Kirim Notifikasi ke Role/Jabatan Tertentu
-     */
-    public static function sendToRole(
-        int $jabatan,
-        string $title,
-        string $body,
-        array $data = []
-    ) {
-        $users = User::where('user_jabatan', $jabatan)
-            ->whereNotNull('fcm_token')
-            ->get();
-
-        foreach ($users as $user) {
-            self::send($user->fcm_token, $title, $body, $data);
         }
+
+        self::send(
+            $user->fcm_token,
+            $title,
+            $body,
+            $data
+        );
     }
 
     /**
-     * Kirim Notifikasi ke Semua User
+     * Kirim ke semua user
      */
     public static function sendToAll(
         string $title,
         string $body,
         array $data = []
     ) {
+
         $users = User::whereNotNull('fcm_token')->get();
 
         foreach ($users as $user) {
-            self::send($user->fcm_token, $title, $body, $data);
+
+            self::send(
+                $user->fcm_token,
+                $title,
+                $body,
+                $data
+            );
+
         }
+
     }
 }

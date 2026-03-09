@@ -9,12 +9,20 @@ use App\Models\MLabel;
 
 class AppConfigController extends Controller
 {
+    private $basePath = 'https://lensasyariah.com/simple_app/api/storage/app/public/';
+
     public function index()
     {
         $config = MLabel::where('mla_status', 1)->first();
 
-        if ($config && $config->mla_logo) {
-            $config->mla_logo = url('storage/' . $config->mla_logo);
+        if ($config) {
+            if ($config->mla_logo) {
+                $config->mla_logo = $this->basePath . $config->mla_logo;
+            }
+
+            if ($config->mla_logo_perusahaan) {
+                $config->mla_logo_perusahaan = $this->basePath . $config->mla_logo_perusahaan;
+            }
         }
 
         return response()->json([
@@ -25,10 +33,9 @@ class AppConfigController extends Controller
 
     public function update(Request $request)
     {
-        \Log::info('UPDATE ROUTE TERPANGGIL');
         $user = auth()->user();
 
-        if ($user->user_jabatan != 1) {
+        if (!$user || $user->user_jabatan != 1) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -37,11 +44,13 @@ class AppConfigController extends Controller
 
         $request->validate([
             'mla_logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'mla_logo_perusahaan' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'mla_nama_aplikasi' => 'nullable|string|max:100',
             'mla_keterangan' => 'nullable|string',
             'mla_fitur' => 'nullable|string',
-            'mla_nama_perusahaan' => 'nullable|string',
+            'mla_nama_perusahaan' => 'nullable|string|max:100',
             'mla_tahun' => 'nullable|string|max:4',
-            'mla_sign' => 'nullable|string',
+            'mla_sign' => 'nullable|string|max:100',
             'mla_versi' => 'nullable|string|max:20',
         ]);
 
@@ -54,25 +63,77 @@ class AppConfigController extends Controller
             ], 404);
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Update Logo Utama
+        |--------------------------------------------------------------------------
+        */
         if ($request->hasFile('mla_logo')) {
 
-            if ($config->mla_logo && Storage::disk('public')->exists($config->mla_logo)) {
+            if ($config->mla_logo &&
+                Storage::disk('public')->exists($config->mla_logo)) {
                 Storage::disk('public')->delete($config->mla_logo);
             }
 
-            $path = $request->file('mla_logo')->store('logo', 'public');
+            $path = $request->file('mla_logo')
+                            ->store('logo', 'public');
 
             $config->mla_logo = $path;
         }
 
-        $config->mla_keterangan = $request->input('mla_keterangan');
-        $config->mla_fitur = $request->input('mla_fitur');
-        $config->mla_nama_perusahaan = $request->input('mla_nama_perusahaan');
-        $config->mla_tahun = $request->input('mla_tahun');
-        $config->mla_sign = $request->input('mla_sign');
-        $config->mla_versi = $request->input('mla_versi');
+        /*
+        |--------------------------------------------------------------------------
+        | Update Logo Perusahaan
+        |--------------------------------------------------------------------------
+        */
+        if ($request->hasFile('mla_logo_perusahaan')) {
+
+            if ($config->mla_logo_perusahaan &&
+                Storage::disk('public')->exists($config->mla_logo_perusahaan)) {
+                Storage::disk('public')->delete($config->mla_logo_perusahaan);
+            }
+
+            $path = $request->file('mla_logo_perusahaan')
+                            ->store('logoPerusahaan', 'public');
+
+            $config->mla_logo_perusahaan = $path;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Field Lain
+        |--------------------------------------------------------------------------
+        */
+        $fields = [
+            'mla_nama_aplikasi',
+            'mla_keterangan',
+            'mla_fitur',
+            'mla_nama_perusahaan',
+            'mla_tahun',
+            'mla_sign',
+            'mla_versi',
+        ];
+
+        foreach ($fields as $field) {
+            if ($request->has($field)) {
+                $config->$field = $request->input($field);
+            }
+        }
 
         $config->save();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Full URL (KONSISTEN)
+        |--------------------------------------------------------------------------
+        */
+        if ($config->mla_logo) {
+            $config->mla_logo = $this->basePath . $config->mla_logo;
+        }
+
+        if ($config->mla_logo_perusahaan) {
+            $config->mla_logo_perusahaan = $this->basePath . $config->mla_logo_perusahaan;
+        }
 
         return response()->json([
             'success' => true,

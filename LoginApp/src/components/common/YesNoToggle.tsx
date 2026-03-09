@@ -8,16 +8,18 @@ import {
 } from 'react-native';
 
 interface Props {
-  value: boolean;
+  value: boolean | null;
   onChange: (val: boolean) => void;
 }
 
 const YesNoToggle = ({ value, onChange }: Props) => {
-  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const anim = useRef(new Animated.Value(value === true ? 1 : 0)).current;
 
   useEffect(() => {
+    if (value === null) return;
+
     Animated.spring(anim, {
-      toValue: value ? 1 : 0,
+      toValue: value === true ? 1 : 0,
       useNativeDriver: false,
       friction: 8,
       tension: 50,
@@ -37,22 +39,26 @@ const YesNoToggle = ({ value, onChange }: Props) => {
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.slider,
-          {
-            transform: [{ translateX }],
-            backgroundColor,
-          },
-        ]}
-      />
+      {value !== null && (
+        <Animated.View
+          style={[
+            styles.slider,
+            {
+              transform: [{ translateX }],
+              backgroundColor,
+            },
+          ]}
+        />
+      )}
 
       <TouchableOpacity
         style={styles.option}
         onPress={() => onChange(false)}
         activeOpacity={1}
       >
-        <Text style={[styles.text, !value && styles.activeText]}>Tidak</Text>
+        <Text style={[styles.text, value === false && styles.activeText]}>
+          Tidak
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -60,7 +66,9 @@ const YesNoToggle = ({ value, onChange }: Props) => {
         onPress={() => onChange(true)}
         activeOpacity={1}
       >
-        <Text style={[styles.text, value && styles.activeText]}>Ya</Text>
+        <Text style={[styles.text, value === true && styles.activeText]}>
+          Ya
+        </Text>
       </TouchableOpacity>
     </View>
   );

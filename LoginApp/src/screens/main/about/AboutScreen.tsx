@@ -1,8 +1,19 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, Image } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  StatusBar,
+  SafeAreaView,
+  Linking,
+  TouchableOpacity,
+} from 'react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAppConfig } from '../../../contexts/AppConfigContext';
 import styles from '../../../styles/profile/aboutStyle';
+import LogoPartner from '../../../assets/BMKG.png';
+import LogoPartner2 from '../../../assets/newfavicon.png';
 
 const AboutScreen = () => {
   const { setTitle, setHideNavbar, setShowBack, setShowSearch } = useLayout();
@@ -20,7 +31,6 @@ const AboutScreen = () => {
     };
   }, [setTitle, setHideNavbar, setShowBack, setShowSearch]);
 
-  // 🔥 Realtime derive fitur (tanpa useMemo)
   const fiturList: string[] = Array.isArray(config?.mla_fitur)
     ? (config.mla_fitur as string[])
     : typeof config?.mla_fitur === 'string'
@@ -28,53 +38,60 @@ const AboutScreen = () => {
     : [];
 
   return (
-    <ScrollView
+    <SafeAreaView
       style={[
         styles.screen,
         { backgroundColor: config?.mla_warna || '#F8F9FA' },
       ]}
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
     >
-      {/* LOGO SECTION */}
-      <View style={styles.logoContainer}>
-        {config?.mla_logo ? (
-          <Image
-            source={{ uri: config.mla_logo }}
-            style={{ width: 180, height: 180, borderRadius: 24 }}
-            resizeMode="contain"
-          />
-        ) : (
-          <View style={styles.logoPlaceholder}>
-            <Text style={styles.logoText}>
-              {config?.mla_nama_aplikasi?.substring(0, 3) || 'APP'}
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" />
+
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ================= HERO SECTION ================= */}
+        <View style={styles.heroSection}>
+          <View style={styles.mainLogoWrapper}>
+            {config?.mla_logo ? (
+              <Image
+                source={{ uri: config.mla_logo }}
+                style={styles.mainLogo}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.logoPlaceholder}>
+                <Text style={styles.logoText}>
+                  {config?.mla_nama_aplikasi?.substring(0, 3).toUpperCase() ||
+                    'APP'}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.appName}>
+            {config?.mla_nama_aplikasi || 'Loading...'}
+          </Text>
+
+          <View style={styles.versionBadge}>
+            <Text style={styles.versionText}>
+              v{config?.mla_versi || '1.0.0'}
             </Text>
           </View>
-        )}
+        </View>
 
-        <Text style={styles.appName}>
-          {config?.mla_nama_aplikasi || 'Loading...'}
-        </Text>
-
-        <View style={styles.versionBadge}>
-          <Text style={styles.versionText}>
-            v{config?.mla_versi || '1.0.0'}
+        {/* ================= CONTENT CARD ================= */}
+        <View style={styles.card}>
+          <Text style={styles.description}>
+            {config?.mla_keterangan || '-'}
           </Text>
         </View>
-      </View>
 
-      {/* DESCRIPTION */}
-      <View style={styles.card}>
-        <Text style={styles.description}>{config?.mla_keterangan || '-'}</Text>
-      </View>
-
-      {/* FEATURES */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Fitur Utama</Text>
-
-        <View style={styles.featureGrid}>
-          {fiturList.length > 0 ? (
-            fiturList.map((feature: string, index: number) => (
+        {/* ================= FEATURES SECTION ================= */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Fitur Utama</Text>
+          <View style={styles.featureGrid}>
+            {fiturList.map((feature, index) => (
               <View key={index} style={styles.featureItem}>
                 <View
                   style={[
@@ -84,41 +101,81 @@ const AboutScreen = () => {
                 />
                 <Text style={styles.featureText}>{feature}</Text>
               </View>
-            ))
-          ) : (
-            <Text style={styles.featureText}>-</Text>
+            ))}
+          </View>
+        </View>
+
+        {/* ================= INFO LIST ================= */}
+        <View style={styles.infoList}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Perusahaan</Text>
+            <Text style={styles.infoValue}>
+              {config?.mla_nama_perusahaan || '-'}
+            </Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <Text style={styles.infoLabel}>Tahun Rilis</Text>
+            <Text style={styles.infoValue}>{config?.mla_tahun || '-'}</Text>
+          </View>
+        </View>
+
+        {/* ================= COMPANY SECTION ================= */}
+        <View style={styles.companySection}>
+          <Text style={styles.companyTitle}>Didukung Oleh</Text>
+
+          <View style={styles.companyLogoRow}>
+            {/* Logo Perusahaan (lebih besar) */}
+            {config?.mla_logo_perusahaan && (
+              <View style={styles.logo1}>
+                <Image
+                  source={{ uri: config.mla_logo_perusahaan }}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+              </View>
+            )}
+
+            {/* Logo Partner (lebih kecil) */}
+            <View style={styles.logo2}>
+              <Image
+                source={LogoPartner}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+
+            <View style={styles.logo3}>
+              <Image
+                source={LogoPartner2}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
+            </View>
+
+          </View>
+        </View>
+        
+        {/* ================= FOOTER & SIGN ================= */}
+        <View style={styles.footerContainer}>
+          {config?.mla_sign && (
+            <View style={styles.signSection}>
+              <View style={styles.lineDivider} />
+              <Text style={styles.signLabel}>
+                HANDCRAFTED BY{' '}
+                <Text style={styles.signName}>
+                  {config.mla_sign.toUpperCase()}
+                </Text>
+              </Text>
+            </View>
           )}
-        </View>
-      </View>
 
-      {/* INFO */}
-      <View style={styles.infoList}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Perusahaan</Text>
-          <Text style={styles.infoValue}>
-            {config?.mla_nama_perusahaan || '-'}
+          <Text style={styles.footerCopyright}>
+            © {new Date().getFullYear()} {config?.mla_nama_perusahaan}
           </Text>
+          <Text style={styles.footerRights}>All rights reserved.</Text>
         </View>
-
-        <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-          <Text style={styles.infoLabel}>Tahun Rilis</Text>
-          <Text style={styles.infoValue}>{config?.mla_tahun || '-'}</Text>
-        </View>
-      </View>
-
-      {/* FOOTER */}
-      <View style={styles.footerContainer}>
-        <Text style={styles.footer}>
-          © {new Date().getFullYear()} {config?.mla_nama_perusahaan}
-        </Text>
-
-        {config?.mla_sign && (
-          <Text style={styles.footerSub}>Created by {config.mla_sign}</Text>
-        )}
-
-        <Text style={styles.footerSub}>All rights reserved.</Text>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

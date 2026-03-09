@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { fetchAppConfig } from '../data/AppConfigRepository';
+import { fetchAppConfig, updateAppConfig } from '../data/AppConfigRepository';
 import { saveAppConfig, getAppConfig } from '../core/storage/appStorage';
 
 interface AppConfig {
   mla_logo?: string;
+  mla_logo_perusahaan?: string;
   mla_nama_aplikasi?: string;
   mla_versi?: string;
   mla_keterangan?: string;
@@ -17,6 +18,7 @@ interface AppConfig {
 interface AppConfigContextType {
   config: AppConfig | null;
   refreshConfig: () => Promise<void>;
+  updateConfig: (payload: Partial<AppConfig> | FormData) => Promise<boolean>;
 }
 
 const AppConfigContext = createContext<AppConfigContextType | null>(null);
@@ -46,6 +48,19 @@ export const AppConfigProvider = ({ children }: any) => {
     }
   };
 
+  const updateConfig = async (
+    payload: Partial<AppConfig> | FormData,
+  ): Promise<boolean> => {
+    try {
+      await updateAppConfig(payload);
+      await loadConfig();
+      return true;
+    } catch (error) {
+      console.log('UPDATE CONFIG ERROR', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     loadConfig();
   }, []);
@@ -55,6 +70,7 @@ export const AppConfigProvider = ({ children }: any) => {
       value={{
         config,
         refreshConfig: loadConfig,
+        updateConfig,
       }}
     >
       {children}

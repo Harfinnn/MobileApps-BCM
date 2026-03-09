@@ -6,47 +6,99 @@ import Toast from 'react-native-toast-message';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 import { AppState } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import { AppConfigProvider } from './src/contexts/AppConfigContext';
 
+import { AppConfigProvider } from './src/contexts/AppConfigContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { LayoutProvider } from './src/contexts/LayoutContext';
 import { UserProvider } from './src/contexts/UserContext';
+
 import {
   navigationRef,
   flushPendingNavigation,
   markOpenedFromNotification,
 } from './src/navigation/navigationRef';
-import { registerFcmHandlers } from './src/services/fcmHandler';
+
+// 🔧 Convert firebase data supaya semua string
+function normalizeData(data?: any): Record<string, string> | undefined {
+  if (!data) return undefined;
+
+  const result: Record<string, string> = {};
+
+  Object.keys(data).forEach(key => {
+    const value = data[key];
+    result[key] = typeof value === 'string' ? value : JSON.stringify(value);
+  });
+
+  return result;
+}
 
 const App = () => {
+  // 🔥 GET FCM TOKEN
   useEffect(() => {
     messaging()
       .getToken()
       .then(token => {
-        console.log('🔥 FCM TOKEN::', token);
+        console.log('🔥 FCM TOKEN:', token);
       });
   }, []);
 
-  // NOTIFICATION SETUP
+  // 🔔 SETUP PERMISSION + CHANNEL
   useEffect(() => {
-    notifee.createChannel({
-      id: 'default',
-      name: 'Default',
-      importance: AndroidImportance.HIGH,
-      badge: true,
-    });
+    async function setupNotification() {
+      await messaging().requestPermission();
+      await notifee.requestPermission();
 
-    notifee.requestPermission();
-    registerFcmHandlers();
+      await notifee.createChannel({
+        id: 'custom-sound-v2',
+        name: 'General Notification',
+        importance: AndroidImportance.HIGH,
+        badge: true,
+        sound: 'notif_bencana', // tanpa .mp3
+      });
+    }
+
+    setupNotification();
   }, []);
 
+  // 🔔 FOREGROUND MESSAGE
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      const title = String(
+        remoteMessage.data?.title ??
+          remoteMessage.notification?.title ??
+          'Notifikasi',
+      );
+
+      const body = String(
+        remoteMessage.data?.body ?? remoteMessage.notification?.body ?? '',
+      );
+
+      await notifee.displayNotification({
+        title,
+        body,
+        data: normalizeData(remoteMessage.data),
+        android: {
+          channelId: 'custom-sound-v2',
+          sound: 'notif_bencana',
+          pressAction: {
+            id: 'default',
+          },
+        },
+      });
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // 🔔 HANDLE APP OPEN FROM NOTIFICATION
   useEffect(() => {
     async function handleInitialNotification() {
       const initial = await notifee.getInitialNotification();
       if (!initial) return;
 
       const data = initial.notification?.data;
-      if (data?.type) {
+
+      if (data) {
         markOpenedFromNotification(data);
       }
     }
@@ -54,6 +106,7 @@ const App = () => {
     handleInitialNotification();
   }, []);
 
+  // 🔔 HANDLE NAVIGATION DELAY
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') {
@@ -62,6 +115,14 @@ const App = () => {
     });
 
     return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('MESSAGE RECEIVED', remoteMessage);
+    });
+
+    return unsubscribe;
   }, []);
 
   return (
@@ -76,6 +137,7 @@ const App = () => {
               >
                 <AppNavigator />
               </NavigationContainer>
+
               <Toast />
             </LayoutProvider>
           </UserProvider>

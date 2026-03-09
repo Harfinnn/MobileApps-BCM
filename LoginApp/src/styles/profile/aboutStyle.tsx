@@ -1,173 +1,286 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
 
 export default StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
-
   container: {
-    padding: 24,
-    paddingTop: 60,
+    paddingHorizontal: 24,
+    // Spacing paddingTop disesuaikan agar tidak menempel ke atas
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
+    paddingBottom: 60,
     alignItems: 'center',
   },
 
-  /* ================= LOGO ================= */
-
-  logoContainer: {
+  /* HERO SECTION */
+  heroSection: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 35,
   },
-
+  mainLogoWrapper: {
+    backgroundColor: '#FFF',
+    borderRadius: 35,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  mainLogo: {
+    width: 120,
+    height: 120,
+    borderRadius: 35,
+  },
   logoPlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
+    width: 120,
+    height: 120,
+    borderRadius: 35,
     backgroundColor: '#1A73E8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#1A73E8',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 8,
   },
-
   logoText: {
     color: '#FFF',
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 36,
+    fontWeight: '900',
   },
-
   appName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#1F2937',
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 20,
     textAlign: 'center',
-    marginBottom: 8,
   },
-
+  smallCompanyLogo: {
+    width: 100,
+    height: 100,
+  },
+  companyNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
   versionBadge: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F1F5F9',
     paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 12,
+    marginTop: 10
   },
-
   versionText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#4B5563',
+    fontWeight: '800',
+    color: '#000000',
   },
 
-  /* ================= CARD ================= */
-
+  /* CONTENT CARDS */
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: 24,
     width: '100%',
     marginBottom: 24,
     borderWidth: 1,
     borderColor: '#F1F3F4',
   },
-
   description: {
     fontSize: 15,
-    color: '#4B5563',
+    color: '#475569',
     lineHeight: 24,
+    textAlign: 'center',
   },
-
-  /* ================= FEATURES ================= */
-
   section: {
     width: '100%',
-    marginBottom: 24,
+    marginBottom: 20,
   },
-
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '800',
+    color: '#1E293B',
     marginBottom: 16,
     paddingLeft: 4,
   },
-
   featureGrid: {
     backgroundColor: '#FFF',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 16,
     borderWidth: 1,
     borderColor: '#F1F3F4',
   },
-
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
   },
-
   dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#1A73E8',
     marginRight: 12,
   },
-
   featureText: {
-    fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#334155',
+    fontWeight: '600',
   },
-
-  /* ================= INFO ================= */
-
   infoList: {
     width: '100%',
     backgroundColor: '#FFF',
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    borderRadius: 24,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: '#F1F3F4',
+    marginBottom: 40,
   },
-
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F8FAFC',
   },
-
   infoLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#94A3B8',
+    fontWeight: '600',
   },
-
   infoValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: '800',
+    color: '#0F172A',
   },
 
-  /* ================= FOOTER ================= */
-
-  footerContainer: {
-    marginTop: 20,
+  /* PARTNER SECTION */
+  partnerSection: {
+    width: '100%',
     alignItems: 'center',
+    marginBottom: 20,
+  },
+  partnerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#CBD5E1',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    marginBottom: 20,
   },
 
-  footer: {
+  /* FOOTER & SIGN */
+  footerContainer: {
+    marginTop: 10,
+    paddingBottom: 10,
+    alignItems: 'center',
+    width: '100%',
+  },
+
+  footerCopyright: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#94A3B8',
     fontWeight: '500',
   },
 
-  footerSub: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 2,
+  signSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+    width: '100%',
+  },
+
+  signCapsule: {
+    marginTop: 15,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 100,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+
+  lineDivider: {
+    width: 40,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginBottom: 16,
+  },
+
+  signLabel: {
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '600',
+    letterSpacing: 2,
+  },
+
+  signName: {
+    color: '#475569',
+    fontWeight: '800',
+  },
+
+  footerRights: {
+    fontSize: 10,
+    color: '#CBD5E1',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+
+  companySection: {
+    width: '100%',
+    alignItems: 'center',
+  },
+
+  companyTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#CBD5E1',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+
+  companyLogoLarge: {
+    width: 140,
+    height: 140,
+  },
+
+  companyLogoRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  logo1: {
+    width: 130,
+    height: 130,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  logo2: {
+    width: 110,
+    height: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+    right: 10
+  },
+
+  logo3: {
+    width: 100,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    right: 5
+  },
+
+  logoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  companyNameLarge: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#334155',
   },
 });

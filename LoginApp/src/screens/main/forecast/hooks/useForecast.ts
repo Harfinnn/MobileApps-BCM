@@ -14,6 +14,8 @@ import {
   getCurrentPosition,
   requestLocationPermission,
 } from '../../../../services/locationService';
+
+import { weatherCodeToCondition } from '../../../../utils/weatherCodeMapper';
 import API from '../../../../services/api';
 
 const DEFAULT_ADM4 = '31.71.03.1001';
@@ -22,6 +24,81 @@ const DEFAULT_WARNING: WeatherWarning = {
   type: 'safe',
   title: 'Memuat informasi peringatan...',
   description: 'Sedang memeriksa kondisi cuaca terkini.',
+};
+
+const generateWeatherCodeWarning = (current: any): WeatherWarning => {
+  if (!current) {
+    return {
+      type: 'safe',
+      title: 'Data Cuaca Tidak Tersedia',
+      description: 'Tidak dapat memuat kondisi cuaca terkini.',
+    };
+  }
+
+  const weather_code = current?.weather_code ?? 0;
+  const wind_speed_10m = current?.wind_speed_10m ?? 0;
+
+  if (weather_code >= 95) {
+    return {
+      type: 'alert',
+      title: 'Badai Petir',
+      description: 'Terjadi badai petir dengan potensi hujan deras.',
+    };
+  }
+
+  if (wind_speed_10m >= 50) {
+    return {
+      type: 'alert',
+      title: 'Angin Kencang',
+      description: 'Kecepatan angin tinggi terdeteksi.',
+    };
+  }
+
+  if (weather_code === 65 || weather_code === 82) {
+    return {
+      type: 'alert',
+      title: 'Hujan Lebat',
+      description: 'Curah hujan tinggi terdeteksi.',
+    };
+  }
+
+  if (weather_code === 63 || weather_code === 81) {
+    return {
+      type: 'warning',
+      title: 'Hujan Sedang',
+      description: 'Sedang terjadi hujan dengan intensitas sedang.',
+    };
+  }
+
+  if (weather_code === 61 || weather_code === 80) {
+    return {
+      type: 'warning',
+      title: 'Hujan Ringan',
+      description: 'Terjadi hujan ringan di sekitar wilayah Anda.',
+    };
+  }
+
+  if (weather_code === 45 || weather_code === 48) {
+    return {
+      type: 'warning',
+      title: 'Kabut Tebal',
+      description: 'Jarak pandang berkurang akibat kabut.',
+    };
+  }
+
+  if (weather_code === 3) {
+    return {
+      type: 'info',
+      title: 'Mendung Tebal',
+      description: 'Langit mendung, kemungkinan hujan.',
+    };
+  }
+
+  return {
+    type: 'safe',
+    title: 'Tidak Ada Peringatan Cuaca Aktif',
+    description: 'Kondisi cuaca normal.',
+  };
 };
 
 export const useForecast = () => {
@@ -33,7 +110,10 @@ export const useForecast = () => {
   const [loading, setLoading] = useState(true);
 
   const lastAdm4Ref = useRef<string | null>(null);
+  const adm4CacheRef = useRef<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const lastWatchUpdateRef = useRef(0);
+  const refreshLockRef = useRef(false);
   const isMountedRef = useRef(true);
 
   const saveUserLocation = async (adm4Id: number) => {
@@ -41,162 +121,125 @@ export const useForecast = () => {
       await API.post('/user-location', {
         adm4_id: adm4Id,
       });
-    } catch (e) {
-      console.log('Save location error', e);
-    }
+    } catch {}
   };
 
-  /* ==========================================
-     CORE LOAD (ANTI DOUBLE FETCH)
-  ========================================== */
+  /* ==============================
+     LOAD FORECAST
+  ============================== */
   const loadForecast = useCallback(
-    async (lat: number, lon: number, adm4: string, locationInfo?: any) => {
+    async (lat: number, lon: number, adm4: string) => {
       try {
-        const res = await fetchWeatherAPI(lat, lon, adm4);
+        if (lastAdm4Ref.current === adm4) return;
+        lastAdm4Ref.current = adm4;
 
-        // 🔥 CEK FALLBACK / STALE DATA
-        if (res.current?.stale) {
-          console.log('⚠️ Weather data is stale');
-
-          setWarning({
-            type: 'alert',
-            title: 'Data Terakhir Digunakan',
-            description: 'Koneksi ke server cuaca sedang bermasalah.',
-          });
-        }
-
-        const parsed = parseForecast(res.forecast);
+        const [res, capRes] = await Promise.all([
+          fetchWeatherAPI(lat, lon, adm4),
+          fetchCAPAPI().catch(() => null),
+        ]);
 
         if (!isMountedRef.current) return;
 
-        // 🔥 override suhu hari ini pakai realtime
+        const parsed = parseForecast(res.forecast);
+
         if (res.current && parsed.length > 0) {
           parsed[0].summary.temp = Math.floor(res.current.temperature_2m);
           parsed[0].summary.wind = Math.floor(res.current.wind_speed_10m ?? 0);
+          parsed[0].summary.condition = weatherCodeToCondition(
+            res.current.weather_code,
+          );
         }
 
         setWeatherData(parsed);
 
-        if (locationInfo) {
-          const parts = [
-            locationInfo.kelurahan,
-            locationInfo.kecamatan,
-            locationInfo.kotkab,
-          ].filter(Boolean);
-
-          setLocationName(parts.join(', '));
-        }
+        const autoWarning = generateWeatherCodeWarning(res.current);
+        setWarning(capRes ?? autoWarning);
       } catch (err) {
         console.log('LOAD WEATHER ERROR:', err);
       }
     },
     [],
   );
-  /* ==========================================
-     INITIAL LOAD (INSTANT RENDER STRATEGY)
-  ========================================== */
+
+  /* ==============================
+     INITIAL LOAD
+  ============================== */
   const initForecast = useCallback(async () => {
     try {
-      if (weatherData.length === 0) {
-        setLoading(true);
-      }
+      if (refreshLockRef.current) return;
+      refreshLockRef.current = true;
+
+      setLoading(true);
 
       const granted = await requestLocationPermission();
       if (!granted) {
         setLoading(false);
+        refreshLockRef.current = false;
         return;
       }
 
       const coords = await getCurrentPosition();
-      const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
 
-      if (!nearest?.data?.adm4) {
-        console.log('⚠️ ADM4 tidak ditemukan, fallback ke current only');
+      const adm4 = adm4CacheRef.current ?? DEFAULT_ADM4;
 
-        const res = await fetchWeatherAPI(
-          coords.latitude,
-          coords.longitude,
-          DEFAULT_ADM4, // hanya supaya endpoint tetap valid
-        );
-
-        if (res?.current) {
-          const fallbackData: DailyForecast[] = [
-            {
-              summary: {
-                temp: Math.floor(res.current.temperature_2m),
-                wind: Math.floor(res.current.wind_speed_10m ?? 0),
-                humidity: res.current.relative_humidity_2m ?? 0,
-                condition: 'Data model global (Open-Meteo)',
-                icon: 'cloud',
-              },
-            } as DailyForecast,
-          ];
-
-          setWeatherData(fallbackData);
-        }
-
-        setLocationName('Wilayah belum terdaftar di database');
-        setLoading(false);
-        return;
-      }
-
-      await loadForecast(
-        coords.latitude,
-        coords.longitude,
-        nearest.data.adm4,
-        nearest.data,
-      );
-
-      await saveUserLocation(nearest.data.id);
+      await loadForecast(coords.latitude, coords.longitude, adm4);
 
       setLoading(false);
 
-      // 🔥 CAP non blocking
-      fetchCAPAPI()
-        .then(capRes => {
-          if (!isMountedRef.current) return;
+      const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
 
-          setWarning(
-            capRes ?? {
-              type: 'safe',
-              title: 'Tidak Ada Peringatan Cuaca Aktif',
-              description: 'Kondisi cuaca dalam keadaan normal.',
-            },
-          );
-        })
-        .catch(() => {
-          setWarning({
-            type: 'safe',
-            title: 'Tidak Ada Peringatan Cuaca Aktif',
-            description: 'Kondisi cuaca dalam keadaan normal.',
-          });
-        });
+      if (nearest?.data?.adm4) {
+        adm4CacheRef.current = nearest.data.adm4;
+
+        await loadForecast(
+          coords.latitude,
+          coords.longitude,
+          nearest.data.adm4,
+        );
+
+        const parts = [
+          nearest.data.kelurahan,
+          nearest.data.kecamatan,
+          nearest.data.kotkab,
+        ].filter(Boolean);
+
+        const newLocation = parts.join(', ');
+
+        setLocationName(prev => (prev === newLocation ? prev : newLocation));
+
+        saveUserLocation(nearest.data.id).catch(() => {});
+      }
+
+      startRealtimeWatch();
+
+      refreshLockRef.current = false;
     } catch (error) {
       console.log('INIT ERROR:', error);
       setLoading(false);
+      refreshLockRef.current = false;
     }
-  }, [loadForecast, weatherData.length]);
+  }, [loadForecast]);
 
-  /* ==========================================
-     REALTIME WATCH (DELAYED START)
-  ========================================== */
-  const startRealtimeWatch = async () => {
-    const granted = await requestLocationPermission();
-    if (!granted) return;
-
+  /* ==============================
+     REALTIME WATCH
+  ============================== */
+  const startRealtimeWatch = () => {
     watchIdRef.current = Geolocation.watchPosition(
       async position => {
+        const now = Date.now();
+
+        if (now - lastWatchUpdateRef.current < 120000) return;
+
+        lastWatchUpdateRef.current = now;
+
         const { latitude, longitude } = position.coords;
 
         const nearest = await fetchNearestADM4(latitude, longitude);
 
         if (nearest?.data?.adm4) {
-          await loadForecast(
-            latitude,
-            longitude,
-            nearest.data.adm4,
-            nearest.data,
-          );
+          adm4CacheRef.current = nearest.data.adm4;
+
+          await loadForecast(latitude, longitude, nearest.data.adm4);
         }
       },
       error => {
@@ -204,30 +247,29 @@ export const useForecast = () => {
       },
       {
         enableHighAccuracy: false,
-        distanceFilter: 1000,
-        interval: 60000,
-        fastestInterval: 30000,
+        distanceFilter: 1500,
+        interval: 120000,
+        fastestInterval: 60000,
       },
     );
   };
 
-  /* ==========================================
+  /* ==============================
      MANUAL REFRESH
-  ========================================== */
+  ============================== */
   const fetchByCurrentLocation = async () => {
     try {
-      const granted = await requestLocationPermission();
-      if (!granted) return;
-
       const coords = await getCurrentPosition();
+
       const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
 
       if (nearest?.data?.adm4) {
+        adm4CacheRef.current = nearest.data.adm4;
+
         await loadForecast(
           coords.latitude,
           coords.longitude,
           nearest.data.adm4,
-          nearest.data,
         );
       }
     } catch (e) {
@@ -235,23 +277,16 @@ export const useForecast = () => {
     }
   };
 
-  /* ==========================================
+  /* ==============================
      EFFECT
-  ========================================== */
+  ============================== */
   useEffect(() => {
     isMountedRef.current = true;
 
     initForecast();
 
-    // 🔥 Delay realtime watch 5 detik
-    const timer = setTimeout(() => {
-      startRealtimeWatch();
-    }, 5000);
-
     return () => {
       isMountedRef.current = false;
-
-      clearTimeout(timer);
 
       if (watchIdRef.current !== null) {
         Geolocation.clearWatch(watchIdRef.current);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import API from '../../services/api';
+import API, { setAuthToken } from '../../services/api';
 
 import LoginForm from '../../components/forms/LoginForm';
 import HumanCheckModal from '../../components/modal/HumanCheckModal';
@@ -43,6 +43,7 @@ const LoginScreen: React.FC = () => {
 
   const login = async () => {
     setLoading(true);
+
     try {
       const res = await API.post('/login', {
         username,
@@ -52,16 +53,25 @@ const LoginScreen: React.FC = () => {
 
       const { token, user } = res.data;
 
-      await AsyncStorage.setItem('token', token);
-      API.defaults.headers.common.Authorization = `Bearer ${token}`;
+      console.log('LOGIN SUCCESS', user);
 
+      // simpan token
+      await AsyncStorage.setItem('token', token);
+
+      // 🔥 set token ke axios
+      setAuthToken(token);
+
+      // simpan user ke context
       await setUser(user);
 
-      // 🔥 INI WAJIB
+      // kirim fcm token ke backend
       await registerFcmToken();
 
+      // masuk ke aplikasi
       navigation.replace('Main');
     } catch (err: any) {
+      console.log('LOGIN ERROR', err?.response?.data);
+
       setError(err.response?.data?.message || 'Login gagal');
     } finally {
       setLoading(false);

@@ -145,6 +145,17 @@ export default StyleSheet.create({
     fontSize: 12,
     color: '#94A3B8',
   },
+  toggleWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 10,
+  },
   photoContainer: {
     marginTop: 15,
   },

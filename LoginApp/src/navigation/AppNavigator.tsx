@@ -26,13 +26,17 @@ import EmergencyCallScreen from '../screens/main/emergency/EmergencyCallScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import GempaDetailScreen from '../screens/main/gempa/GempaDetailScreen';
 import F3dScreen from '../screens/main/forecast/F3dScreen';
+import EditAboutScreen from '../screens/main/profile/EditAboutScreen';
+import { useUser } from '../contexts/UserContext';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
 
 function MainStackScreen() {
+  const { user } = useUser();
+
   return (
-    <MainLayout>
+    <MainLayout key={user?.user_id}>
       <MainStack.Navigator
         screenOptions={{
           headerShown: false,
@@ -40,53 +44,90 @@ function MainStackScreen() {
           animation: 'fade',
         }}
       >
+
         <MainStack.Screen name="Home" component={HomeScreen} />
         <MainStack.Screen name="File" component={FileScreen} />
         <MainStack.Screen name="F3d" component={F3dScreen} />
         <MainStack.Screen name="Maps" component={MapScreen} />
 
-
         <MainStack.Screen name="Profile" component={ProfileScreen} />
         <MainStack.Screen name="EditProfile" component={EditProfileScreen} />
 
         <MainStack.Screen name="About" component={AboutScreen} />
+        <MainStack.Screen name="EditAbout" component={EditAboutScreen} />
 
         <MainStack.Screen name="DashboardIT" component={DashboardITScreen} />
-        <MainStack.Screen name="DashboardNonIT" component={DashboardNonITScreen} />
-        
+        <MainStack.Screen
+          name="DashboardNonIT"
+          component={DashboardNonITScreen}
+        />
+
         <MainStack.Screen name="LaporBencana" component={LaporBencanaScreen} />
-        
-        <MainStack.Screen name="InfoGempaBumi" component={InfoGempaBumiScreen} />
+
+        <MainStack.Screen
+          name="InfoGempaBumi"
+          component={InfoGempaBumiScreen}
+        />
         <MainStack.Screen name="GempaDetail" component={GempaDetailScreen} />
 
         <MainStack.Screen name="RTA" component={RTAScreen} />
         <MainStack.Screen name="Audit" component={AuditScreen} />
 
-        <MainStack.Screen name="PanduanBencana" component={PanduanBencanaScreen} />
-        <MainStack.Screen name="PanduanDetailScreen" component={PanduanDetailScreen} />
+        <MainStack.Screen
+          name="PanduanBencana"
+          component={PanduanBencanaScreen}
+        />
+        <MainStack.Screen
+          name="PanduanDetailScreen"
+          component={PanduanDetailScreen}
+        />
 
         <MainStack.Screen name="Berita" component={NewsScreen} />
         <MainStack.Screen name="DetailBerita" component={NewsDetailScreen} />
 
-        <MainStack.Screen name="DashboardBencana" component={DashboardBencanaScreen} />
-        <MainStack.Screen name="DetailBencana" component={DetailBencanaScreen} />
+        <MainStack.Screen
+          name="DashboardBencana"
+          component={DashboardBencanaScreen}
+        />
+        <MainStack.Screen
+          name="DetailBencana"
+          component={DetailBencanaScreen}
+        />
 
-        <MainStack.Screen name="PanggilanDarurat" component={EmergencyCallScreen} />
-        
+        <MainStack.Screen
+          name="PanggilanDarurat"
+          component={EmergencyCallScreen}
+        />
       </MainStack.Navigator>
     </MainLayout>
   );
 }
 
 export default function AppNavigator() {
+  const { user, loading } = useUser();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
   return (
     <LayoutProvider>
-      <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        <RootStack.Screen name="Loading" component={LoadingScreen} />
-        <RootStack.Screen name="Login" component={LoginScreen} />
-        <RootStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        <RootStack.Screen name="Register" component={RegisterScreen} />
-        <RootStack.Screen name="Main" component={MainStackScreen} />
+      <RootStack.Navigator
+        key={user ? 'app' : 'auth'}
+        screenOptions={{ headerShown: false }}
+      >
+        {user ? (
+          <RootStack.Screen name="Main" component={MainStackScreen} />
+        ) : (
+          <>
+            <RootStack.Screen name="Login" component={LoginScreen} />
+            <RootStack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+            />
+            <RootStack.Screen name="Register" component={RegisterScreen} />
+          </>
+        )}
       </RootStack.Navigator>
     </LayoutProvider>
   );

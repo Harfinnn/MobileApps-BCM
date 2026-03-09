@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { CloudSun, Map, Home, FileArchive } from 'lucide-react-native';
+import { CloudSun, Map, Home, Bot } from 'lucide-react-native';
 import { createStyles } from '../../styles/navigation/navigationStyle';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -15,7 +15,7 @@ import { useLayout } from '../../contexts/LayoutContext';
    CONFIG
 ======================= */
 const TABS = [
-  { icon: FileArchive, label: 'File', route: 'File', color: '#F8AD3CFF' },
+  { icon: Bot, label: 'AI', route: 'File', color: '#F8AD3CFF' },
   { icon: CloudSun, label: 'F3D', route: 'F3d', color: '#F8AD3CFF', size: 25 },
   { icon: Map, label: 'Maps', route: 'Maps', color: '#F8AD3CFF' },
   { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },

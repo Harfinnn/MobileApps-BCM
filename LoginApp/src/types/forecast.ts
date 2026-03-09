@@ -7,7 +7,7 @@ export interface ForecastItem {
 }
 
 export interface WeatherWarning {
-  type: 'safe' | 'alert';
+  type: 'safe' | 'info' | 'warning' | 'alert';
   title: string;
   description: string;
   expires?: Date | null;

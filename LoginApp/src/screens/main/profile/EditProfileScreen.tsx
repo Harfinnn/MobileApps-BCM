@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Camera, User, Phone, Save } from 'lucide-react-native';
+import ImageResizer from 'react-native-image-resizer';
 
 import API from '../../../services/api';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -27,11 +28,13 @@ import { styles } from '../../../styles/profile/editProfileStyle';
 export default function EditProfileScreen({ navigation }: any) {
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
+
   const { user, setUser } = useUser();
 
   const [nama, setNama] = useState('');
   const [hp, setHp] = useState('');
   const [photo, setPhoto] = useState<any>(null);
+
   const [loading, setLoading] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
 
@@ -48,50 +51,91 @@ export default function EditProfileScreen({ navigation }: any) {
       setHideNavbar(true);
       setShowBack(true);
       setShowSearch(false);
+
       setOnBack(() => () => {
         navigation.goBack();
         return true;
       });
+
       return () => {
         setOnBack(undefined);
         setShowSearch(true);
       };
-    }, [
-      navigation,
-      setTitle,
-      setHideNavbar,
-      setShowBack,
-      setOnBack,
-      setShowSearch,
-    ]),
+    }, [navigation]),
   );
 
   const requestCameraPermission = async () => {
     if (Platform.OS !== 'android') return true;
+
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.CAMERA,
     );
+
     return granted === PermissionsAndroid.RESULTS.GRANTED;
+  };
+
+  const processImage = async (asset: any) => {
+    try {
+      const resized = await ImageResizer.createResizedImage(
+        asset.uri,
+        800,
+        800,
+        'JPEG',
+        70,
+      );
+
+      return {
+        uri: resized.uri,
+        type: 'image/jpeg',
+        name: `profile_${Date.now()}.jpg`,
+      };
+    } catch {
+      throw new Error('Gagal memproses gambar');
+    }
   };
 
   const openCamera = async () => {
     const allowed = await requestCameraPermission();
     if (!allowed) return;
+
     setPhotoLoading(true);
-    const res = await launchCamera({
-      mediaType: 'photo',
-      quality: 0.7,
-      cameraType: 'front',
-    });
-    if (res.assets?.length) setPhoto(res.assets[0]);
-    setPhotoLoading(false);
+
+    try {
+      const res = await launchCamera({
+        mediaType: 'photo',
+        quality: 0.8,
+        cameraType: 'front',
+      });
+
+      if (res.assets?.length) {
+        const processed = await processImage(res.assets[0]);
+        setPhoto(processed);
+      }
+    } catch {
+      Alert.alert('Error', 'Gagal mengambil foto');
+    } finally {
+      setPhotoLoading(false);
+    }
   };
 
   const openGallery = async () => {
     setPhotoLoading(true);
-    const res = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
-    if (res.assets?.length) setPhoto(res.assets[0]);
-    setPhotoLoading(false);
+
+    try {
+      const res = await launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+      });
+
+      if (res.assets?.length) {
+        const processed = await processImage(res.assets[0]);
+        setPhoto(processed);
+      }
+    } catch {
+      Alert.alert('Error', 'Gagal memilih gambar');
+    } finally {
+      setPhotoLoading(false);
+    }
   };
 
   const pickPhoto = () => {
@@ -103,40 +147,60 @@ export default function EditProfileScreen({ navigation }: any) {
   };
 
   const submit = async () => {
+    if (loading) return;
+
     if (!nama || !hp) {
       Alert.alert('Error', 'Nama dan No HP wajib diisi');
       return;
     }
+
     setLoading(true);
+
     try {
       const formData = new FormData();
+
       formData.append('user_nama', nama);
       formData.append('user_hp', hp);
+
       if (photo) {
         formData.append('user_foto', {
           uri: photo.uri,
-          type: photo.type || 'image/jpeg',
-          name: photo.fileName || 'profile.jpg',
+          type: photo.type,
+          name: photo.name,
         } as any);
       }
+
       await API.post('/profile/update', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+
       const me = await API.get('/profile');
-      await setUser(me.data);
+
+      setUser(me.data);
 
       navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Gagal', err?.response?.data?.message ?? 'Terjadi kesalahan');
-    } finally {
-      setLoading(false);
+      let message: string = 'Terjadi kesalahan';
+
+      if (err?.response?.data?.errors) {
+        const errors = err.response.data.errors;
+        const firstError = Object.values(errors)[0] as string[];
+        message = firstError?.[0] ?? message;
+      } else if (err?.response?.data?.message) {
+        message = err.response.data.message;
+      } else if (err?.message) {
+        message = err.message;
+      }
+
+      Alert.alert('Gagal', message);
     }
   };
 
   const avatarUri = useMemo(
     () => (photo?.uri ? photo.uri : resolveImageUri(user?.user_foto)),
-    [photo?.uri, user?.user_foto],
+    [photo, user],
   );
+
   const initial = useMemo(
     () => (nama ? nama.charAt(0).toUpperCase() : 'U'),
     [nama],
@@ -146,13 +210,11 @@ export default function EditProfileScreen({ navigation }: any) {
     <View style={styles.mainContainer}>
       <StatusBar barStyle="light-content" backgroundColor="#009B97" />
 
-      {/* HEADER VISUAL */}
       <LinearGradient
         colors={['#009B97', '#007A77']}
         style={styles.headerCurve}
       />
 
-      {/* HEADER CONTENT (TIDAK SCROLL) */}
       <View style={styles.headerContent}>
         <TouchableOpacity
           style={styles.avatarWrapper}
@@ -177,16 +239,15 @@ export default function EditProfileScreen({ navigation }: any) {
         <Text style={styles.headerTitle}>Edit Informasi Profil</Text>
       </View>
 
-      {/* ===== SCROLLVIEW AMAN (FORM SAJA) ===== */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         bounces={false}
-        overScrollMode="never"
       >
         <View style={styles.card}>
           <Text style={styles.label}>Nama Lengkap</Text>
+
           <View style={styles.inputContainer}>
             <User size={20} color="#94A3B8" style={styles.inputIcon} />
             <TextInput
@@ -198,6 +259,7 @@ export default function EditProfileScreen({ navigation }: any) {
           </View>
 
           <Text style={styles.label}>No Handphone</Text>
+
           <View style={styles.inputContainer}>
             <Phone size={20} color="#94A3B8" style={styles.inputIcon} />
             <TextInput

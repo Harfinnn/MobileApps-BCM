@@ -1,18 +1,36 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
   StatusBar,
   TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
+  TextInput,
+  Platform,
+  Alert,
+  FlatList,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Building2, Plus, Minus, RotateCcw } from 'lucide-react-native';
+import {
+  Building2,
+  Plus,
+  Minus,
+  RotateCcw,
+  Search,
+  Home,
+} from 'lucide-react-native';
+
 import { useLayout } from '../../../contexts/LayoutContext';
+import { useUser } from '../../../contexts/UserContext';
 import API from '../../../services/api';
-import styles from '../../../styles/map/mapStyle';
 import { generateMapHTML } from '../../../utils/maps/generateMapHtml';
+import styles from '../../../styles/map/mapStyle';
 
 type UnitKerja = {
   mjs_id: number;
@@ -23,20 +41,21 @@ type UnitKerja = {
 };
 
 const MapScreen = () => {
-  const { setTitle, setShowBack } = useLayout();
+  const { setTitle, setShowBack, setHideHeader } = useLayout();
+  const { user } = useUser();
   const webViewRef = useRef<WebView>(null);
 
   const [units, setUnits] = useState<UnitKerja[]>([]);
-  const [selectedUnit, setSelectedUnit] = useState<number | null>(null);
+  const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
-
-  const { setHideHeader } = useLayout();
+  const [searchQuery, setSearchQuery] = useState('');
 
   /* ================= INIT ================= */
   useEffect(() => {
     setTitle('Peta Unit Kerja');
     setShowBack(false);
+    setHideHeader(true);
     fetchUnits();
   }, []);
 
@@ -44,6 +63,7 @@ const MapScreen = () => {
   const fetchUnits = async () => {
     try {
       setLoading(true);
+
       const res = await API.get('/selindo', {
         params: { with_location: true },
       });
@@ -58,15 +78,38 @@ const MapScreen = () => {
     }
   };
 
-  /* ================= SEND TO MAP ================= */
-  useEffect(() => {
-    if (mapReady && units.length > 0) {
-      webViewRef.current?.postMessage(
-        JSON.stringify({ type: 'SET_MARKERS', payload: units }),
-      );
-    }
-  }, [mapReady, units]);
+  /* ================= FILTER ================= */
+  const filteredUnits = useMemo(() => {
+    const query = searchQuery.toLowerCase();
 
+    return units.filter(
+      unit =>
+        unit.mjs_nama.toLowerCase().includes(query) ||
+        unit.mjs_alamat.toLowerCase().includes(query),
+    );
+  }, [units, searchQuery]);
+
+  /* ================= SEND MARKERS (BATCH) ================= */
+  useEffect(() => {
+    if (!mapReady || filteredUnits.length === 0) return;
+
+    const chunkSize = 200;
+
+    for (let i = 0; i < filteredUnits.length; i += chunkSize) {
+      const chunk = filteredUnits.slice(i, i + chunkSize);
+
+      setTimeout(() => {
+        webViewRef.current?.postMessage(
+          JSON.stringify({
+            type: 'ADD_MARKERS',
+            payload: chunk,
+          }),
+        );
+      }, i * 5);
+    }
+  }, [mapReady, filteredUnits]);
+
+  /* ================= FOCUS UNIT ================= */
   const focusUnit = (unit: UnitKerja) => {
     if (!unit.mjs_lat || !unit.mjs_long) return;
 
@@ -74,6 +117,7 @@ const MapScreen = () => {
       JSON.stringify({
         type: 'FOCUS',
         payload: {
+          id: unit.mjs_id,
           lat: Number(unit.mjs_lat),
           lng: Number(unit.mjs_long),
         },
@@ -81,14 +125,76 @@ const MapScreen = () => {
     );
   };
 
-   useEffect(() => {
-      setHideHeader(true);
-    }, []);
+  /* ================= MY UNIT ================= */
+  const goToMyUnit = () => {
+    if (!user?.user_selindo) {
+      Alert.alert('Info', 'Anda belum memiliki data unit kerja penugasan.');
+      return;
+    }
+
+    const myUnitId = Number(user.user_selindo);
+    const myUnit = units.find(u => u.mjs_id === myUnitId);
+
+    if (myUnit) {
+      setSearchQuery('');
+      setSelectedUnitId(myUnit.mjs_id);
+      focusUnit(myUnit);
+    } else {
+      Alert.alert('Info', 'Data unit kerja Anda tidak ditemukan di peta.');
+    }
+  };
+
+  /* ================= RENDER ITEM ================= */
+  const renderItem = useCallback(
+    ({ item }: { item: UnitKerja }) => {
+      const selected = selectedUnitId === item.mjs_id;
+
+      return (
+        <TouchableOpacity
+          style={[styles.unitCard, selected && styles.selectedCard]}
+          onPress={() => {
+            setSelectedUnitId(item.mjs_id);
+            focusUnit(item);
+          }}
+        >
+          <View style={[styles.iconBox, selected && styles.selectedIconBox]}>
+            <Building2 size={20} color={selected ? '#0F172A' : '#64748B'} />
+          </View>
+
+          <View style={styles.infoBox}>
+            <Text style={[styles.unitName, selected && styles.whiteText]}>
+              {item.mjs_nama}
+            </Text>
+
+            <Text
+              numberOfLines={1}
+              style={[styles.unitDist, selected && styles.lightText]}
+            >
+              {item.mjs_alamat}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [selectedUnitId],
+  );
 
   /* ================= RENDER ================= */
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" />
+
+      {/* SEARCH */}
+      <View style={styles.searchContainer}>
+        <Search color="#64748B" size={20} />
+        <TextInput
+          placeholder="Cari Unit Kerja atau Alamat..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          placeholderTextColor="#94A3B8"
+        />
+      </View>
 
       {/* MAP */}
       <View style={styles.mapContainer}>
@@ -97,17 +203,34 @@ const MapScreen = () => {
           source={{ html: generateMapHTML() }}
           javaScriptEnabled
           originWhitelist={['*']}
+          style={{ flex: 1 }}
           onMessage={event => {
             try {
               const msg = JSON.parse(event.nativeEvent.data);
-              if (msg.type === 'MAP_READY') setMapReady(true);
+
+              if (msg.type === 'MAP_READY') {
+                setMapReady(true);
+              }
+
+              if (msg.type === 'MARKER_CLICK') {
+                setSelectedUnitId(msg.payload);
+              }
             } catch {}
           }}
-          style={{ flex: 1 }}
         />
 
-        {/* ZOOM CONTROLS */}
+        {/* FLOATING BUTTONS */}
         <View style={styles.floatingActions}>
+          <TouchableOpacity
+            style={[
+              styles.circleBtn,
+              { marginBottom: 15, backgroundColor: '#0F172A' },
+            ]}
+            onPress={goToMyUnit}
+          >
+            <Home size={20} color="#FFF" />
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.circleBtn}
             onPress={() =>
@@ -144,64 +267,26 @@ const MapScreen = () => {
       {/* LIST */}
       <View style={styles.bottomSheet}>
         <View style={styles.sheetHandle} />
+
         <View style={styles.sheetHeader}>
           <Text style={styles.sheetTitle}>Unit Terdekat</Text>
-          <Text style={styles.unitCount}>{units.length} Lokasi</Text>
+          <Text style={styles.unitCount}>{filteredUnits.length} Lokasi</Text>
         </View>
 
         {loading ? (
-          <ActivityIndicator style={{ marginTop: 20 }} />
+          <ActivityIndicator style={{ marginTop: 20 }} color="#0F172A" />
         ) : (
-          <ScrollView
+          <FlatList
+            data={filteredUnits}
+            keyExtractor={item => item.mjs_id.toString()}
+            renderItem={renderItem}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.scrollPadding]}
-          >
-            {units.map((unit, index) => (
-              <TouchableOpacity
-                key={unit.mjs_id}
-                style={[
-                  styles.unitCard,
-                  selectedUnit === index && styles.selectedCard,
-                ]}
-                onPress={() => {
-                  setSelectedUnit(index);
-                  focusUnit(unit);
-                }}
-              >
-                <View
-                  style={[
-                    styles.iconBox,
-                    selectedUnit === index && styles.selectedIconBox,
-                  ]}
-                >
-                  <Building2
-                    size={20}
-                    color={selectedUnit === index ? '#0F172A' : '#64748B'}
-                  />
-                </View>
-
-                <View style={styles.infoBox}>
-                  <Text
-                    style={[
-                      styles.unitName,
-                      selectedUnit === index && styles.whiteText,
-                    ]}
-                  >
-                    {unit.mjs_nama}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.unitDist,
-                      selectedUnit === index && styles.lightText,
-                    ]}
-                  >
-                    {unit.mjs_alamat}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+            contentContainerStyle={styles.scrollPadding}
+            initialNumToRender={10}
+            maxToRenderPerBatch={12}
+            windowSize={10}
+            removeClippedSubviews
+          />
         )}
       </View>
     </View>

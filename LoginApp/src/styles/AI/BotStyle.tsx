@@ -3,12 +3,11 @@ import { StyleSheet, Platform } from 'react-native';
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4F7F6', // Latar belakang aplikasi abu-abu terang
+    backgroundColor: '#F4F7F6',
   },
   container: {
     flex: 1,
     backgroundColor: '#F4F7F6',
-    paddingTop: 20, // Memberikan ruang untuk Global Header bawaan aplikasi
   },
 
   /* --- STYLES UNTUK FLOATING BANNER --- */
@@ -19,41 +18,35 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    marginHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 16,
-    elevation: 4,
     shadowColor: '#00A39D',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
     marginBottom: 10,
+    marginTop: 20,
   },
   bannerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  bannerAvatar: {
-    fontSize: 28,
-    marginRight: 12,
   },
   bannerTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#1E2A38',
   },
-  onlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  limitText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
     marginTop: 4,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981', // Hijau online
-    marginRight: 4,
+
+  limitDanger: {
+    color: '#EF4444',
   },
   bannerSubtitle: {
     fontSize: 12,
@@ -61,11 +54,20 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
   },
   clearBtnIcon: {
-    backgroundColor: '#FEE2E2', // Merah pudar
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    width: 40,
+    height: 40,
     borderRadius: 20,
+    backgroundColor: '#FFF1F1',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
+  clearLottie: {
+    width: 30,
+    height: 30,
+    right: 10,
+  },
+
   clearIconText: {
     color: '#EF4444',
     fontSize: 12,
@@ -117,6 +119,11 @@ export const styles = StyleSheet.create({
   aiText: {
     color: '#334155',
   },
+  linkText: {
+  color: '#2563EB',
+  textDecorationLine: 'underline',
+  fontWeight: '500',
+},
 
   /* --- INPUT STYLES --- */
   loadingContainer: {
@@ -149,6 +156,8 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
+    borderWidth: 2,
+    borderColor: '#E2F4F3',
   },
   input: {
     flex: 1,
@@ -176,17 +185,27 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+  bannerLottie: {
+    width: 65,
+    height: 65,
+    right: 10,
+  },
+
   /* --- CUSTOM MODAL STYLES --- */
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)', // Efek blur gelap
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15,23,42,0.6)', // Latar belakang sedikit digelapkan
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    zIndex: 999,
   },
   modalBox: {
     backgroundColor: '#FFFFFF',
-    width: '100%',
+    width: '90%', // Diubah ke 90% agar membentuk kartu dialog yang cantik
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
@@ -197,17 +216,23 @@ export const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   modalIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#FEE2E2',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    // Tambahan shadow untuk icon agar terlihat sedikit 3D
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800', // Dibuat lebih tebal
     color: '#1E2A38',
     marginBottom: 8,
   },
@@ -217,6 +242,7 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
+    paddingHorizontal: 10, // Memberi jarak agar teks tidak terlalu mepet
   },
   modalBtnRow: {
     flexDirection: 'row',
@@ -227,7 +253,9 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC', // Abu-abu sangat terang
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0', // Tambahan border agar lebih tegas
     marginRight: 8,
     alignItems: 'center',
   },
@@ -240,10 +268,14 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#EF4444', // Merah Hapus
+    backgroundColor: '#EF4444',
     marginLeft: 8,
     alignItems: 'center',
-    elevation: 2,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
   },
   btnConfirmText: {
     color: '#FFFFFF',

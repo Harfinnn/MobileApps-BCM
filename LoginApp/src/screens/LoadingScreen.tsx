@@ -10,10 +10,12 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import styles from '../styles/auth/loadingStyle';
+import { useAppConfig } from '../contexts/AppConfigContext';
 
 export default function LoadingScreen() {
   const navigation = useNavigation<any>();
   const { user, loading } = useUser();
+  const { config } = useAppConfig();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -74,7 +76,11 @@ export default function LoadingScreen() {
         ]}
       >
         <Image
-          source={require('../assets/newfavicon.png')}
+          source={
+            config?.mla_logo
+              ? { uri: config.mla_logo }
+              : require('../assets/newfavicon.png')
+          }
           style={styles.logo}
           resizeMode="contain"
         />
