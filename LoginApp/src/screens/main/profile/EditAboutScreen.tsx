@@ -11,9 +11,11 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
+import ImageResizer from 'react-native-image-resizer';
+
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAppConfig } from '../../../contexts/AppConfigContext';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary, Asset } from 'react-native-image-picker';
 import styles from '../../../styles/profile/editAboutStyle';
 import { useNavigation } from '@react-navigation/native';
 
@@ -69,14 +71,17 @@ const EditAboutScreen = () => {
     try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
-        quality: 0.8,
         selectionLimit: 1,
       });
 
       if (result.didCancel) return;
 
       if (result.assets?.length) {
-        setLogo(result.assets[0]);
+        const processed = await processImage(result.assets[0]);
+
+        if (processed) {
+          setLogo(processed);
+        }
       }
     } catch (err) {
       Alert.alert('Error', 'Gagal memilih gambar');
@@ -91,19 +96,48 @@ const EditAboutScreen = () => {
     try {
       const result = await launchImageLibrary({
         mediaType: 'photo',
-        quality: 0.8,
         selectionLimit: 1,
       });
 
       if (result.didCancel) return;
 
       if (result.assets?.length) {
-        setLogoPerusahaan(result.assets[0]);
+        const processed = await processImage(result.assets[0]);
+
+        if (processed) {
+          setLogoPerusahaan(processed);
+        }
       }
     } catch (err) {
       Alert.alert('Error', 'Gagal memilih gambar');
     } finally {
       setImageLoading(false);
+    }
+  };
+
+  const processImage = async (asset: any) => {
+    try {
+      if (!asset?.uri) {
+        Alert.alert('Error', 'URI gambar tidak ditemukan');
+        return null;
+      }
+
+      const resized = await ImageResizer.createResizedImage(
+        asset.uri,
+        1200, // max width
+        1200, // max height
+        'JPEG',
+        70, // quality
+      );
+
+      return {
+        uri: resized.uri,
+        name: `image_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+      };
+    } catch (error) {
+      Alert.alert('Error', 'Gagal memproses gambar');
+      return null;
     }
   };
 
@@ -127,19 +161,11 @@ const EditAboutScreen = () => {
       formData.append('mla_tahun', tahun);
 
       if (logo) {
-        formData.append('mla_logo', {
-          uri: logo.uri,
-          name: logo.fileName || `logo_${Date.now()}.jpg`,
-          type: logo.type || 'image/jpeg',
-        } as any);
+        formData.append('mla_logo', logo as any);
       }
 
       if (logoPerusahaan) {
-        formData.append('mla_logo_perusahaan', {
-          uri: logoPerusahaan.uri,
-          name: logoPerusahaan.fileName || `logoPerusahaan_${Date.now()}.jpg`,
-          type: logoPerusahaan.type || 'image/jpeg',
-        } as any);
+        formData.append('mla_logo_perusahaan', logoPerusahaan as any);
       }
 
       const success = await updateConfig(formData);
@@ -236,7 +262,7 @@ const EditAboutScreen = () => {
           {/* Logo Perusahaan */}
           <View style={styles.logoColumn}>
             <TouchableOpacity
-              onPress={pickLogo}
+              onPress={pickLogoPerusahaan}
               activeOpacity={0.9}
               disabled={imageLoading}
             >
