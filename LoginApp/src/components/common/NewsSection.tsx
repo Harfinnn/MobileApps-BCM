@@ -29,8 +29,12 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
     <View style={styles.container}>
       {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.title}>Berita Terkini</Text>
-
+        <View>
+          <Text style={styles.title}>Berita Terkini</Text>
+          <Text style={styles.subtitle}>
+            Informasi terbaru seputar kebencanaan
+          </Text>
+        </View>
         <TouchableOpacity onPress={onPressAll} activeOpacity={0.7}>
           <Text style={styles.seeAllText}>Lihat Semua</Text>
         </TouchableOpacity>

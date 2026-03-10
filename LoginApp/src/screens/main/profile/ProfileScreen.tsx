@@ -1,12 +1,5 @@
-import React, { useMemo, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  BackHandler,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import React, { useMemo, useCallback, useState } from 'react';
+import { View, Text, TouchableOpacity, BackHandler } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
@@ -18,6 +11,7 @@ import {
   LogOut,
 } from 'lucide-react-native';
 
+import ConfirmLogoutModal from '../../../components/modal/ConfirmLogoutModal';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import { resolveImageUri } from '../../../utils/image';
@@ -27,21 +21,23 @@ import { styles } from '../../../styles/profile/profileStyle';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
+
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
+
   const { user, loading, setUser } = useUser();
+
+  const [showLogout, setShowLogout] = useState(false);
+
   const isAdmin = Number(user?.user_jabatan) === 1;
 
+  /*
+  ===============================
+  LAYOUT CONFIG
+  ===============================
+  */
   useFocusEffect(
     useCallback(() => {
-      if (!loading && !user) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
-        return;
-      }
-
       setTitle('Profile');
       setHideNavbar(true);
       setShowBack(true);
@@ -67,16 +63,27 @@ export default function ProfileScreen() {
     ]),
   );
 
+  /*
+  ===============================
+  HARDWARE BACK
+  ===============================
+  */
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
         navigation.navigate('Main', { screen: 'Home' });
         return true;
       });
+
       return () => sub.remove();
     }, [navigation]),
   );
 
+  /*
+  ===============================
+  AVATAR
+  ===============================
+  */
   const avatarUri = useMemo(
     () => resolveImageUri(user?.user_foto),
     [user?.user_foto],
@@ -87,6 +94,11 @@ export default function ProfileScreen() {
     [user],
   );
 
+  /*
+  ===============================
+  LOADING STATE
+  ===============================
+  */
   if (loading || !user) {
     return (
       <LinearGradient
@@ -96,77 +108,94 @@ export default function ProfileScreen() {
     );
   }
 
+  /*
+  ===============================
+  LOGOUT
+  ===============================
+  */
   const handleLogout = () => {
-    Alert.alert('Keluar Akun', 'Apakah Anda yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      {
-        text: 'Keluar',
-        style: 'destructive',
-        onPress: async () => {
-          await setUser(null);
-        },
-      },
-    ]);
+    setShowLogout(true);
+  };
+
+  const confirmLogout = async () => {
+    setShowLogout(false);
+    await setUser(null);
   };
 
   return (
-    <LinearGradient colors={['#009B97', '#007A77']} style={styles.container}>
-      {/* ===== HEADER ===== */}
-      <View style={styles.header}>
-        <View style={styles.avatarWrapper}>
-          <View style={styles.avatarGlow}>
-            <Avatar uri={avatarUri} initial={initial} size={96} />
-          </View>
+    <>
+      <LinearGradient colors={['#009B97', '#007A77']} style={styles.container}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <View style={styles.avatarWrapper}>
+            <View style={styles.avatarGlow}>
+              <Avatar uri={avatarUri} initial={initial} size={96} />
+            </View>
 
-          <Text style={styles.name}>{user.user_nama}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>
-              {user.jabatan?.jab_nama ?? 'Viewer'}
-            </Text>
+            <Text style={styles.name}>{user.user_nama}</Text>
+
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {user.jabatan?.jab_nama ?? 'Viewer'}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* ===== CONTENT ===== */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* MENU */}
-        <Text style={styles.sectionLabel}>AKUN & INFORMASI</Text>
-        <MenuItem
-          icon={<User size={18} color="#009B97" />}
-          label="Edit Profile"
-          onPress={() => navigation.navigate('EditProfile')}
-        />
+        {/* CONTENT */}
+        <View style={styles.content}>
+          <Text style={styles.sectionLabel}>AKUN & INFORMASI</Text>
 
-        {isAdmin && (
           <MenuItem
-            icon={<Settings size={18} color="#009B97" />}
-            label="Pengaturan Info Aplikasi"
-            onPress={() => navigation.navigate('EditAbout')}
+            icon={<User size={18} color="#009B97" />}
+            label="Edit Profile"
+            onPress={() => navigation.navigate('EditProfile')}
           />
-        )}
 
-        <Text style={styles.sectionLabel}>PRIVASI & KEAMANAN</Text>
+          {isAdmin && (
+            <MenuItem
+              icon={<Settings size={18} color="#009B97" />}
+              label="Pengaturan Info Aplikasi"
+              onPress={() => navigation.navigate('EditAbout')}
+            />
+          )}
 
-        <MenuItem
-          icon={<Lock size={18} color="#009B97" />}
-          label="Ganti Password"
-        />
+          <Text style={styles.sectionLabel}>PRIVASI & KEAMANAN</Text>
 
-        <MenuItem
-          icon={<Info size={18} color="#009B97" />}
-          label="Tentang"
-          onPress={() => navigation.navigate('About')}
-        />
+          <MenuItem
+            icon={<Lock size={18} color="#009B97" />}
+            label="Ganti Password"
+          />
 
-        {/* LOGOUT */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <LogOut size={18} color="#EF4444" />
-          <Text style={styles.logoutText}>Keluar Akun</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </LinearGradient>
+          <MenuItem
+            icon={<Info size={18} color="#009B97" />}
+            label="Tentang"
+            onPress={() => navigation.navigate('About')}
+          />
+
+          {/* LOGOUT */}
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <LogOut size={18} color="#EF4444" />
+            <Text style={styles.logoutText}>Keluar Akun</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* LOGOUT MODAL */}
+      <ConfirmLogoutModal
+        visible={showLogout}
+        onCancel={() => setShowLogout(false)}
+        onConfirm={confirmLogout}
+      />
+    </>
   );
 }
+
+/*
+===============================
+MENU ITEM
+===============================
+*/
 
 const MenuItem = ({ icon, label, onPress }: any) => (
   <TouchableOpacity style={styles.menuItem} onPress={onPress}>
@@ -174,6 +203,7 @@ const MenuItem = ({ icon, label, onPress }: any) => (
       <View style={styles.menuIconBg}>{icon}</View>
       <Text style={styles.menuLabel}>{label}</Text>
     </View>
+
     <ChevronRight size={18} color="#CBD5E1" />
   </TouchableOpacity>
 );

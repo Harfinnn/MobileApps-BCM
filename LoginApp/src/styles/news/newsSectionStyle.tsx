@@ -19,6 +19,11 @@ const NewsSectionStyles = StyleSheet.create({
     color: '#111827',
     letterSpacing: -0.5,
   },
+  subtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+  },
   more: {
     fontSize: 14,
     color: '#F8AD3C',

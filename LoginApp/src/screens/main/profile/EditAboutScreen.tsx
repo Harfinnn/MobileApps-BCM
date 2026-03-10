@@ -12,7 +12,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import ImageResizer from 'react-native-image-resizer';
-
+import { Modal } from 'react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAppConfig } from '../../../contexts/AppConfigContext';
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
@@ -34,6 +34,7 @@ const EditAboutScreen = () => {
   const [sign, setSign] = useState('');
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const navigation = useNavigation<any>();
 
@@ -124,16 +125,16 @@ const EditAboutScreen = () => {
 
       const resized = await ImageResizer.createResizedImage(
         asset.uri,
-        1200, // max width
-        1200, // max height
-        'JPEG',
-        70, // quality
+        1200,
+        1200,
+        'PNG',
+        100,
       );
 
       return {
         uri: resized.uri,
-        name: `image_${Date.now()}.jpg`,
-        type: 'image/jpeg',
+        name: `image_${Date.now()}.png`,
+        type: 'image/png',
       };
     } catch (error) {
       Alert.alert('Error', 'Gagal memproses gambar');
@@ -170,12 +171,7 @@ const EditAboutScreen = () => {
 
       const success = await updateConfig(formData);
       if (success) {
-        Alert.alert('Sukses', 'Data berhasil diperbarui ✨', [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Profile'),
-          },
-        ]);
+        setSuccessVisible(true);
       }
     } catch (err: any) {
       let message = 'Terjadi kesalahan';
@@ -384,6 +380,64 @@ const EditAboutScreen = () => {
           )}
         </TouchableOpacity>
       </ScrollView>
+      <Modal visible={successVisible} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              width: 300,
+              backgroundColor: '#fff',
+              borderRadius: 16,
+              padding: 24,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 40 }}>✅</Text>
+
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '600',
+                marginTop: 10,
+              }}
+            >
+              Berhasil
+            </Text>
+
+            <Text
+              style={{
+                textAlign: 'center',
+                marginTop: 6,
+                color: '#666',
+              }}
+            >
+              Data berhasil diperbarui
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => {
+                setSuccessVisible(false);
+                navigation.navigate('Profile');
+              }}
+              style={{
+                marginTop: 20,
+                backgroundColor: '#009B97',
+                paddingVertical: 10,
+                paddingHorizontal: 25,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '600' }}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

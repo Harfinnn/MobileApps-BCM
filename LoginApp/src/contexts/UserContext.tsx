@@ -13,6 +13,13 @@ export type User = {
   user_id: number;
   user_nama: string;
   user_status?: number;
+  user_selindo?: string | number;
+  user_foto?: string;
+  user_jabatan?: number;
+
+  jabatan?: {
+    jab_nama?: string;
+  };
 };
 
 type UserContextType = {
@@ -120,25 +127,25 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
 
     const interval = setInterval(async () => {
-
       console.log('Checking user status...');
 
       try {
         const res = await API.get('/me');
-
         const serverUser = res.data.user;
 
         if (serverUser.user_status === 0) {
           console.log('User disabled by admin');
-
           forceLogout();
         }
-      } catch (err) {
-        console.log('Session expired');
-
-        forceLogout();
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          console.log('Session expired');
+          forceLogout();
+        } else {
+          console.log('Network error - skip logout');
+        }
       }
-    }, 30000); // 30 detik
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [user]);

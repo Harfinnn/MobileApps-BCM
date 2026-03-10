@@ -5,13 +5,21 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#F0FDFA',
   },
 
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
+  },
+  backgroundImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
 
   /* ================= HEADER ================= */

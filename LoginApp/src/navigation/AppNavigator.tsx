@@ -1,4 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useState, useEffect } from 'react';
 import HomeScreen from '../screens/main/home/HomeScreen';
 import FileScreen from '../screens/main/FileScreen';
 import MapScreen from '../screens/main/map/MapScreen';
@@ -44,7 +45,6 @@ function MainStackScreen() {
           animation: 'fade',
         }}
       >
-
         <MainStack.Screen name="Home" component={HomeScreen} />
         <MainStack.Screen name="File" component={FileScreen} />
         <MainStack.Screen name="F3d" component={F3dScreen} />
@@ -105,8 +105,19 @@ function MainStackScreen() {
 
 export default function AppNavigator() {
   const { user, loading } = useUser();
+  const [ready, setReady] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading) {
+      const timer = setTimeout(() => {
+        setReady(true);
+      }, 3000); // 🔥 splash 5 detik
+
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  if (loading || !ready) {
     return <LoadingScreen />;
   }
 

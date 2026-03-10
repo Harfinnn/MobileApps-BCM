@@ -148,7 +148,7 @@ const LoginForm: React.FC<Props> = ({
       >
         <View style={styles.headerSection}>
           <Image
-            source={require('../../assets/newlogo.png')}
+            source={{ uri: 'https://simpel-bcm.com/img/newlogo.png' }}
             style={styles.logoImage}
             resizeMode="contain"
           />
@@ -204,14 +204,6 @@ const LoginForm: React.FC<Props> = ({
               </TouchableOpacity>
             </View>
           </View>
-
-          {/* 🔑 LUPA PASSWORD */}
-          <TouchableOpacity
-            onPress={onForgotPassword}
-            style={styles.forgotPasswordContainer}
-          >
-            <Text style={styles.forgotPasswordText}>Lupa password?</Text>
-          </TouchableOpacity>
 
           {error ? (
             <View style={styles.errorBox}>

@@ -3,8 +3,7 @@ import { StyleSheet } from 'react-native';
 export default StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
-    paddingTop: 60,
+    backgroundColor: '#ffffff',
   },
 
   center: {
@@ -12,6 +11,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
+    
   },
 
   listContent: {
@@ -20,6 +20,7 @@ export default StyleSheet.create({
 
   headerContainer: {
     paddingBottom: 8,
+    paddingTop: 60
   },
 
   sectionLabel: {
