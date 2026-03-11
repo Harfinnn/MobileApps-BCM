@@ -17,6 +17,7 @@ import {
   flushPendingNavigation,
   markOpenedFromNotification,
 } from './src/navigation/navigationRef';
+import { LocationProvider } from './src/contexts/LocationContext';
 
 // 🔧 Convert firebase data supaya semua string
 function normalizeData(data?: any): Record<string, string> | undefined {
@@ -131,13 +132,14 @@ const App = () => {
         <AppConfigProvider>
           <UserProvider>
             <LayoutProvider>
+              <LocationProvider>
               <NavigationContainer
                 ref={navigationRef}
                 onReady={flushPendingNavigation}
               >
                 <AppNavigator />
               </NavigationContainer>
-
+              </LocationProvider>
               <Toast />
             </LayoutProvider>
           </UserProvider>

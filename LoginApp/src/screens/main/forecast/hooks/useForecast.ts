@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import Geolocation from '@react-native-community/geolocation';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   fetchWeatherAPI,
@@ -9,16 +9,14 @@ import {
 
 import { parseForecast } from '../../../../utils/weatherParser';
 import { DailyForecast, WeatherWarning } from '../../../../types/forecast';
-
-import {
-  getCurrentPosition,
-  requestLocationPermission,
-} from '../../../../services/locationService';
+import { useLocation } from '../../../../contexts/LocationContext';
 
 import { weatherCodeToCondition } from '../../../../utils/weatherCodeMapper';
 import API from '../../../../services/api';
 
 const DEFAULT_ADM4 = '31.71.03.1001';
+
+const CACHE_DURATION = 10 * 60 * 1000; // 10 menit
 
 const DEFAULT_WARNING: WeatherWarning = {
   type: 'safe',
@@ -26,82 +24,9 @@ const DEFAULT_WARNING: WeatherWarning = {
   description: 'Sedang memeriksa kondisi cuaca terkini.',
 };
 
-const generateWeatherCodeWarning = (current: any): WeatherWarning => {
-  if (!current) {
-    return {
-      type: 'safe',
-      title: 'Data Cuaca Tidak Tersedia',
-      description: 'Tidak dapat memuat kondisi cuaca terkini.',
-    };
-  }
-
-  const weather_code = current?.weather_code ?? 0;
-  const wind_speed_10m = current?.wind_speed_10m ?? 0;
-
-  if (weather_code >= 95) {
-    return {
-      type: 'alert',
-      title: 'Badai Petir',
-      description: 'Terjadi badai petir dengan potensi hujan deras.',
-    };
-  }
-
-  if (wind_speed_10m >= 50) {
-    return {
-      type: 'alert',
-      title: 'Angin Kencang',
-      description: 'Kecepatan angin tinggi terdeteksi.',
-    };
-  }
-
-  if (weather_code === 65 || weather_code === 82) {
-    return {
-      type: 'alert',
-      title: 'Hujan Lebat',
-      description: 'Curah hujan tinggi terdeteksi.',
-    };
-  }
-
-  if (weather_code === 63 || weather_code === 81) {
-    return {
-      type: 'warning',
-      title: 'Hujan Sedang',
-      description: 'Sedang terjadi hujan dengan intensitas sedang.',
-    };
-  }
-
-  if (weather_code === 61 || weather_code === 80) {
-    return {
-      type: 'warning',
-      title: 'Hujan Ringan',
-      description: 'Terjadi hujan ringan di sekitar wilayah Anda.',
-    };
-  }
-
-  if (weather_code === 45 || weather_code === 48) {
-    return {
-      type: 'warning',
-      title: 'Kabut Tebal',
-      description: 'Jarak pandang berkurang akibat kabut.',
-    };
-  }
-
-  if (weather_code === 3) {
-    return {
-      type: 'info',
-      title: 'Mendung Tebal',
-      description: 'Langit mendung, kemungkinan hujan.',
-    };
-  }
-
-  return {
-    type: 'safe',
-    title: 'Tidak Ada Peringatan Cuaca Aktif',
-    description: 'Kondisi cuaca normal.',
-  };
-};
-
 export const useForecast = () => {
+  const location = useLocation();
+
   const [weatherData, setWeatherData] = useState<DailyForecast[]>([]);
   const [locationName, setLocationName] = useState('');
   const [warning, setWarning] = useState<WeatherWarning | null>(
@@ -110,29 +35,51 @@ export const useForecast = () => {
   const [loading, setLoading] = useState(true);
 
   const lastAdm4Ref = useRef<string | null>(null);
-  const adm4CacheRef = useRef<string | null>(null);
-  const watchIdRef = useRef<number | null>(null);
-  const lastWatchUpdateRef = useRef(0);
-  const refreshLockRef = useRef(false);
+  const lastFetchRef = useRef<number>(0);
   const isMountedRef = useRef(true);
 
   const saveUserLocation = async (adm4Id: number) => {
     try {
-      await API.post('/user-location', {
-        adm4_id: adm4Id,
-      });
+      await API.post('/user-location', { adm4_id: adm4Id });
     } catch {}
   };
 
   /* ==============================
+     LOAD CACHE (instant open)
+  ============================== */
+
+  useEffect(() => {
+    const loadCache = async () => {
+      try {
+        const cache = await AsyncStorage.getItem('weather_cache');
+
+        if (!cache) return;
+
+        const parsed = JSON.parse(cache);
+
+        if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+          setWeatherData(parsed.data);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.log('CACHE LOAD ERROR:', e);
+      }
+    };
+
+    loadCache();
+  }, []);
+
+  /* ==============================
      LOAD FORECAST
   ============================== */
+
   const loadForecast = useCallback(
     async (lat: number, lon: number, adm4: string) => {
-      try {
-        if (lastAdm4Ref.current === adm4) return;
-        lastAdm4Ref.current = adm4;
+      if (lastAdm4Ref.current === adm4) return;
 
+      lastAdm4Ref.current = adm4;
+
+      try {
         const [res, capRes] = await Promise.all([
           fetchWeatherAPI(lat, lon, adm4),
           fetchCAPAPI().catch(() => null),
@@ -152,6 +99,17 @@ export const useForecast = () => {
 
         setWeatherData(parsed);
 
+        // save cache
+        await AsyncStorage.setItem(
+          'weather_cache',
+          JSON.stringify({
+            data: parsed,
+            timestamp: Date.now(),
+            lat,
+            lon,
+          }),
+        );
+
         const autoWarning = generateWeatherCodeWarning(res.current);
         setWarning(capRes ?? autoWarning);
       } catch (err) {
@@ -162,40 +120,36 @@ export const useForecast = () => {
   );
 
   /* ==============================
-     INITIAL LOAD
+     LOCATION EFFECT
   ============================== */
-  const initForecast = useCallback(async () => {
-    try {
-      if (refreshLockRef.current) return;
-      refreshLockRef.current = true;
 
-      setLoading(true);
+  useEffect(() => {
+    if (!location) return;
 
-      const granted = await requestLocationPermission();
-      if (!granted) {
-        setLoading(false);
-        refreshLockRef.current = false;
-        return;
-      }
+    const run = async () => {
+      const now = Date.now();
 
-      const coords = await getCurrentPosition();
+      // debounce request
+      if (now - lastFetchRef.current < 60000) return;
+      lastFetchRef.current = now;
 
-      const adm4 = adm4CacheRef.current ?? DEFAULT_ADM4;
-
-      await loadForecast(coords.latitude, coords.longitude, adm4);
-
-      setLoading(false);
-
-      const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
-
-      if (nearest?.data?.adm4) {
-        adm4CacheRef.current = nearest.data.adm4;
-
-        await loadForecast(
-          coords.latitude,
-          coords.longitude,
-          nearest.data.adm4,
+      try {
+        const nearest = await fetchNearestADM4(
+          location.latitude,
+          location.longitude,
         );
+
+        if (!nearest?.data?.adm4) return;
+
+        const newAdm4 = nearest.data.adm4;
+
+        // skip jika adm4 sama
+        if (lastAdm4Ref.current === newAdm4) {
+          setLoading(false);
+          return;
+        }
+
+        await loadForecast(location.latitude, location.longitude, newAdm4);
 
         const parts = [
           nearest.data.kelurahan,
@@ -203,103 +157,131 @@ export const useForecast = () => {
           nearest.data.kotkab,
         ].filter(Boolean);
 
-        const newLocation = parts.join(', ');
-
-        setLocationName(prev => (prev === newLocation ? prev : newLocation));
+        setLocationName(parts.join(', '));
 
         saveUserLocation(nearest.data.id).catch(() => {});
+
+        setLoading(false);
+      } catch (e) {
+        console.log('FORECAST ERROR:', e);
       }
+    };
 
-      startRealtimeWatch();
-
-      refreshLockRef.current = false;
-    } catch (error) {
-      console.log('INIT ERROR:', error);
-      setLoading(false);
-      refreshLockRef.current = false;
-    }
-  }, [loadForecast]);
-
-  /* ==============================
-     REALTIME WATCH
-  ============================== */
-  const startRealtimeWatch = () => {
-    watchIdRef.current = Geolocation.watchPosition(
-      async position => {
-        const now = Date.now();
-
-        if (now - lastWatchUpdateRef.current < 120000) return;
-
-        lastWatchUpdateRef.current = now;
-
-        const { latitude, longitude } = position.coords;
-
-        const nearest = await fetchNearestADM4(latitude, longitude);
-
-        if (nearest?.data?.adm4) {
-          adm4CacheRef.current = nearest.data.adm4;
-
-          await loadForecast(latitude, longitude, nearest.data.adm4);
-        }
-      },
-      error => {
-        console.log('WATCH ERROR:', error);
-      },
-      {
-        enableHighAccuracy: false,
-        distanceFilter: 1500,
-        interval: 120000,
-        fastestInterval: 60000,
-      },
-    );
-  };
+    run();
+  }, [location, loadForecast]);
 
   /* ==============================
      MANUAL REFRESH
   ============================== */
-  const fetchByCurrentLocation = async () => {
-    try {
-      const coords = await getCurrentPosition();
 
-      const nearest = await fetchNearestADM4(coords.latitude, coords.longitude);
+  const refetch = async () => {
+    if (!location) return;
 
-      if (nearest?.data?.adm4) {
-        adm4CacheRef.current = nearest.data.adm4;
+    const nearest = await fetchNearestADM4(
+      location.latitude,
+      location.longitude,
+    );
 
-        await loadForecast(
-          coords.latitude,
-          coords.longitude,
-          nearest.data.adm4,
-        );
-      }
-    } catch (e) {
-      console.log('GPS ERROR:', e);
-    }
+    if (!nearest?.data?.adm4) return;
+
+    lastAdm4Ref.current = null;
+
+    await loadForecast(
+      location.latitude,
+      location.longitude,
+      nearest.data.adm4,
+    );
   };
 
   /* ==============================
-     EFFECT
+     CLEANUP
   ============================== */
+
   useEffect(() => {
     isMountedRef.current = true;
 
-    initForecast();
-
     return () => {
       isMountedRef.current = false;
-
-      if (watchIdRef.current !== null) {
-        Geolocation.clearWatch(watchIdRef.current);
-      }
     };
-  }, [initForecast]);
+  }, []);
 
   return {
     weatherData,
     warning,
     loading,
-    refetch: initForecast,
-    fetchByCurrentLocation,
     locationName,
+    refetch,
+  };
+};
+
+/* ==============================
+   WARNING GENERATOR
+============================== */
+
+const generateWeatherCodeWarning = (current: any): WeatherWarning => {
+  if (!current) {
+    return {
+      type: 'safe',
+      title: 'Data Cuaca Tidak Tersedia',
+      description: 'Tidak dapat memuat kondisi cuaca terkini.',
+    };
+  }
+
+  const weather_code = current?.weather_code ?? 0;
+  const wind_speed_10m = current?.wind_speed_10m ?? 0;
+
+  if (weather_code >= 95)
+    return {
+      type: 'alert',
+      title: 'Badai Petir',
+      description: 'Potensi hujan deras.',
+    };
+
+  if (wind_speed_10m >= 50)
+    return {
+      type: 'alert',
+      title: 'Angin Kencang',
+      description: 'Angin sangat kuat.',
+    };
+
+  if (weather_code === 65 || weather_code === 82)
+    return {
+      type: 'alert',
+      title: 'Hujan Lebat',
+      description: 'Curah hujan tinggi.',
+    };
+
+  if (weather_code === 63 || weather_code === 81)
+    return {
+      type: 'warning',
+      title: 'Hujan Sedang',
+      description: 'Hujan intensitas sedang.',
+    };
+
+  if (weather_code === 61 || weather_code === 80)
+    return {
+      type: 'warning',
+      title: 'Hujan Ringan',
+      description: 'Hujan ringan.',
+    };
+
+  if (weather_code === 45 || weather_code === 48)
+    return {
+      type: 'warning',
+      title: 'Kabut Tebal',
+      description: 'Jarak pandang berkurang.',
+    };
+
+  if (weather_code === 3)
+    return {
+      type: 'info',
+      title: 'Mendung Tebal',
+      description: 'Langit mendung.',
+    };
+
+  return {
+    type: 'safe',
+    title: 'Tidak Ada Peringatan Cuaca Aktif',
+    description: 'Kondisi cuaca normal.',
   };
 };

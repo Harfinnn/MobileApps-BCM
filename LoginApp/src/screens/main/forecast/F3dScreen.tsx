@@ -39,7 +39,7 @@ export default function F3dScreen() {
   const { weatherData, warning, loading, refetch, locationName } =
     useForecast();
 
-  const main = weatherData?.[0];
+  const main = weatherData?.length ? weatherData[0] : null;
 
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,6 +117,11 @@ export default function F3dScreen() {
       />
     ),
     [expandedIndex, toggleItem],
+  );
+
+  const keyExtractor = useCallback(
+    (_: any, index: number) => `forecast-${index}`,
+    [],
   );
 
   /* ===============================
@@ -225,7 +230,7 @@ export default function F3dScreen() {
      LOADING
   =============================== */
 
-  if (loading) {
+  if (loading && weatherData.length === 0) {
     return (
       <LinearGradient colors={['#f8fafc', '#ffffff']} style={styles.container}>
         <SafeAreaView style={{ flex: 1 }}>
@@ -257,9 +262,9 @@ export default function F3dScreen() {
         <FlatList
           data={weatherData}
           renderItem={renderItem}
-          keyExtractor={(item, index) => `forecast-${index}`}
+          keyExtractor={keyExtractor}
           ListHeaderComponent={headerComponent}
-          initialNumToRender={2}
+          initialNumToRender={3}
           maxToRenderPerBatch={2}
           windowSize={3}
           updateCellsBatchingPeriod={50}
