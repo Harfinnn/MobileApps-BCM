@@ -18,8 +18,10 @@ import {
   HardDrive,
   CheckCircle2,
 } from 'lucide-react-native';
+import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
+const FEATURE_DASHBOARD_IT_ENABLED = false;
 
 export default function DashboardITScreen() {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
@@ -57,95 +59,121 @@ export default function DashboardITScreen() {
     },
   ];
 
+  const ComingSoon = () => (
+    <View style={styles.comingSoonContainer}>
+      <LottieView
+        source={require('../../../assets/Web.json')}
+        autoPlay
+        loop
+        style={{ width: 160, height: 160 }}
+      />
+
+      <Text style={styles.csTitle}>Fitur Dalam Pengembangan</Text>
+
+      <Text style={styles.csText}>
+        Dashboard IT sedang dalam tahap pengembangan. Nantikan pembaruan pada
+        versi berikutnya.
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerSubtitle}>INFRASTRUCTURE OVERVIEW</Text>
-          <Text style={styles.headerTitle}>IT Dashboard</Text>
-        </View>
-        <TouchableOpacity style={styles.refreshBtn}>
-          <Text style={styles.refreshText}>Live</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Main Health Card */}
-        <View style={styles.healthCard}>
-          <View style={styles.healthInfo}>
-            <CheckCircle2 size={32} color="#10B981" />
-            <View style={styles.healthTextContainer}>
-              <Text style={styles.healthStatus}>All Systems Operational</Text>
-              <Text style={styles.healthDesc}>
-                Uptime: {uptime} (Last 30 days)
-              </Text>
+      {!FEATURE_DASHBOARD_IT_ENABLED ? (
+        <ComingSoon />
+      ) : (
+        <>
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.headerSubtitle}>INFRASTRUCTURE OVERVIEW</Text>
+              <Text style={styles.headerTitle}>IT Dashboard</Text>
             </View>
+            <TouchableOpacity style={styles.refreshBtn}>
+              <Text style={styles.refreshText}>Live</Text>
+            </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Stats Grid */}
-        <View style={styles.grid}>
-          {stats.map((item, index) => (
-            <View
-              key={index}
-              style={[styles.statBox, { backgroundColor: item.color }]}
-            >
-              <View style={styles.iconCircle}>{item.icon}</View>
-              <Text style={styles.statValue}>{item.value}</Text>
-              <Text style={styles.statLabel}>{item.label}</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* Main Health Card */}
+            <View style={styles.healthCard}>
+              <View style={styles.healthInfo}>
+                <CheckCircle2 size={32} color="#10B981" />
+                <View style={styles.healthTextContainer}>
+                  <Text style={styles.healthStatus}>
+                    All Systems Operational
+                  </Text>
+                  <Text style={styles.healthDesc}>
+                    Uptime: {uptime} (Last 30 days)
+                  </Text>
+                </View>
+              </View>
             </View>
-          ))}
-        </View>
 
-        {/* Server List Section */}
-        <Text style={styles.sectionTitle}>Active Nodes</Text>
+            {/* Stats Grid */}
+            <View style={styles.grid}>
+              {stats.map((item, index) => (
+                <View
+                  key={index}
+                  style={[styles.statBox, { backgroundColor: item.color }]}
+                >
+                  <View style={styles.iconCircle}>{item.icon}</View>
+                  <Text style={styles.statValue}>{item.value}</Text>
+                  <Text style={styles.statLabel}>{item.label}</Text>
+                </View>
+              ))}
+            </View>
 
-        {[
-          {
-            name: 'Primary DB Cluster',
-            status: 'Online',
-            ip: '192.168.1.10',
-            load: '12%',
-          },
-          {
-            name: 'Main API Gateway',
-            status: 'Online',
-            ip: '192.168.1.12',
-            load: '45%',
-          },
-          {
-            name: 'Backup Storage S3',
-            status: 'Online',
-            ip: '10.0.0.5',
-            load: '05%',
-          },
-        ].map((server, i) => (
-          <View key={i} style={styles.serverItem}>
-            <View style={styles.serverIcon}>
-              <Server size={22} color="#64748B" />
-            </View>
-            <View style={styles.serverInfo}>
-              <Text style={styles.serverName}>{server.name}</Text>
-              <Text style={styles.serverIp}>{server.ip}</Text>
-            </View>
-            <View style={styles.serverMeta}>
-              <Text style={styles.loadText}>{server.load}</Text>
-              <View style={styles.onlineIndicator} />
-            </View>
-          </View>
-        ))}
+            {/* Server List Section */}
+            <Text style={styles.sectionTitle}>Active Nodes</Text>
 
-        {/* Bottom Action */}
-        <TouchableOpacity style={styles.primaryAction}>
-          <Database size={20} color="#FFF" style={{ marginRight: 10 }} />
-          <Text style={styles.primaryActionText}>View Database Logs</Text>
-        </TouchableOpacity>
-      </ScrollView>
+            {[
+              {
+                name: 'Primary DB Cluster',
+                status: 'Online',
+                ip: '192.168.1.10',
+                load: '12%',
+              },
+              {
+                name: 'Main API Gateway',
+                status: 'Online',
+                ip: '192.168.1.12',
+                load: '45%',
+              },
+              {
+                name: 'Backup Storage S3',
+                status: 'Online',
+                ip: '10.0.0.5',
+                load: '05%',
+              },
+            ].map((server, i) => (
+              <View key={i} style={styles.serverItem}>
+                <View style={styles.serverIcon}>
+                  <Server size={22} color="#64748B" />
+                </View>
+                <View style={styles.serverInfo}>
+                  <Text style={styles.serverName}>{server.name}</Text>
+                  <Text style={styles.serverIp}>{server.ip}</Text>
+                </View>
+                <View style={styles.serverMeta}>
+                  <Text style={styles.loadText}>{server.load}</Text>
+                  <View style={styles.onlineIndicator} />
+                </View>
+              </View>
+            ))}
+
+            {/* Bottom Action */}
+            <TouchableOpacity style={styles.primaryAction}>
+              <Database size={20} color="#FFF" style={{ marginRight: 10 }} />
+              <Text style={styles.primaryActionText}>View Database Logs</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -311,5 +339,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 15,
+  },
+
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+
+  csTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 10,
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+
+  csText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#64748B',
+    lineHeight: 20,
   },
 });

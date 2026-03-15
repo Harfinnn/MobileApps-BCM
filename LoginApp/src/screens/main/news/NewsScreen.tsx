@@ -97,6 +97,12 @@ const NewsScreen = () => {
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <View style={styles.headerArea}>
+            <Text style={styles.hugeTitle}>Berita{'\n'}Terbaru</Text>
+            <View style={styles.divider} />
+          </View>
+        }
       />
     </View>
   );

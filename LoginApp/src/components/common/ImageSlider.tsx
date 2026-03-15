@@ -7,9 +7,9 @@ import {
   Image,
 } from 'react-native';
 
-import Slider1 from '../../assets/banners/poster.png';
-import Slider2 from '../../assets/banners/poster2.png';
-import Slider3 from '../../assets/banners/poster3.png';
+import Slider1 from '../../assets/banners/poster_1.png';
+import Slider2 from '../../assets/banners/poster_2.png';
+import Slider3 from '../../assets/banners/Poster_3.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_HEIGHT = 280;

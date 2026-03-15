@@ -2,8 +2,8 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
 
 export default StyleSheet.create({
-  container: { flex: 1, paddingBottom: 70 },
-  headerContainer: { paddingHorizontal: 20, paddingTop: 20 },
+  container: { flex: 1},
+  headerContainer: { paddingHorizontal: 20, paddingTop: 75 },
 
   headerTop: { marginBottom: 20 },
   dateBadge: {
@@ -424,5 +424,28 @@ export default StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
     marginTop: 4,
+  },
+
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+  },
+
+  sourceBadge: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+
+  sourceBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: 0.5,
   },
 });

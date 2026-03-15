@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 // AUTH (PUBLIC)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/first-change-password', [AuthController::class, 'firstChangePassword']);
 
 // ADMIN ACTION
 Route::post('/users/{id}/disable', [UserController::class, 'disable']);

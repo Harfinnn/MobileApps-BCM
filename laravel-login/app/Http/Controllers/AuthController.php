@@ -47,7 +47,23 @@ class AuthController extends Controller
             'status' => $user->user_status
         ]);
 
-        if ((int) $user->user_status !== 1) {
+        // STATUS 2 → wajib ganti password
+        if ((int) $user->user_status === 2) {
+
+            Log::info('User must change password', [
+                'user_id' => $user->user_id
+            ]);
+
+            return response()->json([
+                'message' => 'Harus ganti password',
+                'force_change_password' => true,
+                'user_id' => $user->user_id
+            ], 200);
+        }
+
+        // STATUS 0 → akun tidak aktif
+        if ((int) $user->user_status === 0) {
+
             Log::warning('User inactive', [
                 'user_id' => $user->user_id
             ]);
@@ -149,6 +165,58 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $user
+        ]);
+    }
+
+    public function firstChangePassword(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required',
+            'old_password' => 'required',
+            'password' => [
+                'required',
+                'min:8',
+                'confirmed',
+                'regex:/[A-Z]/',      
+                'regex:/[a-z]/',      
+                'regex:/[0-9]/',      
+                'regex:/[@$!%*#?&]/'  
+            ]
+        ], [
+            'password.min' => 'Password minimal 8 karakter',
+            'password.regex' => 'Password harus mengandung huruf besar, huruf kecil, angka, dan karakter spesial'
+        ]);
+
+        $user = User::find($request->user_id);
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User tidak ditemukan'
+            ], 404);
+        }
+
+        // cek password lama
+        $oldPassword = PasswordHelper::encrypt($request->old_password);
+
+        if ($oldPassword !== $user->user_pswd) {
+            return response()->json([
+                'message' => 'Password lama salah'
+            ], 422);
+        }
+
+        if ($request->old_password === $request->password) {
+            return response()->json([
+                'message' => 'Password baru tidak boleh sama dengan password lama'
+            ], 422);
+        }
+
+        // update password
+        $user->user_pswd = PasswordHelper::encrypt($request->password);
+        $user->user_status = 1;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password berhasil diganti'
         ]);
     }
 }

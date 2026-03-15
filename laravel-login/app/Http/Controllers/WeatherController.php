@@ -16,26 +16,37 @@ class WeatherController extends Controller
 
     public function index(Request $request)
     {
-        $lat = $request->lat;
-        $lon = $request->lon;
-        $adm4 = $request->adm4;
+        try {
 
-        if (!$lat || !$lon || !$adm4) {
+            $lat = $request->lat;
+            $lon = $request->lon;
+            $adm4 = $request->adm4;
+
+            if (!$lat || !$lon || !$adm4) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'lat, lon, adm4 required'
+                ], 400);
+            }
+
+            $current = $this->weather->getCurrentWeather($lat, $lon);
+            $forecast = $this->weather->getForecastBMKG($adm4);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'current' => $current,
+                    'forecast' => $forecast,
+                ]
+            ]);
+
+        } catch (\Throwable $e) {
+
             return response()->json([
                 'success' => false,
-                'message' => 'lat, lon, adm4 required'
-            ], 400);
+                'error' => $e->getMessage(),
+                'line' => $e->getLine()
+            ], 500);
         }
-
-        $current = $this->weather->getCurrentWeather($lat, $lon);
-        $forecast = $this->weather->getForecastBMKG($adm4);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'current' => $current,
-                'forecast' => $forecast,
-            ]
-        ]);
     }
 }

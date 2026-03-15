@@ -9,32 +9,33 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   content: {
     alignItems: 'center',
     zIndex: 10,
   },
+
   logo: {
-    width: width * 0.7,
-    height: 150,
-    marginBottom: 20,
+    width: width * 0.65,
+    height: 140,
+    marginBottom: 10,
   },
-  loadingWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 30,
+
+  /* Lottie Animation */
+  lottie: {
+    width: 120,
+    height: 120,
+    marginTop: 5,
   },
+
   loadingText: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
-    marginLeft: 10,
-    marginTop:10,
+    marginTop: 8,
     letterSpacing: 0.5,
   },
+
   footerText: {
     position: 'absolute',
     bottom: 50,
@@ -44,7 +45,9 @@ export default StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
-  // Variasi Dekorasi agar tidak kaku
+
+  /* Decorative background shapes */
+
   circleTop: {
     position: 'absolute',
     top: -height * 0.1,
@@ -54,6 +57,7 @@ export default StyleSheet.create({
     borderRadius: width * 0.4,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
+
   circleBottom: {
     position: 'absolute',
     bottom: -height * 0.15,

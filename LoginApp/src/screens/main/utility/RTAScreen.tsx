@@ -12,13 +12,33 @@ import {
 } from 'react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
+const FEATURE_RTA_ENABLED = false;
 
 const RTAScreen = () => {
   const navigation = useNavigation<any>();
   const { setTitle, setHideNavbar, setShowBack, setShowSearch } = useLayout();
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const ComingSoon = () => (
+    <View style={styles.comingSoonContainer}>
+      <LottieView
+        source={require('../../../assets/Web.json')}
+        autoPlay
+        loop
+        style={{ width: 160, height: 160 }}
+      />
+
+      <Text style={styles.csTitle}>Fitur Dalam Pengembangan</Text>
+
+      <Text style={styles.csText}>
+        Modul Real-Time Access sedang dalam tahap pengembangan. Nantikan
+        pembaruan pada versi berikutnya.
+      </Text>
+    </View>
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -37,6 +57,7 @@ const RTAScreen = () => {
     setShowSearch(false);
 
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+
     return () => {
       setHideNavbar(false);
       setShowBack(false);
@@ -48,93 +69,109 @@ const RTAScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      {/* SOFT GRADIENT ORB (Visual Decor) */}
-      <View style={styles.softGlow} />
+      {!FEATURE_RTA_ENABLED ? (
+        <ComingSoon />
+      ) : (
+        <>
+          {/* SOFT GRADIENT ORB */}
+          <View style={styles.softGlow} />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* MINIMALIST HEADER */}
-        <View style={styles.topHeader}>
-          <View style={styles.liveTag}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveTagText}>SYSTEM ACTIVE</Text>
-          </View>
-          <Text style={styles.mainTitle}>Real-Time{'\n'}Access Center</Text>
-        </View>
-
-        {/* CLOCK SECTION */}
-        <View style={styles.heroClock}>
-          <Text style={styles.clockBig}>
-            {currentTime.toLocaleTimeString('id-ID', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            })}
-          </Text>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateSmall}>
-              {currentTime
-                .toLocaleDateString('id-ID', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                })
-                .toUpperCase()}
-            </Text>
-            <View style={styles.yearBadge}>
-              <Text style={styles.yearText}>{currentTime.getFullYear()}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* METRICS (Clean Minimalist) */}
-        <View style={styles.metricsWrapper}>
-          <View style={styles.metricItem}>
-            <Text style={styles.mLabel}>LATENCY</Text>
-            <Text style={styles.mValue}>12ms</Text>
-          </View>
-          <View style={styles.mDivider} />
-          <View style={styles.metricItem}>
-            <Text style={styles.mLabel}>STABILITY</Text>
-            <Text style={styles.mValue}>99%</Text>
-          </View>
-          <View style={styles.mDivider} />
-          <View style={styles.metricItem}>
-            <Text style={styles.mLabel}>NODES</Text>
-            <Text style={styles.mValue}>ACTIVE</Text>
-          </View>
-        </View>
-
-        {/* LOG SECTION (Clean Neumorphic touch) */}
-        <View style={styles.logCard}>
-          <View style={styles.logHeader}>
-            <Text style={styles.logTitle}>System Protocol</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>SECURE</Text>
-            </View>
-          </View>
-
-          {[
-            { t: '10:24', msg: 'Encrypted tunnel established' },
-            { t: '10:25', msg: 'Seismic node #12 responded' },
-            { t: '10:27', msg: 'Data packet synchronization' },
-          ].map((item, i) => (
-            <View key={i} style={styles.logLine}>
-              <View style={styles.logTimeBox}>
-                <Text style={styles.logTime}>{item.t}</Text>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* MINIMALIST HEADER */}
+            <View style={styles.topHeader}>
+              <View style={styles.liveTag}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveTagText}>SYSTEM ACTIVE</Text>
               </View>
-              <Text style={styles.logMsg}>{item.msg}</Text>
+              <Text style={styles.mainTitle}>Real-Time{'\n'}Access Center</Text>
             </View>
-          ))}
-        </View>
 
-        {/* MODERN ACTION BUTTON */}
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
-          <Text style={styles.btnText}>REBOOT ACCESS</Text>
-        </TouchableOpacity>
-      </ScrollView>
+            {/* CLOCK */}
+            <View style={styles.heroClock}>
+              <Text style={styles.clockBig}>
+                {currentTime.toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </Text>
+
+              <View style={styles.dateRow}>
+                <Text style={styles.dateSmall}>
+                  {currentTime
+                    .toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })
+                    .toUpperCase()}
+                </Text>
+
+                <View style={styles.yearBadge}>
+                  <Text style={styles.yearText}>
+                    {currentTime.getFullYear()}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* METRICS */}
+            <View style={styles.metricsWrapper}>
+              <View style={styles.metricItem}>
+                <Text style={styles.mLabel}>LATENCY</Text>
+                <Text style={styles.mValue}>12ms</Text>
+              </View>
+
+              <View style={styles.mDivider} />
+
+              <View style={styles.metricItem}>
+                <Text style={styles.mLabel}>STABILITY</Text>
+                <Text style={styles.mValue}>99%</Text>
+              </View>
+
+              <View style={styles.mDivider} />
+
+              <View style={styles.metricItem}>
+                <Text style={styles.mLabel}>NODES</Text>
+                <Text style={styles.mValue}>ACTIVE</Text>
+              </View>
+            </View>
+
+            {/* LOG */}
+            <View style={styles.logCard}>
+              <View style={styles.logHeader}>
+                <Text style={styles.logTitle}>System Protocol</Text>
+
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusBadgeText}>SECURE</Text>
+                </View>
+              </View>
+
+              {[
+                { t: '10:24', msg: 'Encrypted tunnel established' },
+                { t: '10:25', msg: 'Seismic node #12 responded' },
+                { t: '10:27', msg: 'Data packet synchronization' },
+              ].map((item, i) => (
+                <View key={i} style={styles.logLine}>
+                  <View style={styles.logTimeBox}>
+                    <Text style={styles.logTime}>{item.t}</Text>
+                  </View>
+
+                  <Text style={styles.logMsg}>{item.msg}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* BUTTON */}
+            <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
+              <Text style={styles.btnText}>REBOOT ACCESS</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 };
@@ -326,5 +363,26 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1.5,
+  },
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+
+  csTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 10,
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+
+  csText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#64748B',
+    lineHeight: 20,
   },
 });

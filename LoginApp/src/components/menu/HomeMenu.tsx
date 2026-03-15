@@ -8,7 +8,6 @@ import {
 import { MAIN_MENU, MORE_MENU, MenuItemType } from '../../data/menu';
 import { styles } from '../../styles/menu/menuStyle';
 import { useNavigation } from '@react-navigation/native';
-import { LayoutGrid } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,6 +23,8 @@ type Props = {
 /* =======================
    MENU ITEM
 ======================= */
+const MORE_ICON = require('../../assets/newIcon/more.png');
+
 const MenuItem = React.memo(
   ({
     item,
@@ -69,9 +70,22 @@ const MenuItem = React.memo(
             onPress={onPress}
             activeOpacity={0.85}
           >
-            <View style={[styles.iconBox, { backgroundColor: '#2CCABC' }]}>
-              <LayoutGrid size={30} color="#fff" />
+            <View style={styles.iconWrapper}>
+              <View style={styles.frameHighlight} />
+
+              <Image
+                source={MORE_ICON}
+                style={{
+                  width: 135,
+                  height: 135,
+                  bottom: -40,
+                  right: -40,
+                  position: 'absolute',
+                }}
+                resizeMode="contain"
+              />
             </View>
+
             <Text style={styles.menuText}>More</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -87,13 +101,6 @@ const MenuItem = React.memo(
         >
           <View style={{ alignItems: 'center' }}>
             <View style={styles.iconWrapper}>
-              <View style={styles.iconShadowBase} />
-              <View
-                style={[
-                  styles.iconFrame,
-                  { backgroundColor: item.color || '#E9EBF7' },
-                ]}
-              />
               <View style={styles.frameHighlight} />
 
               {item.image && (

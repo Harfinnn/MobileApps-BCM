@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useUser } from '../contexts/UserContext';
 import styles from '../styles/auth/loadingStyle';
 import { useAppConfig } from '../contexts/AppConfigContext';
+import LottieView from 'lottie-react-native';
 
 export default function LoadingScreen() {
   const navigation = useNavigation<any>();
@@ -92,7 +93,12 @@ export default function LoadingScreen() {
           resizeMode="contain"
         />
 
-        <LoadingDots />
+        <LottieView
+          source={require('../assets/loading.json')}
+          autoPlay
+          loop
+          style={styles.lottie}
+        />
 
         <Text style={styles.loadingText}>Menyiapkan data...</Text>
       </Animated.View>
@@ -101,65 +107,3 @@ export default function LoadingScreen() {
     </View>
   );
 }
-
-/* =========================
-   Loading Dots Animation
-   ========================= */
-
-const LoadingDots = () => {
-  const dot1 = useRef(new Animated.Value(0)).current;
-  const dot2 = useRef(new Animated.Value(0)).current;
-  const dot3 = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animate = (anim: Animated.Value, delay: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-
-    animate(dot1, 0);
-    animate(dot2, 200);
-    animate(dot3, 400);
-  }, []);
-
-  return (
-    <View style={{ flexDirection: 'row', marginTop: 20 }}>
-      <Dot anim={dot1} />
-      <Dot anim={dot2} />
-      <Dot anim={dot3} />
-    </View>
-  );
-};
-
-const Dot = ({ anim }: { anim: Animated.Value }) => (
-  <Animated.View
-    style={{
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: '#fff',
-      marginHorizontal: 4,
-      opacity: anim,
-      transform: [
-        {
-          scale: anim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0.6, 1.2],
-          }),
-        },
-      ],
-    }}
-  />
-);

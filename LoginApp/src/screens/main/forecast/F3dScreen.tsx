@@ -45,7 +45,7 @@ export default function F3dScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
 
-  const { setHideHeader } = useLayout();
+  const { setHideHeader, setHideNavbar,setShowBack, setTitle, setShowSearch } = useLayout();
 
   /* ===============================
      ICON + STYLE
@@ -185,7 +185,13 @@ export default function F3dScreen() {
           getWindStatus={getWindStatus}
         />
 
-        <Text style={styles.sectionTitle}>Prakiraan Harian</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Prakiraan Harian</Text>
+
+          <View style={styles.sourceBadge}>
+            <Text style={styles.sourceBadgeText}>BMKG</Text>
+          </View>
+        </View>
       </View>
     );
   }, [
@@ -215,8 +221,15 @@ export default function F3dScreen() {
   =============================== */
 
   useEffect(() => {
-    setHideHeader(true);
-  }, [setHideHeader]);
+     setTitle('Cuaca');
+     setHideNavbar(true);
+     setShowBack(true);
+     setShowSearch(false);
+     return () => {
+       setHideNavbar(false);
+       setShowBack(false);
+     };
+   }, []);
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {

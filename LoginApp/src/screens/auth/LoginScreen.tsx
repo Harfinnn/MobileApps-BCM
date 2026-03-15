@@ -51,6 +51,15 @@ const LoginScreen: React.FC = () => {
         human_verified: true,
       });
 
+      if (res.data.force_change_password) {
+        navigation.navigate('ChangePasswordFirst', {
+          user_id: res.data.user_id,
+          username,
+        });
+
+        return;
+      }
+
       const { token, user } = res.data;
 
       console.log('LOGIN SUCCESS', user);
@@ -70,7 +79,17 @@ const LoginScreen: React.FC = () => {
       // masuk ke aplikasi
       navigation.replace('Main');
     } catch (err: any) {
-      console.log('LOGIN ERROR', err?.response?.data);
+      console.log('LOGIN ERROR FULL', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+
+      console.log('LOGIN REQUEST', {
+        url: API.defaults.baseURL + '/login',
+        username,
+        password,
+      });
 
       setError(err.response?.data?.message || 'Login gagal');
     } finally {

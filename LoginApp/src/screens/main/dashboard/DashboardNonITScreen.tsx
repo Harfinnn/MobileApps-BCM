@@ -18,8 +18,10 @@ import {
   Calendar,
   ArrowRight,
 } from 'lucide-react-native';
+import LottieView from 'lottie-react-native';
 
 const { width } = Dimensions.get('window');
+const FEATURE_DASHBOARD_NON_IT_ENABLED = false;
 
 export default function DashboardNonITScreen() {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
@@ -50,105 +52,129 @@ export default function DashboardNonITScreen() {
     },
   ];
 
+  const ComingSoon = () => (
+    <View style={styles.comingSoonContainer}>
+      <LottieView
+        source={require('../../../assets/Web.json')}
+        autoPlay
+        loop
+        style={{ width: 160, height: 160 }}
+      />
+
+      <Text style={styles.csTitle}>Fitur Dalam Pengembangan</Text>
+
+      <Text style={styles.csText}>
+        Dashboard Non-IT sedang dalam tahap pengembangan. Nantikan pembaruan
+        pada versi berikutnya.
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* HEADER AREA */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerSubtitle}>OPERATIONAL OVERVIEW</Text>
-          <Text style={styles.headerTitle}>General Dashboard</Text>
-        </View>
-        <TouchableOpacity style={styles.dateBadge}>
-          <Calendar size={14} color="#64748B" />
-          <Text style={styles.dateText}>Feb 2026</Text>
-        </TouchableOpacity>
-      </View>
+      {!FEATURE_DASHBOARD_NON_IT_ENABLED ? (
+        <ComingSoon />
+      ) : (
+        <>
+          {/* HEADER AREA */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.headerSubtitle}>OPERATIONAL OVERVIEW</Text>
+              <Text style={styles.headerTitle}>General Dashboard</Text>
+            </View>
+            <TouchableOpacity style={styles.dateBadge}>
+              <Calendar size={14} color="#64748B" />
+              <Text style={styles.dateText}>Feb 2026</Text>
+            </TouchableOpacity>
+          </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* SUMMARY CARDS */}
-        <View style={styles.statsRow}>
-          {mainStats.map((item, i) => (
-            <View
-              key={i}
-              style={[styles.statCard, { backgroundColor: item.bg }]}
-            >
-              <View style={styles.iconCircle}>{item.icon}</View>
-              <View>
-                <Text style={styles.statLabel}>{item.label}</Text>
-                <Text style={styles.statValue}>{item.value}</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            {/* SUMMARY CARDS */}
+            <View style={styles.statsRow}>
+              {mainStats.map((item, i) => (
+                <View
+                  key={i}
+                  style={[styles.statCard, { backgroundColor: item.bg }]}
+                >
+                  <View style={styles.iconCircle}>{item.icon}</View>
+                  <View>
+                    <Text style={styles.statLabel}>{item.label}</Text>
+                    <Text style={styles.statValue}>{item.value}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* PERFORMANCE BANNER */}
+            <View style={styles.banner}>
+              <View style={styles.bannerInfo}>
+                <Text style={styles.bannerTitle}>Operational Growth</Text>
+                <Text style={styles.bannerDesc}>
+                  Efisiensi meningkat 12% bulan ini.
+                </Text>
+              </View>
+              <View style={styles.growthBadge}>
+                <TrendingUp size={16} color="#10B981" />
+                <Text style={styles.growthText}>+12.5%</Text>
               </View>
             </View>
-          ))}
-        </View>
 
-        {/* PERFORMANCE BANNER */}
-        <View style={styles.banner}>
-          <View style={styles.bannerInfo}>
-            <Text style={styles.bannerTitle}>Operational Growth</Text>
-            <Text style={styles.bannerDesc}>
-              Efisiensi meningkat 12% bulan ini.
+            {/* QUICK ACTIONS SECTION */}
+            <Text style={styles.sectionTitle}>Quick Access</Text>
+            <View style={styles.actionGrid}>
+              {[
+                {
+                  name: 'Laporan Harian',
+                  desc: '12 Berkas baru',
+                  icon: <FileText size={22} color="#F59E0B" />,
+                },
+                {
+                  name: 'Data Logistik',
+                  desc: 'Update 2 jam lalu',
+                  icon: <Package size={22} color="#EC4899" />,
+                },
+              ].map((action, i) => (
+                <TouchableOpacity key={i} style={styles.actionItem}>
+                  <View style={styles.actionIcon}>{action.icon}</View>
+                  <View style={styles.actionText}>
+                    <Text style={styles.actionName}>{action.name}</Text>
+                    <Text style={styles.actionDesc}>{action.desc}</Text>
+                  </View>
+                  <ArrowRight size={18} color="#CBD5E1" />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* RECENT ACTIVITY LIST */}
+            <Text style={[styles.sectionTitle, { marginTop: 30 }]}>
+              Recent Activity
             </Text>
-          </View>
-          <View style={styles.growthBadge}>
-            <TrendingUp size={16} color="#10B981" />
-            <Text style={styles.growthText}>+12.5%</Text>
-          </View>
-        </View>
-
-        {/* QUICK ACTIONS SECTION */}
-        <Text style={styles.sectionTitle}>Quick Access</Text>
-        <View style={styles.actionGrid}>
-          {[
-            {
-              name: 'Laporan Harian',
-              desc: '12 Berkas baru',
-              icon: <FileText size={22} color="#F59E0B" />,
-            },
-            {
-              name: 'Data Logistik',
-              desc: 'Update 2 jam lalu',
-              icon: <Package size={22} color="#EC4899" />,
-            },
-          ].map((action, i) => (
-            <TouchableOpacity key={i} style={styles.actionItem}>
-              <View style={styles.actionIcon}>{action.icon}</View>
-              <View style={styles.actionText}>
-                <Text style={styles.actionName}>{action.name}</Text>
-                <Text style={styles.actionDesc}>{action.desc}</Text>
+            <View style={styles.activityList}>
+              <View style={styles.activityItem}>
+                <View style={styles.activityPoint} />
+                <Text style={styles.activityText}>
+                  Pengadaan barang rutin selesai dikirim
+                </Text>
+                <Text style={styles.activityTime}>09:00</Text>
               </View>
-              <ArrowRight size={18} color="#CBD5E1" />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* RECENT ACTIVITY LIST */}
-        <Text style={[styles.sectionTitle, { marginTop: 30 }]}>
-          Recent Activity
-        </Text>
-        <View style={styles.activityList}>
-          <View style={styles.activityItem}>
-            <View style={styles.activityPoint} />
-            <Text style={styles.activityText}>
-              Pengadaan barang rutin selesai dikirim
-            </Text>
-            <Text style={styles.activityTime}>09:00</Text>
-          </View>
-          <View style={styles.activityItem}>
-            <View
-              style={[styles.activityPoint, { backgroundColor: '#CBD5E1' }]}
-            />
-            <Text style={styles.activityText}>
-              Meeting mingguan koordinasi operasional
-            </Text>
-            <Text style={styles.activityTime}>Kemarin</Text>
-          </View>
-        </View>
-      </ScrollView>
+              <View style={styles.activityItem}>
+                <View
+                  style={[styles.activityPoint, { backgroundColor: '#CBD5E1' }]}
+                />
+                <Text style={styles.activityText}>
+                  Meeting mingguan koordinasi operasional
+                </Text>
+                <Text style={styles.activityTime}>Kemarin</Text>
+              </View>
+            </View>
+          </ScrollView>
+        </>
+      )}
     </SafeAreaView>
   );
 }
@@ -338,5 +364,27 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94A3B8',
     fontWeight: '600',
+  },
+
+  comingSoonContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+
+  csTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 10,
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+
+  csText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#64748B',
+    lineHeight: 20,
   },
 });

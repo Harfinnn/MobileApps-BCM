@@ -29,6 +29,7 @@ import GempaDetailScreen from '../screens/main/gempa/GempaDetailScreen';
 import F3dScreen from '../screens/main/forecast/F3dScreen';
 import EditAboutScreen from '../screens/main/profile/EditAboutScreen';
 import { useUser } from '../contexts/UserContext';
+import ChangePasswordFirstScreen from '../screens/auth/ChangePasswordFirstScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -49,6 +50,8 @@ function MainStackScreen() {
         <MainStack.Screen name="File" component={FileScreen} />
         <MainStack.Screen name="F3d" component={F3dScreen} />
         <MainStack.Screen name="Maps" component={MapScreen} />
+
+        <RootStack.Screen name="ChangePassword" component={ChangePasswordFirstScreen} />
 
         <MainStack.Screen name="Profile" component={ProfileScreen} />
         <MainStack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -136,6 +139,7 @@ export default function AppNavigator() {
               name="ForgotPassword"
               component={ForgotPasswordScreen}
             />
+            <RootStack.Screen name="ChangePasswordFirst" component={ChangePasswordFirstScreen} />
             <RootStack.Screen name="Register" component={RegisterScreen} />
           </>
         )}

@@ -128,7 +128,6 @@ const PanduanBencanaScreen = () => {
         renderItem={renderItem}
         ListHeaderComponent={() => (
           <View style={styles.headerArea}>
-            <Text style={styles.overTitle}>LIBRARY</Text>
             <Text style={styles.hugeTitle}>Prosedur{'\n'}Siaga</Text>
             <View style={styles.divider} />
           </View>

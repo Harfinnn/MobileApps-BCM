@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 40,
-    paddingTop: 80, 
+    paddingTop: 80,
   },
 
   card: {
@@ -104,5 +104,24 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     color: '#007AFF',
     fontWeight: 'bold',
+  },
+  headerArea: {
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    marginBottom: 30,
+  },
+  hugeTitle: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#111827',
+    lineHeight: 42,
+    letterSpacing: -1.5,
+  },
+  divider: {
+    width: 45,
+    height: 5,
+    backgroundColor: '#111827',
+    marginTop: 20,
+    borderRadius: 10,
   },
 });

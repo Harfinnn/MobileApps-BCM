@@ -44,8 +44,8 @@ const DashboardMenuStyles = StyleSheet.create({
   },
 
   iconImage: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
   },
 

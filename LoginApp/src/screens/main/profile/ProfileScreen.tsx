@@ -165,6 +165,12 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<Lock size={18} color="#009B97" />}
             label="Ganti Password"
+            onPress={() =>
+              navigation.navigate('ChangePassword', {
+                user_id: user.user_id,
+                fromProfile: true,
+              })
+            }
           />
 
           <MenuItem

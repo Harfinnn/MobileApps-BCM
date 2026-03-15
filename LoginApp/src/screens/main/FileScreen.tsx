@@ -150,7 +150,7 @@ function FileScreen({ navigation }: any) {
           setMessages([
             {
               id: 'welcome',
-              text: 'Halo 👋 Saya BCM-Assistant. Ada yang bisa saya bantu terkait keberlangsungan operasional hari ini?',
+              text: 'Halo 👋 Saya Akbar-AI. Ada yang bisa saya bantu terkait keberlangsungan operasional hari ini?',
               sender: 'ai',
             },
           ]);
@@ -179,7 +179,7 @@ function FileScreen({ navigation }: any) {
         setMessages([
           {
             id: 'welcome',
-            text: 'Halo 👋 Saya BCM-Assistant. Ada yang bisa saya bantu terkait keberlangsungan operasional hari ini?',
+            text: 'Halo 👋 Saya Akbar-AI. Ada yang bisa saya bantu terkait keberlangsungan operasional hari ini?',
             sender: 'ai',
           },
         ]);
@@ -210,7 +210,7 @@ function FileScreen({ navigation }: any) {
                   style={styles.bannerLottie}
                 />
                 <View>
-                  <Text style={styles.bannerTitle}>BCM-Assistant</Text>
+                  <Text style={styles.bannerTitle}>Akbar-AI</Text>
                   <Text
                     style={[
                       styles.limitText,
@@ -244,16 +244,16 @@ function FileScreen({ navigation }: any) {
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => (
                 <TouchableOpacity
-  activeOpacity={0.8}
-  onLongPress={() => copyMessage(item.text)}
-  delayLongPress={300}
-  style={[
-    styles.bubble,
-    item.sender === 'user'
-      ? styles.userBubble
-      : styles.aiBubble,
-  ]}
->
+                  activeOpacity={0.8}
+                  onLongPress={() => copyMessage(item.text)}
+                  delayLongPress={300}
+                  style={[
+                    styles.bubble,
+                    item.sender === 'user'
+                      ? styles.userBubble
+                      : styles.aiBubble,
+                  ]}
+                >
                   {item.sender === 'ai' ? (
                     <ParsedText
                       style={[styles.text, styles.aiText]}
@@ -293,8 +293,11 @@ function FileScreen({ navigation }: any) {
               <View style={styles.inputContainer}>
                 <TextInput
                   value={input}
-                  onChangeText={setInput}
-                  placeholder="Tanya BCM-Assistant..."
+                  onChangeText={text => {
+                    const clean = text.replace(/[\u{1F600}-\u{1F6FF}]/gu, '');
+                    setInput(clean);
+                  }}
+                  placeholder="Tanya Akbar-AI..."
                   placeholderTextColor="#A0AAB5"
                   style={styles.input}
                   multiline
@@ -328,7 +331,7 @@ function FileScreen({ navigation }: any) {
             <Text style={styles.modalTitle}>Hapus Riwayat?</Text>
 
             <Text style={styles.modalDesc}>
-              Semua percakapan dengan BCM-Assistant akan dihapus permanen dan
+              Semua percakapan dengan Akbar-AI akan dihapus permanen dan
               tidak dapat dikembalikan.
             </Text>
 
