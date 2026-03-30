@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState, useEffect } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Image, FlatList } from 'react-native';
 import {
   BottomSheetModal,
@@ -23,7 +23,7 @@ type Props = {
 /* =======================
    MENU ITEM
 ======================= */
-const MORE_ICON = require('../../assets/newIcon/more.png');
+const MORE_ICON = require('../../assets/newIcon/more2.png');
 
 const MenuItem = React.memo(
   ({
@@ -41,7 +41,7 @@ const MenuItem = React.memo(
     const opacity = useSharedValue(0);
     const translateY = useSharedValue(12);
 
-    useEffect(() => {
+    React.useEffect(() => {
       const delay = index * 60;
 
       scale.value = withDelay(
@@ -53,7 +53,6 @@ const MenuItem = React.memo(
       );
 
       opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
-
       translateY.value = withDelay(delay, withTiming(0, { duration: 400 }));
     }, []);
 
@@ -136,10 +135,8 @@ const MenuItem = React.memo(
 export default function HomeMenu({ onDashboardPress }: Props) {
   const navigation = useNavigation<any>();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const [moreReady, setMoreReady] = useState(false);
 
   const openMore = useCallback(() => {
-    setMoreReady(true);
     bottomSheetRef.current?.present();
   }, []);
 
@@ -185,42 +182,41 @@ export default function HomeMenu({ onDashboardPress }: Props) {
         )}
       />
 
-      {moreReady && (
-        <BottomSheetModal
-          ref={bottomSheetRef}
-          snapPoints={['45%', '75%']}
-          index={1}
-          animateOnMount
-          enablePanDownToClose
-          backdropComponent={renderBackdrop}
-        >
-          <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>All Features</Text>
-          </View>
+      {/* ✅ ALWAYS RENDERED (FIX DOUBLE CLICK ISSUE) */}
+      <BottomSheetModal
+        ref={bottomSheetRef}
+        snapPoints={['45%', '75%']}
+        index={1}
+        animateOnMount
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+      >
+        <View style={styles.sheetHeader}>
+          <Text style={styles.sheetTitle}>All Features</Text>
+        </View>
 
-          <BottomSheetScrollView>
-            <View style={styles.sheetGrid}>
-              {[
-                ...MAIN_MENU.filter(i => !i.hideInMore && i.type !== 'more'),
-                ...MORE_MENU,
-              ].map((item, index) => (
-                <MenuItem
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  boxed
-                  onPress={() => {
-                    if (item.route) {
-                      bottomSheetRef.current?.dismiss();
-                      navigation.navigate(item.route);
-                    }
-                  }}
-                />
-              ))}
-            </View>
-          </BottomSheetScrollView>
-        </BottomSheetModal>
-      )}
+        <BottomSheetScrollView>
+          <View style={styles.sheetGrid}>
+            {[
+              ...MAIN_MENU.filter(i => !i.hideInMore && i.type !== 'more'),
+              ...MORE_MENU,
+            ].map((item, index) => (
+              <MenuItem
+                key={item.id}
+                item={item}
+                index={index}
+                boxed
+                onPress={() => {
+                  if (item.route) {
+                    bottomSheetRef.current?.dismiss();
+                    navigation.navigate(item.route);
+                  }
+                }}
+              />
+            ))}
+          </View>
+        </BottomSheetScrollView>
+      </BottomSheetModal>
     </>
   );
 }

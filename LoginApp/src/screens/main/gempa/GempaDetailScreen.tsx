@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,11 @@ import {
   Modal,
   Image,
   Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  Animated,
+  Easing,
 } from 'react-native';
 import {
   useFocusEffect,
@@ -18,6 +23,8 @@ import {
 } from '@react-navigation/native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import styles from '../../../styles/bencana/gempaDetailStyle';
+import API from '../../../services/api';
+import { getUnitsInRadius, UnitWithDistance } from '../../../utils/gempa';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,12 +32,34 @@ const GempaDetailScreen = () => {
   const route = useRoute<any>();
   const { gempa } = route.params;
   const navigation = useNavigation<any>();
-  const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch, setHideHeaderLeft } =
-    useLayout();
+  const {
+    setTitle,
+    setHideNavbar,
+    setOnBack,
+    setHideHeader,
+    setShowBack,
+    setShowSearch,
+    setHideHeaderLeft,
+  } = useLayout();
 
   const [isMapVisible, setIsMapVisible] = useState(false);
+  const [affectedUnits, setAffectedUnits] = useState<UnitWithDistance[]>([]);
+  const [showRadius, setShowRadius] = useState(false);
 
-  // Fungsi Back
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Animation refs
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Enable LayoutAnimation Android
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      UIManager.setLayoutAnimationEnabledExperimental?.(true);
+    }
+  }, []);
+
+  // Back handler
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -41,29 +70,82 @@ const GempaDetailScreen = () => {
     }, [navigation]),
   );
 
+  // Load radius data
+  useEffect(() => {
+    const loadImpact = async () => {
+      try {
+        const res = await API.get('/selindo', {
+          params: { with_location: true },
+        });
+
+        if (res.data?.success && gempa?.Coordinates) {
+          const [lat, lng] = gempa.Coordinates.split(',').map(Number);
+          const impacted = getUnitsInRadius(lat, lng, res.data.data, 50);
+          setAffectedUnits(impacted);
+        }
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    loadImpact();
+  }, [gempa]);
+
   useEffect(() => {
     setTitle('Detail Gempa');
     setHideNavbar(true);
-    setShowBack(false); 
-    setShowSearch(false); 
-    setHideHeaderLeft(true); 
-    setOnBack(undefined);
+    setHideHeader(true);
 
     return () => {
-      setHideHeaderLeft(false);
       setShowSearch(true);
       setHideNavbar(false);
+      setShowBack(true);
     };
   }, [navigation]);
 
   const isStrong = Number(gempa.Magnitude) >= 5.0;
   const mapUrl = `https://data.bmkg.go.id/DataMKG/TEWS/${gempa.Shakemap}`;
 
+  // Rotate animation
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
+
+  // Toggle radius
+  const toggleRadius = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+    const toValue = showRadius ? 0 : 1;
+
+    Animated.timing(rotateAnim, {
+      toValue,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+
+    setShowRadius(!showRadius);
+
+    if (!showRadius) {
+      setTimeout(() => {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }, 200);
+    }
+  };
+
+  const getImpactLevel = (distance: number) => {
+    if (distance < 10) return { label: 'RISIKO TINGGI', color: '#E11D48' };
+    if (distance < 30) return { label: 'WASPADA', color: '#F59E0B' };
+    return { label: 'AMAN', color: '#10B981' };
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false}>
+        {/* HEADER */}
         <View style={styles.topSection}>
           <Text style={styles.dateHeader}>
             {gempa.Tanggal} • {gempa.Jam}
@@ -81,6 +163,7 @@ const GempaDetailScreen = () => {
           </View>
         </View>
 
+        {/* TITLE */}
         <View style={styles.titleSection}>
           <View style={styles.divider} />
           <Text style={styles.wilayahText}>{gempa.Wilayah}</Text>
@@ -91,7 +174,7 @@ const GempaDetailScreen = () => {
           </View>
         </View>
 
-        {/* BUTTON BUKA PETA */}
+        {/* MAP BUTTON */}
         {gempa.Shakemap && (
           <View style={{ paddingHorizontal: 24, marginBottom: 30 }}>
             <TouchableOpacity
@@ -110,6 +193,7 @@ const GempaDetailScreen = () => {
           </View>
         )}
 
+        {/* DATA */}
         <View style={styles.dataGrid}>
           <View style={styles.dataRow}>
             <View style={styles.dataItem}>
@@ -130,6 +214,133 @@ const GempaDetailScreen = () => {
           </View>
         </View>
 
+        {/* RADIUS SECTION */}
+        <View
+          style={{ paddingHorizontal: 24, marginTop: 32, marginBottom: 20 }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'flex-end',
+              marginBottom: 16,
+            }}
+          >
+            <View>
+              <Text style={styles.sectionLabel}>ANALISIS DAMPAK</Text>
+              <Text style={styles.sectionTitle}>Unit Terdekat (50km)</Text>
+            </View>
+            <TouchableOpacity
+              onPress={toggleRadius}
+              activeOpacity={0.7}
+              style={styles.expandButton}
+            >
+              <TouchableOpacity
+                onPress={toggleRadius}
+                activeOpacity={0.7}
+                style={styles.expandButton}
+              >
+                <View style={styles.iconContainer}>
+                  {/* Garis Horizontal Minimalis */}
+                  <Animated.View
+                    style={[
+                      styles.iconBar,
+                      {
+                        transform: [
+                          { translateY: 2 },
+                          {
+                            rotate: rotateAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '45deg'],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
+                  <Animated.View
+                    style={[
+                      styles.iconBar,
+                      {
+                        transform: [
+                          { translateY: -2 },
+                          {
+                            rotate: rotateAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '-45deg'],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
+                </View>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
+
+          {/* LIST DENGAN ANIMASI */}
+          {showRadius && (
+            <View>
+              {affectedUnits.map((unit, index) => {
+                const impact = getImpactLevel(unit.distance);
+
+                return (
+                  <Animated.View
+                    key={index}
+                    style={[
+                      styles.unitCard,
+                      { transform: [{ scale: scaleAnim }] },
+                    ]}
+                  >
+                    <View style={styles.unitInfo}>
+                      <View>
+                        <Text style={styles.unitName}>{unit.mjs_nama}</Text>
+
+                        <View style={styles.distanceBadge}>
+                          <Text style={styles.distanceText}>
+                            {unit.distance.toFixed(1)} km dari episenter
+                          </Text>
+                        </View>
+
+                        {/* ✅ STATUS DAMPAK */}
+                        <Text
+                          style={{
+                            marginTop: 6,
+                            fontSize: 11,
+                            fontWeight: '700',
+                            color: impact.color,
+                          }}
+                        >
+                          ● {impact.label}
+                        </Text>
+                      </View>
+
+                      {index === 0 && (
+                        <View style={styles.priorityBadge}>
+                          <Text style={styles.priorityText}>PRIORITAS</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.distanceTrack}>
+                      <View
+                        style={[
+                          styles.distanceFill,
+                          {
+                            width: `${Math.max(10, 100 - unit.distance * 2)}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        {/* FOOTER */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.closeButton}
@@ -142,8 +353,8 @@ const GempaDetailScreen = () => {
         </View>
       </ScrollView>
 
-      {/* MODAL PETA ZOOMABLE */}
-      <Modal visible={isMapVisible} transparent={true} animationType="fade">
+      {/* MODAL MAP */}
+      <Modal visible={isMapVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <SafeAreaView style={styles.modalHeader}>
             <TouchableOpacity
@@ -157,7 +368,7 @@ const GempaDetailScreen = () => {
           <ScrollView
             maximumZoomScale={4}
             minimumZoomScale={1}
-            centerContent={true}
+            centerContent
             contentContainerStyle={styles.modalScroll}
           >
             <Image
@@ -166,6 +377,7 @@ const GempaDetailScreen = () => {
               resizeMode="contain"
             />
           </ScrollView>
+
           <View style={styles.modalFooter}>
             <Text style={styles.zoomHint}>
               Gunakan dua jari untuk memperbesar peta

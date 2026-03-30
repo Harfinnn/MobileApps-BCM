@@ -22,6 +22,7 @@ const InfoGempaBumiScreen = () => {
   const {
     setTitle,
     setHideNavbar,
+    setHideHeader,
     setShowBack,
     setOnBack,
     setShowSearch,
@@ -51,6 +52,7 @@ const InfoGempaBumiScreen = () => {
     fetchGempa(true);
     setShowSearch(false);
     setHideHeaderLeft(false);
+    setHideHeader(false)
     setOnBack(() => () => {
       navigation.navigate('Main', { screen: 'Home' });
       return true;

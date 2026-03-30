@@ -4,7 +4,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  topSection: { paddingHorizontal: 24, paddingTop: 80, paddingBottom: 10 },
+  topSection: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 10 },
   dateHeader: {
     fontSize: 13,
     fontWeight: '600',
@@ -104,4 +104,116 @@ export default StyleSheet.create({
   fullMapImage: { width: SCREEN_WIDTH, height: SCREEN_HEIGHT * 0.7 },
   modalFooter: { padding: 30, alignItems: 'center' },
   zoomHint: { color: '#94A3B8', fontSize: 12, fontStyle: 'italic' },
+
+  expandButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12, // Kotak dengan sudut halus lebih modern dibanding bulat sempurna
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconBar: {
+    width: 14,
+    height: 1.5, // Sangat tipis untuk kesan premium
+    backgroundColor: '#0F172A',
+    position: 'absolute',
+    borderRadius: 1,
+  },
+
+  /* NEW RADIUS SECTION STYLES */
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#94A3B8',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+
+  unitCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    // Soft Shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  unitInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  unitName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  distanceBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  distanceText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  priorityBadge: {
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  priorityText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#E11D48',
+  },
+  distanceTrack: {
+    height: 6,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  distanceFill: {
+    height: '100%',
+    backgroundColor: '#0F172A', // Warna gelap kontras agar terkesan premium
+    borderRadius: 3,
+  },
+  emptyState: {
+    padding: 30,
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 20,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  emptyStateText: {
+    color: '#94A3B8',
+    fontSize: 14,
+  },
 });

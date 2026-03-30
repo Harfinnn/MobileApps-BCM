@@ -354,16 +354,15 @@ const LaporBencanaScreen = () => {
               onChange={v => {
                 onChange('adaKerusakan', v);
                 setErrors(prev => ({ ...prev, adaKerusakan: '' }));
-                if (!v) setFoto(null);
               }}
             />
           </View>
-          
+
           {errors.adaKerusakan && (
             <Text style={styles.errorText}>{errors.adaKerusakan}</Text>
           )}
 
-          {form.adaKerusakan && (
+          {form.adaKerusakan !== null && (
             <>
               <View style={styles.photoContainer}>
                 <TouchableOpacity style={styles.uploadBox} onPress={ambilFoto}>
@@ -376,7 +375,9 @@ const LaporBencanaScreen = () => {
                     <View style={styles.uploadPlaceholder}>
                       <Text style={{ fontSize: 28 }}>📷</Text>
                       <Text style={styles.uploadText}>
-                        Ambil Foto Kerusakan
+                        {form.adaKerusakan
+                          ? 'Ambil Foto Kerusakan'
+                          : 'Ambil Foto Kondisi Lokasi'}
                       </Text>
                     </View>
                   )}
