@@ -61,51 +61,35 @@ const App = () => {
     setupNotification();
   }, []);
 
-  // 🔔 FOREGROUND MESSAGE
+  // 🔔 HANDLE CLICK (BACKGROUND)
   useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      const title = String(
-        remoteMessage.data?.title ??
-          remoteMessage.notification?.title ??
-          'Notifikasi',
-      );
-
-      const body = String(
-        remoteMessage.data?.body ?? remoteMessage.notification?.body ?? '',
-      );
-
-      await notifee.displayNotification({
-        title,
-        body,
-        data: normalizeData(remoteMessage.data),
-        android: {
-          channelId: 'custom-sound-v2',
-          sound: 'notif_bencana',
-          pressAction: {
-            id: 'default',
-          },
-        },
-      });
+    const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
+      if (remoteMessage?.data) {
+        markOpenedFromNotification(remoteMessage.data);
+      }
     });
 
     return unsubscribe;
   }, []);
 
-  // 🔔 HANDLE APP OPEN FROM NOTIFICATION
+  // 🔔 HANDLE CLICK (APP MATI)
   useEffect(() => {
-    async function handleInitialNotification() {
-      const initial = await notifee.getInitialNotification();
-      if (!initial) return;
-
-      const data = initial.notification?.data;
-
-      if (data) {
-        markOpenedFromNotification(data);
-      }
-    }
-
-    handleInitialNotification();
+    messaging()
+      .getInitialNotification()
+      .then(remoteMessage => {
+        if (remoteMessage?.data) {
+          markOpenedFromNotification(remoteMessage.data);
+        }
+      });
   }, []);
+
+  messaging().onNotificationOpenedApp(remoteMessage => {
+    console.log('NOTIF DITEKAN:', remoteMessage?.data);
+
+    if (remoteMessage?.data) {
+      markOpenedFromNotification(remoteMessage.data);
+    }
+  });
 
   // 🔔 HANDLE NAVIGATION DELAY
   useEffect(() => {
@@ -133,12 +117,12 @@ const App = () => {
           <UserProvider>
             <LayoutProvider>
               <LocationProvider>
-              <NavigationContainer
-                ref={navigationRef}
-                onReady={flushPendingNavigation}
-              >
-                <AppNavigator />
-              </NavigationContainer>
+                <NavigationContainer
+                  ref={navigationRef}
+                  onReady={flushPendingNavigation}
+                >
+                  <AppNavigator />
+                </NavigationContainer>
               </LocationProvider>
               <Toast />
             </LayoutProvider>

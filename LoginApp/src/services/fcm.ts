@@ -18,16 +18,17 @@ export async function registerFcmToken() {
     const allowed = await requestPermission();
     if (!allowed) return;
 
-    // 🔥 WAJIB
     await messaging().registerDeviceForRemoteMessages();
+
+    // 🔥 HAPUS TOKEN LAMA
+    await messaging().deleteToken();
 
     const token = await messaging().getToken();
     if (!token) return;
 
-    console.log('🔥 FCM TOKEN =>', token);
+    console.log('🔥 FCM TOKEN BARU =>', token);
 
-    // 🔒 AUTH REQUIRED (SETELAH LOGIN)
-    await API.post('/save-fcm-token', {
+    await API.post('/update-fcm-token', {
       fcm_token: token,
     });
   } catch (e) {

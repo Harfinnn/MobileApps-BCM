@@ -52,7 +52,7 @@ const InfoGempaBumiScreen = () => {
     fetchGempa(true);
     setShowSearch(false);
     setHideHeaderLeft(false);
-    setHideHeader(false)
+    setHideHeader(false);
     setOnBack(() => () => {
       navigation.navigate('Main', { screen: 'Home' });
       return true;
@@ -74,9 +74,11 @@ const InfoGempaBumiScreen = () => {
     try {
       if (showLoading) setLoading(true);
 
+      const timestamp = Date.now();
+
       const [mainRes, listRes] = await Promise.all([
-        fetch(AUTOGEMPA_URL),
-        fetch(DIRASAKAN_URL),
+        fetch(`${AUTOGEMPA_URL}?t=${timestamp}`),
+        fetch(`${DIRASAKAN_URL}?t=${timestamp}`),
       ]);
 
       const mainJson = await mainRes.json();
@@ -84,7 +86,15 @@ const InfoGempaBumiScreen = () => {
 
       if (mainJson?.Infogempa?.gempa) {
         setMainGempa(mainJson.Infogempa.gempa);
+
+        // debug opsional
+        console.log(
+          'LATEST GEMPA:',
+          mainJson.Infogempa.gempa.Tanggal,
+          mainJson.Infogempa.gempa.Jam,
+        );
       }
+
       if (Array.isArray(listJson?.Infogempa?.gempa)) {
         setListGempa(listJson.Infogempa.gempa);
       }

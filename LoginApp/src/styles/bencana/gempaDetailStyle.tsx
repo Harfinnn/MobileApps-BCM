@@ -170,16 +170,16 @@ export default StyleSheet.create({
     marginBottom: 4,
   },
   distanceBadge: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#cbcbcb',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
   distanceText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000000',
   },
   priorityBadge: {
     backgroundColor: '#FFF1F2',

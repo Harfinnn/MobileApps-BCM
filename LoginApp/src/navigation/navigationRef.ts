@@ -60,6 +60,40 @@ export function flushPendingNavigation() {
     if (!data?.type) return;
 
     switch (data.type) {
+      case 'gempa':
+        if (!data) {
+          console.log('DATA NOTIF KOSONG');
+          return;
+        }
+
+        navigationRef.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'Main',
+                params: {
+                  screen: 'GempaDetail',
+                  params: {
+                    gempa: {
+                      Wilayah: data.wilayah ?? '-',
+                      Magnitude: data.magnitude ?? '-',
+                      Tanggal: data.tanggal ?? '-',
+                      Jam: data.jam ?? '-',
+                      Kedalaman: data.kedalaman ?? '-',
+                      Coordinates: data.coordinates ?? '-',
+                      Dirasakan: data.dirasakan ?? '-',
+                      Potensi: data.potensi ?? '-',
+                      Shakemap: data.shakemap ?? '',
+                    },
+                  },
+                },
+              },
+            ],
+          }),
+        );
+        break;
+
       case 'bencana':
         navigationRef.dispatch(
           CommonActions.reset({

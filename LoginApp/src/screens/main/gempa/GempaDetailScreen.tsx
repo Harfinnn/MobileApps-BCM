@@ -223,7 +223,7 @@ const GempaDetailScreen = () => {
               flexDirection: 'row',
               justifyContent: 'space-between',
               alignItems: 'flex-end',
-              marginBottom: 16,
+              marginBottom: 12,
             }}
           >
             <View>
@@ -282,60 +282,74 @@ const GempaDetailScreen = () => {
           {/* LIST DENGAN ANIMASI */}
           {showRadius && (
             <View>
-              {affectedUnits.map((unit, index) => {
-                const impact = getImpactLevel(unit.distance);
+              {affectedUnits.length === 0 ? (
+                <Text
+                  style={{
+                    textAlign: 'center',
+                    marginTop: 10,
+                    color: '#64748B',
+                  }}
+                >
+                  Tidak ada unit dalam radius 50 km dari lokasi gempa
+                </Text>
+              ) : (
+                affectedUnits.map((unit, index) => {
+                  const impact = getImpactLevel(unit.distance);
 
-                return (
-                  <Animated.View
-                    key={index}
-                    style={[
-                      styles.unitCard,
-                      { transform: [{ scale: scaleAnim }] },
-                    ]}
-                  >
-                    <View style={styles.unitInfo}>
-                      <View>
-                        <Text style={styles.unitName}>{unit.mjs_nama}</Text>
+                  return (
+                    <Animated.View
+                      key={index}
+                      style={[
+                        styles.unitCard,
+                        { transform: [{ scale: scaleAnim }] },
+                      ]}
+                    >
+                      <View style={styles.unitInfo}>
+                        <View>
+                          <Text style={styles.unitName}>{unit.mjs_nama}</Text>
 
-                        <View style={styles.distanceBadge}>
-                          <Text style={styles.distanceText}>
-                            {unit.distance.toFixed(1)} km dari episenter
+                          <View style={styles.distanceBadge}>
+                            <Text style={styles.distanceText}>
+                              {unit.distance.toFixed(1)} km dari episenter
+                            </Text>
+                          </View>
+
+                          <Text
+                            style={{
+                              marginTop: 10,
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: impact.color,
+                            }}
+                          >
+                            ● {impact.label}
                           </Text>
                         </View>
 
-                        {/* ✅ STATUS DAMPAK */}
-                        <Text
-                          style={{
-                            marginTop: 6,
-                            fontSize: 11,
-                            fontWeight: '700',
-                            color: impact.color,
-                          }}
-                        >
-                          ● {impact.label}
-                        </Text>
+                        {index === 0 && (
+                          <View style={styles.priorityBadge}>
+                            <Text style={styles.priorityText}>PRIORITAS</Text>
+                          </View>
+                        )}
                       </View>
 
-                      {index === 0 && (
-                        <View style={styles.priorityBadge}>
-                          <Text style={styles.priorityText}>PRIORITAS</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    <View style={styles.distanceTrack}>
-                      <View
-                        style={[
-                          styles.distanceFill,
-                          {
-                            width: `${Math.max(10, 100 - unit.distance * 2)}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </Animated.View>
-                );
-              })}
+                      <View style={styles.distanceTrack}>
+                        <View
+                          style={[
+                            styles.distanceFill,
+                            {
+                              width: `${Math.max(
+                                10,
+                                100 - unit.distance * 2,
+                              )}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                    </Animated.View>
+                  );
+                })
+              )}
             </View>
           )}
         </View>

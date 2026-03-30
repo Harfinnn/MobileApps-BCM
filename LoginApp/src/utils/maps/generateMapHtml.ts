@@ -48,10 +48,12 @@ preferCanvas:true
 }).setView([-2.5,118],5);
 
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{ maxZoom:19 }
-).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap & CartoDB',
+  subdomains: 'abcd',
+  maxZoom: 19,
+  maxNativeZoom: 18,
+}).addTo(map);
 
 
 
@@ -62,6 +64,7 @@ chunkDelay:50,
 maxClusterRadius:60,
 spiderfyOnMaxZoom:true,
 showCoverageOnHover:false,
+removeOutsideVisibleBounds:true,
 animate:false
 });
 
@@ -115,6 +118,8 @@ activeMarker = marker;
 function addMarkers(list){
 
 list.forEach(function(item){
+
+if(markerMap[item.mjs_id]) return;
 
 if(!item.mjs_lat || !item.mjs_long) return;
 
