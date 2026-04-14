@@ -1,4 +1,12 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+// Path: src/screens/FileScreen.tsx
+
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -12,54 +20,69 @@ import {
   UIManager,
   Linking,
   Alert,
+  BackHandler,
+  LayoutAnimation,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import LottieView from 'lottie-react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import Markdown from 'react-native-markdown-display';
+
+// Asumsi import services & context
 import {
   sendMessage,
   getChatHistory,
   clearChatHistory,
-  getRemainingChat,
 } from '../../services/chatService';
-import { styles } from '../../styles/AI/BotStyle';
 import { useLayout } from '../../contexts/LayoutContext';
-import LottieView from 'lottie-react-native';
-import ParsedText from 'react-native-parsed-text';
-import Clipboard from '@react-native-clipboard/clipboard';
+
+// IMPORT KEDUA STYLES DARI BERKAS EKSTERNAL
+import { styles, markdownStyles } from '../../styles/AI/BotStyle';
 
 type Message = {
   id: string;
   text: string;
   sender: 'user' | 'ai';
+  timestamp: string;
 };
+
+const getCurrentTime = () => {
+  return new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const QUICK_CHATS = [
+  'Bagaimana cuaca hari ini?',
+  'Apa isi tas siaga bencana?',
+  'Tanda-tanda akan terjadi tsunami',
+  'Cara berlindung saat gempa bumi',
+  'Apa itu mitigasi bencana?',
+];
 
 function FileScreen({ navigation }: any) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const { setHideHeader } = useLayout();
-
-  // State untuk Custom Modal Hapus Riwayat
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [remaining, setRemaining] = useState<number>(100);
   const flatListRef = useRef<FlatList>(null);
+  const { setHideHeader } = useLayout();
 
   const copyMessage = (text: string) => {
     Clipboard.setString(text);
-
     Alert.alert('Teks Disalin', 'Pesan berhasil disalin ke clipboard.');
   };
 
   useLayoutEffect(() => {
-    if (navigation) {
-      navigation.setOptions({
-        headerShown: false,
-      });
-    }
+    if (navigation) navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   useEffect(() => {
     setHideHeader(true);
+    return () => setHideHeader(false);
   }, []);
 
   useEffect(() => {
@@ -68,90 +91,94 @@ function FileScreen({ navigation }: any) {
     }
   }, []);
 
-  useEffect(() => {
-    const loadRemaining = async () => {
-      try {
-        const data = await getRemainingChat();
-        setRemaining(data.remaining);
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
-    loadRemaining();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate('Main', { screen: 'Home' });
+        return true;
+      };
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+      return () => subscription.remove();
+    }, [navigation]),
+  );
 
   const executeClearChat = async () => {
     setShowDeleteModal(false);
-
     try {
       await clearChatHistory();
-
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setMessages([
         {
           id: 'reset',
           text: 'Riwayat percakapan telah dibersihkan.',
           sender: 'ai',
+          timestamp: getCurrentTime(),
         },
       ]);
-
-      const data = await getRemainingChat();
-      setRemaining(data.remaining);
     } catch (error) {
       console.log(error);
     }
   };
-  const handleSend = async () => {
-    if (input.trim() === '') return;
+
+  // Fungsi utama untuk mengirim pesan (dari input manual maupun Quick Chat)
+  const executeSend = async (textToSend: string) => {
+    if (textToSend.trim() === '') return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: input,
+      text: textToSend,
       sender: 'user',
+      timestamp: getCurrentTime(),
     };
 
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    // setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const response = await sendMessage(input);
-
+      const response = await sendMessage(textToSend);
       const aiMessage: Message = {
         id: Date.now().toString() + '_ai',
         text: response.reply,
         sender: 'ai',
+        timestamp: getCurrentTime(),
       };
 
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setMessages(prev => [...prev, aiMessage]);
-
-      // 🔥 update realtime
-      setRemaining(response.remaining);
     } catch (error) {
       console.log(error);
     } finally {
       setLoading(false);
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      // setTimeout(
+      //   () => flatListRef.current?.scrollToEnd({ animated: true }),
+      //   100,
+      // );
     }
+  };
+
+  // Handler untuk tombol kirim manual
+  const handleSend = () => {
+    executeSend(input);
   };
 
   useEffect(() => {
     const loadHistory = async () => {
       try {
         const history = await getChatHistory();
-
         if (!history || history.length === 0) {
           setMessages([
             {
               id: 'welcome',
-              text: 'Halo 👋 Saya Akbar-AI. Ada yang bisa saya bantu terkait keberlangsungan operasional hari ini?',
+              text: 'Halo 👋 Saya Akbar-AI. **Ada yang bisa saya bantu** terkait keberlangsungan operasional hari ini?',
               sender: 'ai',
+              timestamp: getCurrentTime(),
             },
           ]);
           return;
@@ -162,30 +189,32 @@ function FileScreen({ navigation }: any) {
             id: item.id + '_user',
             text: item.message,
             sender: 'user' as const,
+            timestamp: item.timestamp || getCurrentTime(),
           },
           {
             id: item.id + '_ai',
             text: item.reply,
             sender: 'ai' as const,
+            timestamp: item.replyTimestamp || getCurrentTime(),
           },
         ]);
 
         setMessages(formattedMessages);
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: false });
-        }, 100);
+        setTimeout(
+          () => flatListRef.current?.scrollToEnd({ animated: false }),
+          100,
+        );
       } catch (error) {
-        console.log('Load history error:', error);
         setMessages([
           {
             id: 'welcome',
-            text: 'Halo 👋 Saya Akbar-AI. Ada yang bisa saya bantu terkait keberlangsungan operasional hari ini?',
+            text: 'Halo 👋 Saya Akbar-AI. Ada yang bisa saya bantu?',
             sender: 'ai',
+            timestamp: getCurrentTime(),
           },
         ]);
       }
     };
-
     loadHistory();
   }, []);
 
@@ -197,6 +226,7 @@ function FileScreen({ navigation }: any) {
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
         >
           <View style={styles.container}>
             {/* ===== FLOATING BANNER ===== */}
@@ -211,17 +241,9 @@ function FileScreen({ navigation }: any) {
                 />
                 <View>
                   <Text style={styles.bannerTitle}>Akbar-AI</Text>
-                  <Text
-                    style={[
-                      styles.limitText,
-                      remaining <= 10 && styles.limitDanger,
-                    ]}
-                  >
-                    Limit Chat: {remaining}
-                  </Text>
+                  <Text style={styles.bannerSubtitle}>Asisten Operasional</Text>
                 </View>
               </View>
-
               <TouchableOpacity
                 onPress={() => setShowDeleteModal(true)}
                 activeOpacity={0.7}
@@ -242,40 +264,59 @@ function FileScreen({ navigation }: any) {
               keyExtractor={item => item.id}
               contentContainerStyle={styles.chatContainer}
               showsVerticalScrollIndicator={false}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onLongPress={() => copyMessage(item.text)}
-                  delayLongPress={300}
-                  style={[
-                    styles.bubble,
-                    item.sender === 'user'
-                      ? styles.userBubble
-                      : styles.aiBubble,
-                  ]}
-                >
-                  {item.sender === 'ai' ? (
-                    <ParsedText
-                      style={[styles.text, styles.aiText]}
-                      parse={[
-                        {
-                          type: 'url',
-                          style: styles.linkText,
-                          onPress: (url: string) => {
-                            Linking.openURL(url);
-                          },
-                        },
+              renderItem={({ item }) => {
+                const isAI = item.sender === 'ai';
+                return (
+                  <View
+                    style={[
+                      styles.messageRow,
+                      isAI ? styles.messageRowAI : styles.messageRowUser,
+                    ]}
+                  >
+                    {/* AVATAR AI */}
+                    {isAI && (
+                      <View style={styles.avatarContainer}>
+                        <Text style={styles.avatarEmoji}>🤖</Text>
+                      </View>
+                    )}
+
+                    {/* BUBBLE CHAT */}
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onLongPress={() => copyMessage(item.text)}
+                      delayLongPress={300}
+                      style={[
+                        styles.bubble,
+                        isAI ? styles.aiBubble : styles.userBubble,
                       ]}
                     >
-                      {item.text}
-                    </ParsedText>
-                  ) : (
-                    <Text style={[styles.text, styles.userText]}>
-                      {item.text}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
+                      {isAI ? (
+                        <Markdown
+                          style={markdownStyles}
+                          onLinkPress={url => {
+                            Linking.openURL(url);
+                            return true;
+                          }}
+                        >
+                          {item.text}
+                        </Markdown>
+                      ) : (
+                        <Text style={styles.userText}>{item.text}</Text>
+                      )}
+
+                      {/* TIMESTAMP */}
+                      <Text
+                        style={[
+                          styles.timestampText,
+                          isAI ? styles.timestampAI : styles.timestampUser,
+                        ]}
+                      >
+                        {item.timestamp}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              }}
             />
 
             {/* ===== LOADING ===== */}
@@ -283,73 +324,97 @@ function FileScreen({ navigation }: any) {
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#00A39D" />
                 <Text style={styles.loadingText}>
-                  Asisten sedang mengetik...
+                  Akbar-AI sedang mengetik...
                 </Text>
               </View>
             )}
 
-            {/* ===== INPUT ===== */}
+            {/* ===== BAGIAN BAWAH (QUICK CHAT + INPUT) ===== */}
             <View style={styles.inputWrapper}>
-              <View style={styles.inputContainer}>
-                <TextInput
-                  value={input}
-                  onChangeText={text => {
-                    const clean = text.replace(/[\u{1F600}-\u{1F6FF}]/gu, '');
-                    setInput(clean);
-                  }}
-                  placeholder="Tanya Akbar-AI..."
-                  placeholderTextColor="#A0AAB5"
-                  style={styles.input}
-                  multiline
-                  maxLength={500}
-                />
-                <TouchableOpacity
-                  style={[
-                    styles.sendButton,
-                    input.trim() === '' ? styles.sendButtonDisabled : null,
-                  ]}
-                  onPress={handleSend}
-                  disabled={input.trim() === ''}
-                >
-                  <Text style={styles.sendText}>Kirim</Text>
-                </TouchableOpacity>
+              {/* ===== QUICK CHAT SCROLL VIEW (TAMPIL JIKA CHAT KOSONG) ===== */}
+              {messages.length <= 1 && (
+                <View style={styles.quickChatWrapper}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.quickChatContainer}
+                  >
+                    {QUICK_CHATS.map((item, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.quickChatButton,
+                          loading && styles.quickChatButtonDisabled,
+                        ]}
+                        onPress={() => executeSend(item)}
+                        disabled={loading} // Cegah spam klik saat loading
+                      >
+                        <Text
+                          style={[
+                            styles.quickChatText,
+                            loading && styles.quickChatTextDisabled,
+                          ]}
+                        >
+                          {item}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* ===== INPUT BOX ===== */}
+              <View style={{ paddingHorizontal: 16 }}>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    value={input}
+                    onChangeText={setInput}
+                    placeholder="Ketik pesan..."
+                    placeholderTextColor="#A0AAB5"
+                    style={styles.input}
+                    multiline
+                    maxLength={500}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.sendButton,
+                      input.trim() === '' ? styles.sendButtonDisabled : null,
+                    ]}
+                    onPress={handleSend}
+                    disabled={input.trim() === '' || loading}
+                  >
+                    <Text style={styles.sendText}>Kirim</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
 
-      {/* ===== MODAL DI LUAR SAFEAREA ===== */}
+      {/* ===== CUSTOM MODAL ===== */}
       {showDeleteModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            {/* Tambahan Icon agar lebih menarik */}
             <View style={styles.modalIconContainer}>
               <Text style={{ fontSize: 28 }}>🗑️</Text>
             </View>
-
             <Text style={styles.modalTitle}>Hapus Riwayat?</Text>
-
             <Text style={styles.modalDesc}>
-              Semua percakapan dengan Akbar-AI akan dihapus permanen dan
-              tidak dapat dikembalikan.
+              Semua percakapan dengan Akbar-AI akan dihapus permanen.
             </Text>
-
             <View style={styles.modalBtnRow}>
               <TouchableOpacity
                 style={styles.btnCancel}
                 onPress={() => setShowDeleteModal(false)}
-                activeOpacity={0.7}
               >
                 <Text style={styles.btnCancelText}>Batal</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.btnConfirm}
                 onPress={executeClearChat}
-                activeOpacity={0.7}
               >
-                <Text style={styles.btnConfirmText}>Ya, Hapus</Text>
+                <Text style={styles.btnConfirmText}>Hapus</Text>
               </TouchableOpacity>
             </View>
           </View>

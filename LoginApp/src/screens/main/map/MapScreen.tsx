@@ -15,6 +15,7 @@ import {
   Platform,
   Alert,
   FlatList,
+  BackHandler,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import {
@@ -25,6 +26,8 @@ import {
   Search,
   Home,
 } from 'lucide-react-native';
+
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
@@ -51,12 +54,34 @@ const MapScreen = () => {
   const [mapReady, setMapReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const navigation = useNavigation<any>();
+
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate('Main', { screen: 'Home' });
+        return true; // block default back
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+
+      return () => subscription.remove();
+    }, [navigation]),
+  );
+
   /* ================= INIT ================= */
   useEffect(() => {
     setTitle('Peta Unit Kerja');
     setShowBack(false);
     setHideHeader(true);
     fetchUnits();
+
+    return () => {
+      setHideHeader(false);
+    };
   }, []);
 
   /* ================= FETCH API ================= */

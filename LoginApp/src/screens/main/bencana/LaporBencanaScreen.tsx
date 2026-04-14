@@ -34,6 +34,7 @@ type Bencana = {
 type FormState = {
   userId: number | null;
   nama: string;
+  noHp: string;
   unitKerjaId: number | null;
   unitKerjaNama: string;
   jenisBencana: number | null;
@@ -57,6 +58,7 @@ const LaporBencanaScreen = () => {
   const [form, setForm] = useState<FormState>({
     userId: null,
     nama: '',
+    noHp: '',
     unitKerjaId: null,
     unitKerjaNama: '',
     jenisBencana: null,
@@ -94,6 +96,7 @@ const LaporBencanaScreen = () => {
         ...prev,
         userId: user.user_id ?? null,
         nama: user.user_nama ?? '',
+        noHp: user.user_hp ?? '',
         unitKerjaId: user.selindo?.mjs_id ?? user.user_selindo ?? null,
         unitKerjaNama: user.selindo?.mjs_nama ?? '',
       }));
@@ -320,9 +323,9 @@ const LaporBencanaScreen = () => {
               errors.terdampak && styles.errorBorder,
             ]}
           >
-            <View>
-              <Text style={styles.toggleLabel}>Apakah terdampak?</Text>
-            </View>
+            <Text style={styles.toggleLabel}>
+              Apakah gedung kantor terkena bencana ?
+            </Text>
 
             <YesNoToggle
               value={form.terdampak}
@@ -345,9 +348,9 @@ const LaporBencanaScreen = () => {
               errors.adaKerusakan && styles.errorBorder,
             ]}
           >
-            <View>
-              <Text style={styles.toggleLabel}>Apakah ada kerusakan?</Text>
-            </View>
+            <Text style={styles.toggleLabel}>
+              Apakah terdapat kerusakan pada gedung kantor ?
+            </Text>
 
             <YesNoToggle
               value={form.adaKerusakan}

@@ -30,7 +30,8 @@ export default function ImageSlider() {
     timerRef.current = setInterval(() => {
       if (isUserInteracting.current) return;
 
-      const nextIndex = currentIndex.current + 1;
+      const nextIndex =
+        currentIndex.current + 1 >= DATA.length ? 0 : currentIndex.current + 1;
 
       flatListRef.current?.scrollToIndex({
         index: nextIndex,
@@ -49,6 +50,10 @@ export default function ImageSlider() {
   useEffect(() => {
     startAutoSlide();
     return () => stopAutoSlide();
+  }, []);
+
+  useEffect(() => {
+    currentIndex.current = 0;
   }, []);
 
   return (

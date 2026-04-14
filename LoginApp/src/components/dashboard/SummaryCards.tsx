@@ -1,22 +1,81 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
 import styles from '../../styles/dashboard/summaryCardStyle';
+import LinearGradient from 'react-native-linear-gradient';
 
 type Props = {
   data: {
-    hari_ini: number;
-    aktif: number;
-    selesai: number;
-    darurat: number;
+    total: number;
+    aman: number;
+    waspada: number;
+    bahaya: number;
   };
+  timeFilter: 'Hari Ini' | '7 Hari' | '30 Hari';
+  loading?: boolean;
 };
 
-export default function SummaryCards({ data }: Props) {
+/* ================= COUNT UP FIX ================= */
+
+const CountUp = ({ value }: { value: number }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const duration = 800;
+    const stepTime = 16;
+    const increment = value / (duration / stepTime);
+
+    const interval = setInterval(() => {
+      start += increment;
+
+      if (start >= value) {
+        start = value;
+        clearInterval(interval);
+      }
+
+      setDisplayValue(Math.floor(start));
+    }, stepTime);
+
+    return () => clearInterval(interval);
+  }, [value]);
+
+  return <Text>{displayValue}</Text>;
+};
+
+/* ================= SHIMMER ================= */
+
+const Shimmer = () => {
+  return (
+    <View
+      style={{
+        height: 20,
+        borderRadius: 6,
+        overflow: 'hidden',
+        backgroundColor: '#E5E7EB',
+      }}
+    >
+      <LinearGradient
+        colors={['#E5E7EB', '#F3F4F6', '#E5E7EB']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={{ flex: 1 }}
+      />
+    </View>
+  );
+};
+
+/* ================= MAIN ================= */
+
+export default function SummaryCards({
+  data,
+  timeFilter,
+  loading = false,
+}: Props) {
   const items = [
-    { label: 'Hari Ini', value: data.hari_ini },
-    { label: 'Aktif', value: data.aktif },
-    { label: 'Selesai', value: data.selesai },
-    { label: 'Darurat', value: data.darurat, danger: true },
+    { label: `Total (${timeFilter})`, value: data.total },
+    { label: 'Aman', value: data.aman },
+    { label: 'Waspada', value: data.waspada, warning: true },
+    { label: 'Bahaya', value: data.bahaya, danger: true },
   ];
 
   return (
@@ -27,21 +86,30 @@ export default function SummaryCards({ data }: Props) {
           style={[
             styles.card,
             item.danger && styles.cardDanger,
+            item.warning && { backgroundColor: '#FEF3C7' },
           ]}
         >
-          <Text
-            style={[
-              styles.value,
-              item.danger && styles.valueDanger,
-            ]}
-          >
-            {item.value}
-          </Text>
+          {/* VALUE */}
+          {loading ? (
+            <Shimmer />
+          ) : (
+            <Text
+              style={[
+                styles.value,
+                item.danger && styles.valueDanger,
+                item.warning && { color: '#D97706' },
+              ]}
+            >
+              <CountUp value={item.value} />
+            </Text>
+          )}
 
+          {/* LABEL */}
           <Text
             style={[
               styles.label,
               item.danger && styles.labelDanger,
+              item.warning && { color: '#D97706' },
             ]}
           >
             {item.label}

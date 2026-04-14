@@ -61,11 +61,41 @@ export function flushPendingNavigation() {
 
     switch (data.type) {
       case 'gempa':
-        if (!data) {
-          console.log('DATA NOTIF KOSONG');
+        const jabatan = Number(data.user_jabatan || 0);
+
+        // 👑 SUPERADMIN → DETAIL
+        if (jabatan === 1) {
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Main',
+                  params: {
+                    screen: 'GempaDetail',
+                    params: {
+                      gempa: {
+                        Wilayah: data.wilayah ?? '-',
+                        Magnitude: data.magnitude ?? '-',
+                        Tanggal: data.tanggal ?? '-',
+                        Jam: data.jam ?? '-',
+                        Kedalaman: data.kedalaman ?? '-',
+                        Coordinates: data.coordinates ?? '-',
+                        Dirasakan: data.dirasakan ?? '-',
+                        Potensi: data.potensi ?? '-',
+                        Shakemap: data.shakemap ?? '',
+                      },
+                    },
+                  },
+                },
+              ],
+            }),
+          );
+
           return;
         }
 
+        // 👤 USER BIASA → HOME + TRIGGER POPUP
         navigationRef.dispatch(
           CommonActions.reset({
             index: 0,
@@ -73,25 +103,17 @@ export function flushPendingNavigation() {
               {
                 name: 'Main',
                 params: {
-                  screen: 'GempaDetail',
+                  screen: 'Home',
                   params: {
-                    gempa: {
-                      Wilayah: data.wilayah ?? '-',
-                      Magnitude: data.magnitude ?? '-',
-                      Tanggal: data.tanggal ?? '-',
-                      Jam: data.jam ?? '-',
-                      Kedalaman: data.kedalaman ?? '-',
-                      Coordinates: data.coordinates ?? '-',
-                      Dirasakan: data.dirasakan ?? '-',
-                      Potensi: data.potensi ?? '-',
-                      Shakemap: data.shakemap ?? '',
-                    },
+                    fromGempaNotif: true,
+                    gempaData: data,
                   },
                 },
               },
             ],
           }),
         );
+
         break;
 
       case 'bencana':

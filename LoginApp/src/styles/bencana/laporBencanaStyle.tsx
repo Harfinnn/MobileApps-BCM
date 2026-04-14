@@ -140,6 +140,9 @@ export default StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#334155',
+    flex: 1, 
+    flexWrap: 'wrap', 
+    marginRight: 10, 
   },
   toggleSub: {
     fontSize: 12,

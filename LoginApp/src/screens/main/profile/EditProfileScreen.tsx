@@ -261,7 +261,7 @@ export default function EditProfileScreen({ navigation }: any) {
           <Text style={styles.label}>No Handphone</Text>
 
           <View style={styles.inputContainer}>
-            <Phone size={20} color="#94A3B8" style={styles.inputIcon} />
+            <Phone size={20} color="#808080" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               value={hp}

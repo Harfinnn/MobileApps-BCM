@@ -4,6 +4,8 @@ import notifee, { EventType } from '@notifee/react-native';
 import App from './App';
 import { name as appName } from './app.json';
 import { markOpenedFromNotification } from './src/navigation/navigationRef';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 // convert semua data jadi string
 function normalizeData(data) {
@@ -22,28 +24,32 @@ function normalizeData(data) {
 
 // BACKGROUND / KILLED
 messaging().setBackgroundMessageHandler(async remoteMessage => {
-  const title =
-    (remoteMessage.data && remoteMessage.data.title) ||
-    (remoteMessage.notification && remoteMessage.notification.title) ||
-    'Notifikasi';
+  const data = remoteMessage.data;
 
-  const body =
-    (remoteMessage.data && remoteMessage.data.body) ||
-    (remoteMessage.notification && remoteMessage.notification.body) ||
-    '';
+  if (!data) return;
+
+  // ✅ SIMPAN HANYA GEMPA + USER BIASA
+  if (data.type === 'gempa' && data.user_jabatan !== '1') {
+    await AsyncStorage.setItem(
+      'LAST_GEMPA_USER',
+      JSON.stringify(data),
+    );
+
+    await AsyncStorage.setItem('GEMPA_REPORT_STATUS', 'pending');
+  }
 
   await notifee.displayNotification({
-    title,
-    body,
-    data: normalizeData(remoteMessage.data),
-    android: {
-      channelId: 'custom-sound-v2',
-      sound: 'notif_bencana',
-      pressAction: {
-        id: 'default',
-      },
-    },
-  });
+        title: String(data.title || 'Notifikasi'),
+        body: String(data.body || ''),
+        data: normalizeData(data),
+        android: {
+          channelId: 'sound_bencana_v1', 
+          pressAction: {
+            id: 'default',
+          },
+          sound: 'notif_bencana', 
+        },
+      });
 });
 
 // HANDLE CLICK

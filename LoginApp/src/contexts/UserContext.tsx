@@ -12,12 +12,14 @@ import LogoutAlert from '../components/modal/LogoutAlert';
 export type User = {
   user_id: number;
   user_nama: string;
+  user_hp?: string;
   user_status?: number;
   user_selindo?: string | number;
   user_foto?: string;
   user_jabatan?: number;
 
   jabatan?: {
+    jab_id: number;
     jab_nama?: string;
   };
 };

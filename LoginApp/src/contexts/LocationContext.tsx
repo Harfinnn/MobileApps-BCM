@@ -10,34 +10,40 @@ export const LocationProvider = ({ children }: any) => {
     let watchId: number | null = null;
 
     const startGPS = async () => {
+      /* =========================
+         ⚡ 1. FAST LOCATION (CACHE / NETWORK)
+      ========================= */
       Geolocation.getCurrentPosition(
         position => {
-          console.log('INITIAL GPS:', position.coords);
+          console.log('⚡ FAST GPS:', position.coords);
           setLocation(position.coords);
         },
         error => {
-          console.log('INITIAL GPS ERROR:', error);
+          console.log('FAST GPS ERROR:', error);
         },
         {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
+          enableHighAccuracy: false, // 🔥 cepat banget
+          timeout: 5000,
+          maximumAge: 20000, // 🔥 pakai cache GPS
         },
       );
 
+      /* =========================
+         🎯 2. ACCURATE GPS (REAL UPDATE)
+      ========================= */
       watchId = Geolocation.watchPosition(
         position => {
-          console.log('GPS UPDATE:', position.coords);
+          console.log('🎯 GPS UPDATE:', position.coords);
           setLocation(position.coords);
         },
         error => {
           console.log('GPS ERROR:', error);
         },
         {
-          enableHighAccuracy: true,
-          distanceFilter: 1000,
-          interval: 120000,
-          fastestInterval: 60000,
+          enableHighAccuracy: true, // 🔥 akurat tapi belakangan
+          distanceFilter: 100, // 🔥 update tiap 10 meter
+          interval: 7000, // 🔥 5 detik
+          fastestInterval: 4000,
         },
       );
     };

@@ -99,8 +99,18 @@ export default function DashboardHeader({ onLogoutPress }: any) {
 
   /* ================= HANDLERS ================= */
   const handleBack = useCallback(() => {
-    if (onBack) return onBack();
-    if (navigation.canGoBack()) return navigation.goBack();
+    if (onBack) {
+      requestAnimationFrame(() => {
+        onBack();
+      });
+      return;
+    }
+
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+
     navigation.navigate('Main', { screen: 'Home' });
   }, [onBack, navigation]);
 

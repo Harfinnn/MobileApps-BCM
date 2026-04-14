@@ -1,27 +1,15 @@
 import { StyleSheet } from 'react-native';
 
 export default StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-
+  container: { flex: 1, backgroundColor: '#ffffff' },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    
   },
-
-  listContent: {
-    paddingBottom: 24,
-  },
-
-  headerContainer: {
-    paddingBottom: 8,
-    paddingTop: 60
-  },
+  listContent: { paddingBottom: 24 },
+  headerContainer: { paddingBottom: 8, paddingTop: 60 },
 
   sectionLabel: {
     fontSize: 12,
@@ -33,8 +21,36 @@ export default StyleSheet.create({
     marginBottom: 12,
   },
 
-  /* ================= MAP ================= */
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 24,
+    marginBottom: 12,
+  },
 
+  sectionLabelInline: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#9CA3AF',
+    letterSpacing: 1.2,
+  },
+
+  activeFilterText: {
+    fontWeight: '600',
+    color: '#3B82F6',
+    textTransform: 'capitalize',
+  },
+
+  // Menyederhanakan area sentuh untuk ikon
+  iconButton: {
+    padding: 6, // Memberi ruang agar mudah diklik oleh jari
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  /* ================= MAP ================= */
   mapCard: {
     height: 240,
     marginHorizontal: 16,
@@ -49,39 +65,7 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3F4F6',
   },
-
-  map: {
-    flex: 1,
-  },
-
-  mapBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#EF4444',
-    marginRight: 6,
-  },
-
-  mapBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#374151',
-  },
-
+  map: { flex: 1 },
   mapPlaceholder: {
     height: 100,
     marginHorizontal: 16,
@@ -93,11 +77,7 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D1D5DB',
   },
-
-  emptyText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-  },
+  emptyText: { fontSize: 13, color: '#9CA3AF' },
 
   zoomControls: {
     position: 'absolute',
@@ -108,7 +88,6 @@ export default StyleSheet.create({
     overflow: 'hidden',
     elevation: 6,
   },
-
   zoomBtn: {
     width: 35,
     height: 35,
@@ -117,7 +96,6 @@ export default StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#E5E7EB',
   },
-
   zoomBtnReset: {
     width: 35,
     height: 35,
@@ -125,52 +103,39 @@ export default StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F8FAFC',
   },
+  zoomText: { fontSize: 22, fontWeight: '800', color: '#0F172A' },
+  zoomResetText: { fontSize: 18, fontWeight: '800', color: '#2563EB' },
 
-  zoomText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-
-  zoomResetText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#2563EB',
-  },
-
-  /* ================= FILTER WAKTU ================= */
-
+  /* ================= FILTER CHIPS ================= */
   filterRow: {
     flexDirection: 'row',
     gap: 8,
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 5,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
-
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginRight: 8,
   },
-
   filterChipActive: {
     backgroundColor: '#1A73E8',
+    borderColor: 'transparent',
   },
-
   filterText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#111827',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
   },
-
   filterTextActive: {
     color: '#FFFFFF',
   },
 
   /* ================= LIST ================= */
-
   itemWrapper: {
     marginHorizontal: 16,
     marginBottom: 12,

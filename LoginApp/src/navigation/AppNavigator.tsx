@@ -30,6 +30,9 @@ import F3dScreen from '../screens/main/forecast/F3dScreen';
 import EditAboutScreen from '../screens/main/profile/EditAboutScreen';
 import { useUser } from '../contexts/UserContext';
 import ChangePasswordFirstScreen from '../screens/auth/ChangePasswordFirstScreen';
+import LaporGempaScreen from '../screens/main/bencana/LaporGempaScreen';
+import BookScreen from '../screens/main/playbook/BookScreen';
+import BookViewScreen from '../screens/main/playbook/BookViewScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -50,6 +53,7 @@ function MainStackScreen() {
         <MainStack.Screen name="File" component={FileScreen} />
         <MainStack.Screen name="F3d" component={F3dScreen} />
         <MainStack.Screen name="Maps" component={MapScreen} />
+        <MainStack.Screen name="Book" component={BookScreen} />
 
         <RootStack.Screen name="ChangePassword" component={ChangePasswordFirstScreen} />
 
@@ -66,6 +70,7 @@ function MainStackScreen() {
         />
 
         <MainStack.Screen name="LaporBencana" component={LaporBencanaScreen} />
+        <MainStack.Screen name="LaporGempa" component={LaporGempaScreen} />
 
         <MainStack.Screen
           name="InfoGempaBumi"
@@ -75,6 +80,7 @@ function MainStackScreen() {
 
         <MainStack.Screen name="RTA" component={RTAScreen} />
         <MainStack.Screen name="Audit" component={AuditScreen} />
+        <MainStack.Screen name="BookView" component={BookViewScreen} />
 
         <MainStack.Screen
           name="PanduanBencana"

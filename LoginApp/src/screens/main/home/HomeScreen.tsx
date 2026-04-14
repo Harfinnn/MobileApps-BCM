@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Pressable,
   Text,
+  Modal,
 } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,11 +23,16 @@ import HomeSkeleton from '../../../components/skeleton/HomeSkeleton';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import API from '../../../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import styles from '../../../styles/dashboard/homeStyle';
 
+import { useRoute } from '@react-navigation/native';
+
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+
   const { setShowBack, setHideNavbar, setShowSearch } = useLayout();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -34,6 +40,8 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [newsData, setNewsData] = useState<any[]>([]);
   const [panduan, setPanduan] = useState([]);
+  const [showGempaPopup, setShowGempaPopup] = useState(false);
+  const [gempaData, setGempaData] = useState<any>(null);
 
   const { user } = useUser();
   const isSuperAdmin = user?.jabatan?.jab_id === 1;
@@ -67,6 +75,76 @@ const HomeScreen = () => {
     setHideHeader(false);
   }, []);
 
+  useEffect(() => {
+    if (!showGempaPopup) return;
+
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => true, // 🚫 BLOCK
+    );
+
+    return () => backHandler.remove();
+  }, [showGempaPopup]);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      const status = await AsyncStorage.getItem('GEMPA_REPORT_STATUS');
+
+      if (status === 'done') {
+        setShowGempaPopup(false);
+      }
+    };
+
+    const unsubscribe = navigation.addListener('focus', checkStatus);
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (route.params?.fromGempaNotif) {
+      setGempaData(route.params.gempaData);
+      setShowGempaPopup(true);
+
+      // 🔥 reset param supaya tidak muncul lagi saat re-render
+      navigation.setParams({
+        fromGempaNotif: false,
+        gempaData: null,
+      });
+    }
+  }, [route.params]);
+
+  useEffect(() => {
+    if (route.params?.reportDone) {
+      setShowGempaPopup(false);
+
+      navigation.setParams({ reportDone: false });
+    }
+  }, [route.params]);
+
+  useEffect(() => {
+    if (route.params?.fromGempaNotif) return;
+
+    const checkGempa = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('LAST_GEMPA_USER');
+        const status = await AsyncStorage.getItem('GEMPA_REPORT_STATUS');
+
+        if (stored && status === 'pending') {
+          const data = JSON.parse(stored);
+
+          if (data.type === 'gempa' && Number(data.user_jabatan) !== 1) {
+            setGempaData(data);
+            setShowGempaPopup(true);
+          }
+        }
+      } catch (e) {
+        console.log('ERROR GET GEMPA STORAGE', e);
+      }
+    };
+
+    checkGempa();
+  }, [route.params]);
+
   /* ================= FETCH PANDUAN ================= */
 
   useEffect(() => {
@@ -87,6 +165,8 @@ const HomeScreen = () => {
   /* ================= EXIT APP ================= */
   useFocusEffect(
     useCallback(() => {
+      if (showGempaPopup) return; // 🔥 TAMBAHKAN INI
+
       const subscription = BackHandler.addEventListener(
         'hardwareBackPress',
         () => {
@@ -113,7 +193,7 @@ const HomeScreen = () => {
         subscription.remove();
         backPressedOnce.current = false;
       };
-    }, []),
+    }, [showGempaPopup]),
   );
 
   /* ================= LAYOUT STATE ================= */
@@ -208,6 +288,101 @@ const HomeScreen = () => {
         onIT={() => navigation.navigate('DashboardIT')}
         onNonIT={() => navigation.navigate('DashboardNonIT')}
       />
+
+      <Modal
+        visible={showGempaPopup}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: '#fff',
+              padding: 20,
+              borderRadius: 16,
+              width: '100%',
+            }}
+          >
+            {/* HEADER */}
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                marginBottom: 10,
+                color: '#E53935',
+              }}
+            >
+              ⚠️ Gempa Terdeteksi
+            </Text>
+
+            {/* INFO GEMPA */}
+            <Text style={{ marginBottom: 5 }}>
+              📍 Wilayah: {gempaData?.wilayah}
+            </Text>
+            <Text style={{ marginBottom: 5 }}>
+              📊 Magnitude: {gempaData?.magnitude}
+            </Text>
+            <Text style={{ marginBottom: 10 }}>🕒 Jam: {gempaData?.jam}</Text>
+
+            {/* PESAN WAJIB */}
+            <Text
+              style={{
+                marginTop: 10,
+                marginBottom: 20,
+                fontSize: 14,
+                lineHeight: 20,
+              }}
+            >
+              Kami membutuhkan laporan kondisi di lokasi Anda. Silakan segera
+              kirim laporan untuk membantu pemantauan situasi dan respon cepat
+              dari tim terkait.
+            </Text>
+
+            {/* BUTTON WAJIB */}
+            <Pressable
+              onPress={async () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [
+                    {
+                      name: 'LaporGempa',
+                      params: {
+                        fromGempa: true,
+                        gempaData,
+                      },
+                    },
+                  ],
+                });
+              }}
+              style={{
+                backgroundColor: '#E53935',
+                paddingVertical: 14,
+                borderRadius: 10,
+              }}
+            >
+              <Text
+                style={{
+                  color: '#fff',
+                  textAlign: 'center',
+                  fontWeight: 'bold',
+                  fontSize: 15,
+                }}
+              >
+                Isi Laporan Sekarang
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

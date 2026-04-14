@@ -1,19 +1,46 @@
+// Path: src/styles/AI/BotStyle.ts (Sesuaikan dengan struktur foldermu)
+
 import { StyleSheet, Platform } from 'react-native';
 
-export const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F4F7F6',
+// --- MARKDOWN STYLES ---
+export const markdownStyles = StyleSheet.create({
+  body: {
+    color: '#334155',
+    fontSize: 14.5,
+    lineHeight: 22,
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#F4F7F6',
+  strong: {
+    fontWeight: 'bold',
+    color: '#1E2A38',
   },
+  em: {
+    fontStyle: 'italic',
+  },
+  link: {
+    color: '#00A39D',
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  },
+  bullet_list: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  code_inline: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    color: '#EF4444',
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
+});
 
-  /* --- STYLES UNTUK FLOATING BANNER --- */
+// --- MAIN STYLES ---
+export const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: '#F4F7F6' },
+  container: { flex: 1, backgroundColor: '#F4F7F6' },
+
+  // --- BANNER ---
   floatingBanner: {
-    borderWidth: 1,
-    borderColor: '#E2F4F3',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -22,66 +49,50 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2F4F3',
     shadowColor: '#00A39D',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowRadius: 6,
     marginBottom: 10,
     marginTop: 20,
+    elevation: 3,
   },
-  bannerInfo: {
+  bannerInfo: { flexDirection: 'row', alignItems: 'center' },
+  bannerTitle: { fontSize: 16, fontWeight: '700', color: '#1E2A38' },
+  bannerSubtitle: { fontSize: 12, color: '#64748B', fontWeight: '500' },
+  bannerLottie: { width: 50, height: 50, marginRight: 8 },
+  clearLottie: { width: 30, height: 30 },
+
+  // --- CHAT LAYOUT ---
+  chatContainer: { paddingHorizontal: 16, paddingBottom: 20 },
+  messageRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    marginVertical: 8,
+    width: '100%',
   },
-  bannerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1E2A38',
-  },
-  limitText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#10B981',
-    marginTop: 4,
-  },
+  messageRowAI: { justifyContent: 'flex-start' },
+  messageRowUser: { justifyContent: 'flex-end' },
 
-  limitDanger: {
-    color: '#EF4444',
-  },
-  bannerSubtitle: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  clearBtnIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF1F1',
-    alignItems: 'center',
+  // --- AVATAR ---
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E2F4F3',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    marginBottom: 4,
   },
+  avatarEmoji: { fontSize: 18 },
 
-  clearLottie: {
-    width: 30,
-    height: 30,
-    right: 10,
-  },
-
-  clearIconText: {
-    color: '#EF4444',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-
-  /* --- STYLES UNTUK CHAT --- */
-  chatContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-  },
+  // --- BUBBLE ---
   bubble: {
-    padding: 14,
-    marginVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 20,
     maxWidth: '80%',
     shadowColor: '#000',
@@ -89,43 +100,29 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
-
   userBubble: {
     backgroundColor: '#00A39D',
-    alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
-    elevation: 3,
-    shadowColor: '#00A39D',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 2,
   },
-
   aiBubble: {
     backgroundColor: '#FFFFFF',
-    alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: '#E2E8F0',
   },
+  userText: { color: '#FFFFFF', fontSize: 14.5, lineHeight: 22 },
 
-  text: {
-    fontSize: 14.5,
-    lineHeight: 22,
+  // --- TIMESTAMP ---
+  timestampText: {
+    fontSize: 10,
+    marginTop: 4,
+    alignSelf: 'flex-end',
   },
-  userText: {
-    color: '#FFFFFF',
-  },
-  aiText: {
-    color: '#334155',
-  },
-  linkText: {
-  color: '#2563EB',
-  textDecorationLine: 'underline',
-  fontWeight: '500',
-},
+  timestampUser: { color: '#D1FAE5' },
+  timestampAI: { color: '#94A3B8' },
 
-  /* --- INPUT STYLES --- */
+  // --- INPUT ---
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,11 +135,7 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
   },
-  inputWrapper: {
-    marginBottom: 90, // Jarak untuk navigasi bawah
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
+  inputWrapper: { marginBottom: 90, paddingHorizontal: 16, paddingBottom: 10 },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -151,13 +144,9 @@ export const styles = StyleSheet.create({
     paddingLeft: 16,
     paddingRight: 8,
     paddingVertical: 8,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#E2F4F3',
+    elevation: 3,
   },
   input: {
     flex: 1,
@@ -173,47 +162,29 @@ export const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
     marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  sendButtonDisabled: {
-    backgroundColor: '#E2E8F0',
-  },
-  sendText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  sendButtonDisabled: { backgroundColor: '#CBD5E1' },
+  sendText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 
-  bannerLottie: {
-    width: 65,
-    height: 65,
-    right: 10,
-  },
-
-  /* --- CUSTOM MODAL STYLES --- */
+  // --- MODAL ---
   modalOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(15,23,42,0.6)', // Latar belakang sedikit digelapkan
+    backgroundColor: 'rgba(15,23,42,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
   },
   modalBox: {
     backgroundColor: '#FFFFFF',
-    width: '90%', // Diubah ke 90% agar membentuk kartu dialog yang cantik
+    width: '85%',
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
     elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
   },
   modalIconContainer: {
     width: 64,
@@ -223,16 +194,10 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    // Tambahan shadow untuk icon agar terlihat sedikit 3D
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '800', // Dibuat lebih tebal
+    fontWeight: '800',
     color: '#1E2A38',
     marginBottom: 8,
   },
@@ -242,7 +207,6 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
-    paddingHorizontal: 10, // Memberi jarak agar teks tidak terlalu mepet
   },
   modalBtnRow: {
     flexDirection: 'row',
@@ -253,17 +217,13 @@ export const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 16,
-    backgroundColor: '#F8FAFC', // Abu-abu sangat terang
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0', // Tambahan border agar lebih tegas
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     marginRight: 8,
     alignItems: 'center',
   },
-  btnCancelText: {
-    color: '#64748B',
-    fontWeight: '700',
-    fontSize: 15,
-  },
+  btnCancelText: { color: '#64748B', fontWeight: '700', fontSize: 15 },
   btnConfirm: {
     flex: 1,
     paddingVertical: 14,
@@ -271,15 +231,35 @@ export const styles = StyleSheet.create({
     backgroundColor: '#EF4444',
     marginLeft: 8,
     alignItems: 'center',
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
   },
-  btnConfirmText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
+  btnConfirmText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+
+  quickChatWrapper: {
+    marginBottom: 12,
+  },
+  quickChatContainer: {
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  quickChatButton: {
+    backgroundColor: '#E2F4F3',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#00A39D',
+  },
+  quickChatButtonDisabled: {
+    backgroundColor: '#F1F5F9',
+    borderColor: '#CBD5E1',
+  },
+  quickChatText: {
+    color: '#00A39D',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  quickChatTextDisabled: {
+    color: '#94A3B8',
   },
 });

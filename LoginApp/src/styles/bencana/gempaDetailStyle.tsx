@@ -108,7 +108,7 @@ export default StyleSheet.create({
   expandButton: {
     width: 40,
     height: 40,
-    borderRadius: 12, // Kotak dengan sudut halus lebih modern dibanding bulat sempurna
+    borderRadius: 12,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -123,7 +123,7 @@ export default StyleSheet.create({
   },
   iconBar: {
     width: 14,
-    height: 1.5, // Sangat tipis untuk kesan premium
+    height: 1.5,
     backgroundColor: '#0F172A',
     position: 'absolute',
     borderRadius: 1,
@@ -143,6 +143,32 @@ export default StyleSheet.create({
     color: '#0F172A',
   },
 
+  /* --- NEW FILTER CHIPS STYLES --- */
+  filterWrapper: { marginBottom: 16 },
+  filterScroll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterChipActive: { backgroundColor: '#0F172A', borderColor: '#0F172A' },
+  filterChipText: { fontSize: 13, fontWeight: '700', color: '#64748B' },
+  filterChipTextActive: { color: '#FFFFFF' },
+  emptyStateTextMsg: {
+    textAlign: 'center',
+    color: '#64748B',
+    marginVertical: 20,
+  },
+  /* ------------------------------- */
+
   unitCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
@@ -150,7 +176,6 @@ export default StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    // Soft Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.03,
@@ -175,16 +200,18 @@ export default StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     alignSelf: 'flex-start',
+    marginTop: 8,
   },
   distanceText: {
+    marginTop: 4,
     fontSize: 12,
     fontWeight: '700',
     color: '#000000',
   },
   priorityBadge: {
-    backgroundColor: '#FFF1F2',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    backgroundColor: '#0c0c0c',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 8,
   },
   priorityText: {
@@ -200,7 +227,7 @@ export default StyleSheet.create({
   },
   distanceFill: {
     height: '100%',
-    backgroundColor: '#0F172A', // Warna gelap kontras agar terkesan premium
+    backgroundColor: '#0F172A',
     borderRadius: 3,
   },
   emptyState: {
