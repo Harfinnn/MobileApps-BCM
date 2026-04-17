@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
   TouchableOpacity,
   Image,
@@ -18,6 +17,7 @@ import API from '../../../services/api';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import YesNoToggle from '../../../components/common/YesNoToggle';
 
 // IMPORT STYLES DARI FILE TERPISAH
@@ -51,6 +51,7 @@ type AlertState = {
 };
 
 const LaporBencanaScreen = () => {
+  const insets = useSafeAreaInsets();
   const { setTitle, setHideNavbar, setShowBack, setShowSearch } = useLayout();
   const { user } = useUser();
   const navigation = useNavigation<any>();
@@ -255,7 +256,13 @@ const LaporBencanaScreen = () => {
     <View style={styles.mainWrapper}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top + 70,
+            paddingBottom: insets.bottom + 40,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>

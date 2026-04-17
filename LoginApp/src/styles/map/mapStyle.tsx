@@ -12,7 +12,6 @@ const styles = StyleSheet.create({
 
   searchContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
     left: 16,
     right: 16,
     zIndex: 10,

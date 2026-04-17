@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAppConfig } from '../../../contexts/AppConfigContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/profile/aboutStyle';
 import LogoPartner from '../../../assets/BMKG.png';
 import LogoPartner2 from '../../../assets/newfavicon.png';
 
 const AboutScreen = () => {
+  const insets = useSafeAreaInsets();
   const { setTitle, setHideNavbar, setShowBack, setShowSearch } = useLayout();
   const { config } = useAppConfig();
 
@@ -47,7 +49,13 @@ const AboutScreen = () => {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[
+          styles.container,
+          {
+            paddingTop: insets.top + 70,
+            paddingBottom: 60 + insets.bottom,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ================= HERO SECTION ================= */}
@@ -151,10 +159,9 @@ const AboutScreen = () => {
                 resizeMode="contain"
               />
             </View>
-
           </View>
         </View>
-        
+
         {/* ================= FOOTER & SIGN ================= */}
         <View style={styles.footerContainer}>
           {config?.mla_sign && (

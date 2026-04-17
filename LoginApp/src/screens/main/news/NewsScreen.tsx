@@ -11,9 +11,11 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { styles } from '../../../styles/news/newsStyle';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API from '../../../services/api';
 
 const NewsScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
@@ -96,7 +98,13 @@ const NewsScreen = () => {
         keyExtractor={item => item.dbe_id.toString()}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          {
+            paddingTop: insets.top + 70,
+            paddingBottom: insets.bottom + 40,
+          },
+        ]}
         ListHeaderComponent={
           <View style={styles.headerArea}>
             <Text style={styles.hugeTitle}>Berita{'\n'}Terbaru</Text>

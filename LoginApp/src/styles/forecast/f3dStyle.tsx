@@ -2,8 +2,11 @@ import { StyleSheet, Dimensions } from 'react-native';
 const { width } = Dimensions.get('window');
 
 export default StyleSheet.create({
-  container: { flex: 1},
-  headerContainer: { paddingHorizontal: 20, paddingTop: 75 },
+  container: { flex: 1 },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 0,
+  },
 
   headerTop: { marginBottom: 20 },
   dateBadge: {

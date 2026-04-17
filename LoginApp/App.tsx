@@ -12,6 +12,7 @@ import { AppConfigProvider } from './src/contexts/AppConfigContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { LayoutProvider } from './src/contexts/LayoutContext';
 import { UserProvider } from './src/contexts/UserContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import {
   navigationRef,
@@ -179,25 +180,27 @@ const App = () => {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <AppConfigProvider>
-          <UserProvider>
-            <LayoutProvider>
-              <LocationProvider>
-                <NavigationContainer
-                  ref={navigationRef}
-                  onReady={flushPendingNavigation}
-                >
-                  <AppNavigator />
-                </NavigationContainer>
-              </LocationProvider>
-              <Toast />
-            </LayoutProvider>
-          </UserProvider>
-        </AppConfigProvider>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <BottomSheetModalProvider>
+          <AppConfigProvider>
+            <UserProvider>
+              <LayoutProvider>
+                <LocationProvider>
+                  <NavigationContainer
+                    ref={navigationRef}
+                    onReady={flushPendingNavigation}
+                  >
+                    <AppNavigator />
+                  </NavigationContainer>
+                </LocationProvider>
+                <Toast />
+              </LayoutProvider>
+            </UserProvider>
+          </AppConfigProvider>
+        </BottomSheetModalProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 };
 

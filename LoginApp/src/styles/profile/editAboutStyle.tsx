@@ -10,12 +10,10 @@ export default StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 32,
     paddingBottom: 40,
   },
   headerSection: {
     marginBottom: 32,
-    marginTop: 70,
   },
   headerSubtitle: {
     fontSize: 12,

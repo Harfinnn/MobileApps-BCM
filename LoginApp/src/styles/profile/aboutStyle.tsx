@@ -6,9 +6,6 @@ export default StyleSheet.create({
   },
   container: {
     paddingHorizontal: 24,
-    // Spacing paddingTop disesuaikan agar tidak menempel ke atas
-    paddingTop: Platform.OS === 'ios' ? 20 : 40,
-    paddingBottom: 60,
     alignItems: 'center',
   },
 

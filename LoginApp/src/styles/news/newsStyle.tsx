@@ -10,7 +10,6 @@ export const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 40,
-    paddingTop: 80,
   },
 
   card: {

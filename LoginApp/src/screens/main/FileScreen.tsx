@@ -1,5 +1,3 @@
-// Path: src/screens/FileScreen.tsx
-
 import React, {
   useState,
   useRef,
@@ -25,12 +23,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Markdown from 'react-native-markdown-display';
 
-// Asumsi import services & context
 import {
   sendMessage,
   getChatHistory,
@@ -38,7 +36,6 @@ import {
 } from '../../services/chatService';
 import { useLayout } from '../../contexts/LayoutContext';
 
-// IMPORT KEDUA STYLES DARI BERKAS EKSTERNAL
 import { styles, markdownStyles } from '../../styles/AI/BotStyle';
 
 type Message = {
@@ -47,6 +44,8 @@ type Message = {
   sender: 'user' | 'ai';
   timestamp: string;
 };
+
+const TAB_HEIGHT = 90;
 
 const getCurrentTime = () => {
   return new Date().toLocaleTimeString([], {
@@ -64,6 +63,7 @@ const QUICK_CHATS = [
 ];
 
 function FileScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -123,7 +123,6 @@ function FileScreen({ navigation }: any) {
     }
   };
 
-  // Fungsi utama untuk mengirim pesan (dari input manual maupun Quick Chat)
   const executeSend = async (textToSend: string) => {
     if (textToSend.trim() === '') return;
 
@@ -138,8 +137,6 @@ function FileScreen({ navigation }: any) {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
-
-    // setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
       const response = await sendMessage(textToSend);
@@ -156,14 +153,9 @@ function FileScreen({ navigation }: any) {
       console.log(error);
     } finally {
       setLoading(false);
-      // setTimeout(
-      //   () => flatListRef.current?.scrollToEnd({ animated: true }),
-      //   100,
-      // );
     }
   };
 
-  // Handler untuk tombol kirim manual
   const handleSend = () => {
     executeSend(input);
   };
@@ -220,7 +212,14 @@ function FileScreen({ navigation }: any) {
 
   return (
     <>
-      <SafeAreaView style={styles.safeArea}>
+      <View
+        style={[
+          styles.safeArea,
+          {
+            paddingTop: insets.top,
+          },
+        ]}
+      >
         <StatusBar barStyle="dark-content" backgroundColor="#F4F7F6" />
 
         <KeyboardAvoidingView
@@ -257,12 +256,14 @@ function FileScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            {/* ===== CHAT LIST ===== */}
             <FlatList
               ref={flatListRef}
               data={messages}
               keyExtractor={item => item.id}
-              contentContainerStyle={styles.chatContainer}
+              contentContainerStyle={[
+                styles.chatContainer,
+                { paddingBottom: insets.bottom + TAB_HEIGHT + 20 },
+              ]}
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => {
                 const isAI = item.sender === 'ai';
@@ -273,14 +274,12 @@ function FileScreen({ navigation }: any) {
                       isAI ? styles.messageRowAI : styles.messageRowUser,
                     ]}
                   >
-                    {/* AVATAR AI */}
                     {isAI && (
                       <View style={styles.avatarContainer}>
                         <Text style={styles.avatarEmoji}>🤖</Text>
                       </View>
                     )}
 
-                    {/* BUBBLE CHAT */}
                     <TouchableOpacity
                       activeOpacity={0.8}
                       onLongPress={() => copyMessage(item.text)}
@@ -304,7 +303,6 @@ function FileScreen({ navigation }: any) {
                         <Text style={styles.userText}>{item.text}</Text>
                       )}
 
-                      {/* TIMESTAMP */}
                       <Text
                         style={[
                           styles.timestampText,
@@ -319,7 +317,6 @@ function FileScreen({ navigation }: any) {
               }}
             />
 
-            {/* ===== LOADING ===== */}
             {loading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#00A39D" />
@@ -329,9 +326,14 @@ function FileScreen({ navigation }: any) {
               </View>
             )}
 
-            {/* ===== BAGIAN BAWAH (QUICK CHAT + INPUT) ===== */}
-            <View style={styles.inputWrapper}>
-              {/* ===== QUICK CHAT SCROLL VIEW (TAMPIL JIKA CHAT KOSONG) ===== */}
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  paddingBottom: insets.bottom + TAB_HEIGHT,
+                },
+              ]}
+            >
               {messages.length <= 1 && (
                 <View style={styles.quickChatWrapper}>
                   <ScrollView
@@ -347,7 +349,7 @@ function FileScreen({ navigation }: any) {
                           loading && styles.quickChatButtonDisabled,
                         ]}
                         onPress={() => executeSend(item)}
-                        disabled={loading} // Cegah spam klik saat loading
+                        disabled={loading}
                       >
                         <Text
                           style={[
@@ -363,7 +365,6 @@ function FileScreen({ navigation }: any) {
                 </View>
               )}
 
-              {/* ===== INPUT BOX ===== */}
               <View style={{ paddingHorizontal: 16 }}>
                 <View style={styles.inputContainer}>
                   <TextInput
@@ -390,9 +391,8 @@ function FileScreen({ navigation }: any) {
             </View>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
 
-      {/* ===== CUSTOM MODAL ===== */}
       {showDeleteModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>

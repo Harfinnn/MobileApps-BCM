@@ -11,7 +11,7 @@ export const SEARCH_ROUTES: SearchRoute[] = [
 
   { label: 'Lapor Bencana', route: 'LaporBencana' },
   { label: 'Info Gempa Bumi', route: 'InfoGempaBumi' },
-  { label: 'Audit', route: 'Audit' },
+  { label: 'Cuaca', route: 'F3d' },
   { label: 'RTA', route: 'RTA' },
 
   { label: 'Panduan Bencana', route: 'PanduanBencana' },

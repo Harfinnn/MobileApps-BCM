@@ -4,7 +4,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  topSection: { paddingHorizontal: 24, paddingTop: 10, paddingBottom: 10 },
+  topSection: {
+    paddingHorizontal: 24,
+    paddingTop: 0, // biar dikontrol insets
+  },
   dateHeader: {
     fontSize: 13,
     fontWeight: '600',

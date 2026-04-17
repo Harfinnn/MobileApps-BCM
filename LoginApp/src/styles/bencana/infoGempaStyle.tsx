@@ -6,9 +6,7 @@ export default StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   scrollContent: {
-    paddingTop: 85,
     paddingHorizontal: 20,
-    paddingBottom: 40,
   },
   header: {
     marginBottom: 20,

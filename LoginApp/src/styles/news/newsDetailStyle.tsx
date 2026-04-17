@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   },
   headerInfo: {
     paddingHorizontal: 20,
-    paddingTop: 80,
+    paddingTop: 0,
     paddingBottom: 24,
   },
   badge: {
@@ -42,13 +42,13 @@ export const styles = StyleSheet.create({
     marginTop: 12,
   },
   imageWrapper: {
-    paddingHorizontal: 20, 
+    paddingHorizontal: 20,
     marginBottom: 24,
   },
   image: {
     width: '100%',
     height: 250,
-    borderRadius: 20, 
+    borderRadius: 20,
     backgroundColor: '#EEE',
   },
   body: {
@@ -57,7 +57,7 @@ export const styles = StyleSheet.create({
   paragraph: {
     fontSize: 16,
     color: '#444',
-    lineHeight: 28, 
+    lineHeight: 28,
     marginBottom: 20,
   },
   leadParagraph: {
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#222',
     lineHeight: 30,
-    borderLeftWidth: 3, 
+    borderLeftWidth: 3,
     borderLeftColor: '#000',
     paddingLeft: 15,
   },

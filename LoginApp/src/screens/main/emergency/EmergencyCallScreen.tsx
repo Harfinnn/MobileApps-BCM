@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useLayout } from '../../../contexts/LayoutContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/emergency/emergencyCallStyle';
 import {
   PhoneCall,
@@ -52,6 +53,7 @@ const EMERGENCY_NUMBERS = [
 ];
 
 const EmergencyCallScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
@@ -90,10 +92,14 @@ const EmergencyCallScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar
+        barStyle="dark-content"
+        translucent
+        backgroundColor="transparent"
+      />
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerSection}>
+        <View style={[styles.headerSection, { marginTop: insets.top + 70 }]}>
           <View style={styles.topRow}>
             <Text style={styles.title}>Layanan Darurat</Text>
           </View>

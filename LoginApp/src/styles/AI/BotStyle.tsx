@@ -135,7 +135,7 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
   },
-  inputWrapper: { marginBottom: 90, paddingHorizontal: 16, paddingBottom: 10 },
+  inputWrapper: { paddingHorizontal: 16, paddingBottom: 10 },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',

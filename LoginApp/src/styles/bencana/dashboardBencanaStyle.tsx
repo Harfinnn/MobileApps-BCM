@@ -9,7 +9,7 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   listContent: { paddingBottom: 24 },
-  headerContainer: { paddingBottom: 8, paddingTop: 60 },
+  headerContainer: { paddingBottom: 8 },
 
   sectionLabel: {
     fontSize: 12,

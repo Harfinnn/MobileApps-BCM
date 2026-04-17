@@ -1,30 +1,37 @@
 import { BASE_URL } from '../config/env';
 
-// PENTING: Masukkan API Key OWM milikmu di sini atau di file env
+/* ================================
+   CONFIG
+================================ */
+
 const OWM_API_KEY = '0c37c0573bcf4c2cdcf8e3904e189c15';
+const CACHE_TTL = 10 * 60 * 1000; // 10 menit
 
-// ================================
-// WEATHER CACHE (CURRENT + FORECAST)
-// ================================
+/* ================================
+   WEATHER CACHE
+================================ */
 
-let WEATHER_CACHE: Record<string, any> = {};
+let WEATHER_CACHE: Record<string, { data: any; timestamp: number }> = {};
 
-export const fetchWeatherAPI = async (
-  lat: number,
-  lon: number,
-  adm4: string,
-) => {
+/* ================================
+   FETCH WEATHER (OWM)
+================================ */
+
+export const fetchWeatherAPI = async (lat: number, lon: number) => {
   const roundedLat = Number(lat.toFixed(2));
   const roundedLon = Number(lon.toFixed(2));
 
-  const cacheKey = `${roundedLat}_${roundedLon}_${adm4}`;
+  const cacheKey = `${roundedLat}_${roundedLon}`;
+  const now = Date.now();
 
-  if (WEATHER_CACHE[cacheKey]) {
+  const cached = WEATHER_CACHE[cacheKey];
+
+  if (cached && now - cached.timestamp < CACHE_TTL) {
     console.log('⚡ WEATHER FROM CACHE');
-    return WEATHER_CACHE[cacheKey];
+    return cached.data;
   }
 
-  console.log('🌐 FETCH WEATHER FROM OPENWEATHERMAP');
+  console.log('🌐 FETCH WEATHER FROM OPENWEATHER');
 
   try {
     const [currentRes, forecastRes] = await Promise.all([
@@ -37,7 +44,7 @@ export const fetchWeatherAPI = async (
     ]);
 
     if (!currentRes.ok || !forecastRes.ok) {
-      throw new Error('OpenWeatherMap API error');
+      throw new Error('OpenWeather API error');
     }
 
     const currentData = await currentRes.json();
@@ -48,26 +55,29 @@ export const fetchWeatherAPI = async (
       forecast: forecastData,
     };
 
-    WEATHER_CACHE[cacheKey] = combinedData;
+    WEATHER_CACHE[cacheKey] = {
+      data: combinedData,
+      timestamp: now,
+    };
 
     return combinedData;
   } catch (error) {
-    console.log('❌ OWM FETCH ERROR:', error);
+    console.log('❌ WEATHER ERROR:', error);
     throw error;
   }
 };
 
-// ================================
-// CAP CACHE (BMKG - TIDAK DIUBAH)
-// ================================
+/* ================================
+   CAP CACHE (BMKG)
+================================ */
 
 let CAP_CACHE: any = null;
 let CAP_TIMESTAMP = 0;
 
-export const fetchCAPAPI = async (locationName?: string) => {
+export const fetchCAPAPI = async () => {
   const now = Date.now();
 
-  if (CAP_CACHE && now - CAP_TIMESTAMP < 10 * 60 * 1000) {
+  if (CAP_CACHE && now - CAP_TIMESTAMP < CACHE_TTL) {
     return CAP_CACHE;
   }
 
@@ -93,60 +103,23 @@ export const fetchCAPAPI = async (locationName?: string) => {
           description: descMatch[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
         };
       })
-      .filter((a): a is { title: string; description: string } => a !== null);
+      .filter(Boolean);
 
     if (!alerts.length) return null;
 
-    let matched = null;
-
-    if (locationName) {
-      const parts = locationName.toLowerCase().split(',');
-      const keywords = parts.map(p => p.trim());
-
-      matched = alerts.find(a =>
-        keywords.some(
-          k =>
-            a.title.toLowerCase().includes(k) ||
-            a.description.toLowerCase().includes(k),
-        ),
-      );
-    }
-
-    let result;
-
-    if (matched) {
-      result = { ...matched, isLocal: true };
-    } else {
-      result = { ...alerts[0], isLocal: false };
-    }
+    const result = {
+      ...alerts[0],
+      isLocal: false,
+    };
 
     CAP_CACHE = result;
     CAP_TIMESTAMP = now;
 
-    console.log('🌍 BMKG FINAL:', result);
+    console.log('🌍 BMKG ALERT:', result);
 
     return result;
   } catch (err) {
     console.log('❌ CAP ERROR:', err);
     return null;
-  }
-};
-
-// ================================
-// NEAREST ADM4 FROM BACKEND (TIDAK DIUBAH)
-// ================================
-
-export const fetchNearestADM4 = async (lat: number, lon: number) => {
-  try {
-    const url = `${BASE_URL}/api/adm4/nearest?lat=${lat}&lon=${lon}`;
-    const res = await fetch(url);
-    const text = await res.text();
-
-    if (!res.ok) throw new Error('Server error');
-
-    return JSON.parse(text);
-  } catch (error) {
-    console.log('FETCH ERROR DETAIL:', error);
-    throw error;
   }
 };

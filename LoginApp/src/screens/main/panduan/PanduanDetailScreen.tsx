@@ -21,10 +21,12 @@ import {
 } from '@react-navigation/native';
 import API from '../../../services/api';
 import { useLayout } from '../../../contexts/LayoutContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const PanduanDetailScreen = () => {
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { id } = route.params;
@@ -50,8 +52,8 @@ const PanduanDetailScreen = () => {
 
     return () => {
       setOnBack(undefined);
-      setHideNavbar(false);
-      setShowBack(false);
+      setHideNavbar(true);
+      setShowBack(true);
     };
   }, [navigation]);
 
@@ -139,7 +141,7 @@ const PanduanDetailScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAFBFC" />
 
       <FlatList
@@ -154,7 +156,7 @@ const PanduanDetailScreen = () => {
         bounces={false}
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { bottom: insets.bottom + 20 }]}>
         <Text style={styles.pageText}>
           Halaman {currentIndex + 1} dari {images.length}
         </Text>
@@ -174,7 +176,9 @@ const PanduanDetailScreen = () => {
 
       <Modal visible={isZoomVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <SafeAreaView style={styles.modalHeader}>
+          <SafeAreaView
+            style={[styles.modalHeader, { paddingTop: insets.top + 10 }]}
+          >
             <TouchableOpacity
               onPress={() => setIsZoomVisible(false)}
               style={styles.modalCloseBtn}

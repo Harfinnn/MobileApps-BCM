@@ -16,10 +16,12 @@ import { Modal } from 'react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAppConfig } from '../../../contexts/AppConfigContext';
 import { launchImageLibrary, Asset } from 'react-native-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/profile/editAboutStyle';
 import { useNavigation } from '@react-navigation/native';
 
 const EditAboutScreen = () => {
+  const insets = useSafeAreaInsets();
   const { setTitle, setHideNavbar, setShowBack, setShowSearch } = useLayout();
   const { config, updateConfig } = useAppConfig();
 
@@ -197,7 +199,13 @@ const EditAboutScreen = () => {
 
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top + 75,
+            paddingBottom: 40 + insets.bottom,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >

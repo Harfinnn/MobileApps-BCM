@@ -19,12 +19,14 @@ import { getUnreadCount } from '../../../utils/notifications';
 
 import { styles } from '../../../styles/navigation/headerStyle';
 import { SEARCH_ROUTES } from '../../../constants/searchRoutes';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API from '../../../services/api';
 
 import notifee from '@notifee/react-native';
 import { setNotificationListener } from '../../../services/fcmHandler';
 
 export default function DashboardHeader({ onLogoutPress }: any) {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { showBack, onBack, showSearch, hideHeaderLeft } = useLayout();
   const { user } = useUser();
@@ -158,7 +160,15 @@ export default function DashboardHeader({ onLogoutPress }: any) {
   /* ================= RENDER ================= */
   return (
     <>
-      <View style={styles.wrapper}>
+      <View
+        style={[
+          styles.wrapper,
+          {
+            paddingTop: insets.top,
+            height: 70 + insets.top,
+          },
+        ]}
+      >
         <View style={styles.headerRow}>
           {/* LEFT */}
           <View

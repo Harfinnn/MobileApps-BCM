@@ -17,7 +17,6 @@ import {
   Platform,
   Linking,
   StatusBar,
-  Dimensions,
   LayoutAnimation,
   UIManager,
   Animated,
@@ -32,7 +31,7 @@ import {
 } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import Icon from 'react-native-vector-icons/Ionicons';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API from '../../../services/api';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { resolveImageUri } from '../../../utils/image';
@@ -45,6 +44,7 @@ if (Platform.OS === 'android') {
 }
 
 const DetailBencanaScreen = () => {
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const id = route.params?.id;
@@ -211,12 +211,25 @@ const DetailBencanaScreen = () => {
   if (!data) return null;
 
   return (
-    <View style={styles.mainContainer}>
+    <View
+      style={[
+        styles.mainContainer,
+        {
+          paddingTop: insets.top ,
+        },
+      ]}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingTop: insets.top + 80,
+            paddingBottom: insets.bottom + 40,
+          },
+        ]}
       >
         {/* MAP SECTION */}
         <View style={styles.mapWrapper}>
@@ -249,7 +262,10 @@ const DetailBencanaScreen = () => {
               style={styles.map}
             />
           )}
-          <TouchableOpacity style={styles.openMapBtn} onPress={openMaps}>
+          <TouchableOpacity
+            style={[styles.openMapBtn, { bottom: insets.bottom + 12 }]}
+            onPress={openMaps}
+          >
             <Text style={styles.openMapText}>Buka di Maps</Text>
           </TouchableOpacity>
         </View>

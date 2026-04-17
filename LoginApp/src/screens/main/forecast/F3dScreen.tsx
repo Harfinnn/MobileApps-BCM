@@ -19,6 +19,7 @@ import LottieView from 'lottie-react-native';
 import styles from '../../../styles/forecast/f3dStyle';
 import { useForecast } from './hooks/useForecast';
 import { getWeatherAnimation } from '../../../utils/weatherHelper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ForecastSkeleton from '../../../components/skeleton/ForecastSkeleton';
 import AnimatedTemp from './components/AnimatedTemp';
@@ -36,6 +37,7 @@ if (
 }
 
 export default function F3dScreen() {
+  const insets = useSafeAreaInsets();
   const { weatherData, warning, loading, refetch, locationName } =
     useForecast();
 
@@ -45,7 +47,8 @@ export default function F3dScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
 
-  const { setHideHeader, setHideNavbar,setShowBack, setTitle, setShowSearch } = useLayout();
+  const { setHideHeader, setHideNavbar, setShowBack, setTitle, setShowSearch } =
+    useLayout();
 
   /* ===============================
      ICON + STYLE
@@ -132,7 +135,7 @@ export default function F3dScreen() {
     if (!main) return null;
 
     return (
-      <View style={styles.headerContainer}>
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 70 }]}>
         <View style={styles.headerTop}>
           <Text style={styles.headerDate}>{main.day}</Text>
 
@@ -221,15 +224,15 @@ export default function F3dScreen() {
   =============================== */
 
   useEffect(() => {
-     setTitle('Cuaca');
-     setHideNavbar(true);
-     setShowBack(true);
-     setShowSearch(false);
-     return () => {
-       setHideNavbar(false);
-       setShowBack(false);
-     };
-   }, []);
+    setTitle('Cuaca');
+    setHideNavbar(true);
+    setShowBack(true);
+    setShowSearch(false);
+    return () => {
+      setHideNavbar(false);
+      setShowBack(false);
+    };
+  }, []);
 
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
@@ -271,7 +274,12 @@ export default function F3dScreen() {
     <LinearGradient colors={['#f8fafc', '#ffffff']} style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          paddingTop: 0, // karena kita handle manual
+        }}
+      >
         <FlatList
           data={weatherData}
           renderItem={renderItem}
@@ -282,7 +290,9 @@ export default function F3dScreen() {
           windowSize={3}
           updateCellsBatchingPeriod={50}
           removeClippedSubviews
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{
+            paddingBottom: insets.bottom + 40,
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

@@ -13,8 +13,10 @@ import API from '../../../services/api';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { styles } from '../../../styles/bencana/panduanBencanaStyle';
 import { PANDUAN_ICON_MAP } from '../../../utils/panduanIconMap';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const PanduanBencanaScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
@@ -127,12 +129,15 @@ const PanduanBencanaScreen = () => {
         keyExtractor={item => item.mbe_id.toString()}
         renderItem={renderItem}
         ListHeaderComponent={() => (
-          <View style={styles.headerArea}>
+          <View style={[styles.headerArea, { paddingTop: insets.top + 70 }]}>
             <Text style={styles.hugeTitle}>Prosedur{'\n'}Siaga</Text>
             <View style={styles.divider} />
           </View>
         )}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 40 },
+        ]}
         showsVerticalScrollIndicator={false}
       />
     </View>

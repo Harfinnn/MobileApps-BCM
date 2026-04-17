@@ -25,12 +25,14 @@ import DisasterListItem from '../../../components/dashboard/DisasterListItem';
 import styles from '../../../styles/bencana/dashboardBencanaStyle';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { generateDashboardMapHTML } from '../../../utils/maps/dashboardMapHtml';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TodayMarker } from '../../../types/bencana';
 
 type TimeFilter = 'Hari Ini' | '7 Hari' | '30 Hari';
 type StatusFilter = 'Semua' | 'Aman' | 'Waspada' | 'Bahaya';
 
 const DashboardBencanaScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const webViewRef = useRef<WebView>(null);
   const isFirstLoad = useRef(true);
@@ -400,6 +402,10 @@ const DashboardBencanaScreen = () => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          contentContainerStyle={{
+            paddingTop: insets.top + 70,
+            paddingBottom: insets.bottom + 20,
+          }}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={

@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Camera, User, Phone, Save } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ImageResizer from 'react-native-image-resizer';
 
 import API from '../../../services/api';
@@ -26,6 +27,7 @@ import Avatar from '../../../components/common/Avatar';
 import { styles } from '../../../styles/profile/editProfileStyle';
 
 export default function EditProfileScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
     useLayout();
 
@@ -212,10 +214,10 @@ export default function EditProfileScreen({ navigation }: any) {
 
       <LinearGradient
         colors={['#009B97', '#007A77']}
-        style={styles.headerCurve}
+        style={[styles.headerCurve, { height: 220 + insets.top }]}
       />
 
-      <View style={styles.headerContent}>
+      <View style={[styles.headerContent, { paddingTop: insets.top + 70 }]}>
         <TouchableOpacity
           style={styles.avatarWrapper}
           onPress={pickPhoto}

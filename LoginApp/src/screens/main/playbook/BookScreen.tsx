@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -9,55 +10,47 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  TextInput,
 } from 'react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useNavigation } from '@react-navigation/native';
+import { Search } from 'lucide-react-native';
+import API from '../../../services/api';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 56 - 20) / 2;
-const BASE_URL = 'https://bsi-playbook.netlify.app/';
-
-const PLAYBOOK_DATA = [
-  { id: 'qris', title: 'QRIS', slug: 'qris/index' },
-  { id: 'webform', title: 'Webform', slug: 'webform/index' },
-  { id: 'open-banking', title: 'Open Banking', slug: 'open-banking/index' },
-  { id: 'ikurma', title: 'iKurma', slug: 'ikurma/index' },
-  {
-    id: 'hasanah-card-debit',
-    title: 'Hasanah & Debit Card',
-    slug: 'hasanah-card-dan-debit-card/index',
-  },
-  { id: 'exa', title: 'EXA', slug: 'exa/index' },
-  { id: 'cs-digital', title: 'CS Digital', slug: 'cs-digital/index' },
-  { id: 'byond', title: 'BYOND', slug: 'byond/index' },
-  {
-    id: 'bsi-net-banking',
-    title: 'BSI Net Banking',
-    slug: 'bsi-net-banking/index',
-  },
-  { id: 'bsi-mobile', title: 'BSI Mobile', slug: 'bsi-mobile/index' },
-  { id: 'bsi-agent', title: 'BSI Agent', slug: 'bsi-agent/index' },
-  { id: 'bewize', title: 'Bewize', slug: 'bewize/index' },
-  {
-    id: 'bewize-trade',
-    title: 'Bewize Trade Finance',
-    slug: 'bewize-trade-new-trade-finance/index',
-  },
-  {
-    id: 'bewize-dvc',
-    title: 'Bewize Digital Value Chain',
-    slug: 'bewize-digital-value-chain/index',
-  },
-  { id: 'bewize-cash', title: 'Bewize Cash', slug: 'bewize-cash/index' },
-  { id: 'bams', title: 'BAMS', slug: 'bams/index' },
-  { id: 'atm', title: 'ATM', slug: 'atm/index' },
-  { id: 'atm-crm', title: 'ATM CRM', slug: 'atm-crm/index' },
-];
 
 const BookScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { setTitle, setHideNavbar, setShowBack, setShowSearch, setHideHeader } =
     useLayout();
+  const [books, setBooks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredBooks = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+
+    return books.filter(book => book.title?.toLowerCase().includes(query));
+  }, [books, searchQuery]);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const res = await API.get('/mobile-playbooks');
+
+        if (res.data?.status) {
+          setBooks(res.data.data);
+        }
+      } catch (err) {
+        console.log('Error fetch playbooks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
 
   useEffect(() => {
     setTitle('BCP Playbooks');
@@ -71,20 +64,40 @@ const BookScreen = () => {
     };
   }, [setTitle, setHideHeader, setShowSearch, setShowBack, setHideNavbar]);
 
-  const handleOpenPlaybook = (slug: string, title: string) => {
-    navigation.navigate('BookView', {
-      url: `${BASE_URL}${slug}`,
-      title: title,
-    });
-  };
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <Text style={{ textAlign: 'center' }}>Loading playbooks...</Text>
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top,
+        },
+      ]}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#F8FAFC" />
       <View style={styles.softGlow} />
-
+      <View style={[styles.searchContainer, { marginTop: 10 }]}>
+        <Search color="#64748B" size={20} />
+        <TextInput
+          placeholder="Cari Playbook..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          placeholderTextColor="#94A3B8"
+        />
+      </View>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 90 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topHeader}>
@@ -99,21 +112,29 @@ const BookScreen = () => {
         </View>
 
         <View style={styles.gridContainer}>
-          {PLAYBOOK_DATA.map(book => {
+          {filteredBooks.map(book => {
             // Logika pengambilan gambar berdasarkan folder slug
-            const folderName = book.slug.split('/')[0];
-            const thumbUrl = `${BASE_URL}${folderName}/files/shot.png`;
+            const thumbUrl = book.thumbnail;
 
             return (
               <TouchableOpacity
-                key={book.id}
+                key={book.book_id}
                 style={styles.bookCard}
                 activeOpacity={0.8}
-                onPress={() => handleOpenPlaybook(book.slug, book.title)}
+                onPress={() =>
+                  navigation.navigate('BookView', {
+                    url: book.url,
+                    title: book.title,
+                  })
+                }
               >
                 <View style={styles.iconWrapper}>
                   <Image
-                    source={{ uri: thumbUrl }}
+                    source={{
+                      uri:
+                        thumbUrl ||
+                        'https://via.placeholder.com/300x200?text=No+Image',
+                    }}
                     style={styles.bookImage}
                     resizeMode="cover"
                   />
@@ -129,8 +150,15 @@ const BookScreen = () => {
             );
           })}
         </View>
+        {filteredBooks.length === 0 && (
+          <Text
+            style={{ textAlign: 'center', marginTop: 20, color: '#64748B' }}
+          >
+            Playbook tidak ditemukan
+          </Text>
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -157,6 +185,25 @@ const styles = StyleSheet.create({
   },
   topHeader: {
     marginBottom: 35,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 28,
+    marginBottom: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#0F172A',
   },
   liveTag: {
     flexDirection: 'row',

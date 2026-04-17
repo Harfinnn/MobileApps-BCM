@@ -28,7 +28,7 @@ import {
 } from 'lucide-react-native';
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import API from '../../../services/api';
@@ -44,6 +44,7 @@ type UnitKerja = {
 };
 
 const MapScreen = () => {
+  const insets = useSafeAreaInsets();
   const { setTitle, setShowBack, setHideHeader } = useLayout();
   const { user } = useUser();
   const webViewRef = useRef<WebView>(null);
@@ -210,7 +211,7 @@ const MapScreen = () => {
       <StatusBar barStyle="dark-content" />
 
       {/* SEARCH */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { top: insets.top + 10 }]}>
         <Search color="#64748B" size={20} />
         <TextInput
           placeholder="Cari Unit Kerja atau Alamat..."
@@ -245,7 +246,7 @@ const MapScreen = () => {
         />
 
         {/* FLOATING BUTTONS */}
-        <View style={styles.floatingActions}>
+        <View style={[styles.floatingActions, { bottom: insets.bottom + 35 }]}>
           <TouchableOpacity
             style={[
               styles.circleBtn,
@@ -306,7 +307,10 @@ const MapScreen = () => {
             keyExtractor={item => item.mjs_id.toString()}
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollPadding}
+            contentContainerStyle={[
+              styles.scrollPadding,
+              { paddingBottom: insets.bottom + 120 },
+            ]}
             initialNumToRender={10}
             maxToRenderPerBatch={12}
             windowSize={10}

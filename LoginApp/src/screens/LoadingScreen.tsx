@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
 import NetInfo from '@react-native-community/netinfo'; // Import library jaringan
@@ -19,6 +20,7 @@ import { useAppConfig } from '../contexts/AppConfigContext';
 import styles from '../styles/auth/loadingStyle';
 
 const LoadingScreen: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { user, loading } = useUser();
   const { config } = useAppConfig(); // <-- Mengambil config dari AppConfigContext
@@ -295,7 +297,7 @@ const LoadingScreen: React.FC = () => {
       </Animated.View>
 
       {/* Footer & Version Info */}
-      <View style={localStyles.footerWrapper}>
+      <View style={[localStyles.footerWrapper, { bottom: insets.bottom + 10 }]}>
         <Text style={styles.footerText}>Secure & Trusted System</Text>
         <Text style={localStyles.versionText}>
           v{config?.mla_versi || '1.0.0'}
@@ -331,7 +333,6 @@ const localStyles = StyleSheet.create({
   },
   footerWrapper: {
     position: 'absolute',
-    bottom: 30, // Jarak dari bawah layar
     width: '100%',
     alignItems: 'center',
   },

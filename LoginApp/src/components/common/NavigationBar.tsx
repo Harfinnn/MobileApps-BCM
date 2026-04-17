@@ -5,18 +5,19 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Keyboard } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Map, Home, Bot, Ban, SwatchBook } from 'lucide-react-native';
+import { Map, Home, Bot, SwatchBook } from 'lucide-react-native';
 import { createStyles } from '../../styles/navigation/navigationStyle';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useLayout } from '../../contexts/LayoutContext';
 import LottieView from 'lottie-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   BottomSheetModal,
@@ -30,7 +31,13 @@ import {
 const TABS = [
   { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },
   { icon: Map, label: 'KCP', route: 'Maps', color: '#F8AD3CFF' },
-  { icon: SwatchBook, label: 'Book', route: 'Book', color: '#F8AD3CFF', size: 25 },
+  {
+    icon: SwatchBook,
+    label: 'Book',
+    route: 'Book',
+    color: '#F8AD3CFF',
+    size: 25,
+  },
   { icon: Bot, label: 'AI', route: 'File', color: '#F8AD3CFF' },
 ];
 
@@ -57,17 +64,7 @@ const getTabIndexByRoute = (routeName: string) => {
    ICON TAB
 ======================= */
 const IconTab = React.memo(
-  ({
-    icon: Icon,
-    index,
-    activeIndexShared,
-    onPress,
-  }: {
-    icon: any;
-    index: number;
-    activeIndexShared: any;
-    onPress: () => void;
-  }) => {
+  ({ icon: Icon, index, activeIndexShared, onPress }: any) => {
     const style = useAnimatedStyle(() => {
       let offset = 0;
 
@@ -86,7 +83,7 @@ const IconTab = React.memo(
           style={styles.tab}
           activeOpacity={0.8}
         >
-          <Icon size={TABS[index].size ?? 22} color="#ffffff" />
+          <Icon size={TABS[index].size ?? 22} color="#ffffff80" />
         </TouchableOpacity>
       </Animated.View>
     );
@@ -97,12 +94,14 @@ const IconTab = React.memo(
    NAVIGATION BAR
 ======================= */
 function NavigationBar() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { hideNavbar } = useLayout();
 
-  /* BottomSheet */
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['45%'], []);
+
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const openBottomSheet = useCallback(() => {
     bottomSheetRef.current?.present();
@@ -123,7 +122,6 @@ function NavigationBar() {
   const initialIndex = getTabIndexByRoute(activeRouteName);
 
   const [activeIndexState, setActiveIndexState] = useState(initialIndex);
-
   const activeIndexShared = useSharedValue(initialIndex);
 
   const maxTranslate =
@@ -133,6 +131,7 @@ function NavigationBar() {
     Math.min(initialIndex * TAB_WIDTH, maxTranslate),
   );
 
+  const translateY = useSharedValue(0);
   const labelProgress = useSharedValue(1);
 
   /* ROUTE CHANGE */
@@ -154,22 +153,45 @@ function NavigationBar() {
     });
   }, [activeRouteName]);
 
+  /* KEYBOARD LISTENER */
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      setKeyboardVisible(true);
+    });
+
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+    });
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  /* KEYBOARD ANIMATION */
+  useEffect(() => {
+    translateY.value = withTiming(keyboardVisible ? 120 : 0, {
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [keyboardVisible]);
+
   /* TAB PRESS */
   const onPressTab = useCallback(
     (index: number) => {
-      if (TABS[index].route === '#') {
-        openBottomSheet();
-        return;
-      }
-
       navigation.navigate('Main', {
         screen: TABS[index].route,
       });
     },
-    [navigation, openBottomSheet],
+    [navigation],
   );
 
   /* ANIMATIONS */
+  const wrapperAnimated = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
   const pillStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
@@ -193,7 +215,13 @@ function NavigationBar() {
 
   return (
     <>
-      <View style={styles.wrapper}>
+      <Animated.View
+        style={[
+          styles.wrapper,
+          wrapperAnimated,
+          { bottom: insets.bottom + 12 },
+        ]}
+      >
         <View style={styles.navbar}>
           {/* ACTIVE PILL */}
           <Animated.View style={[styles.activePill, pillStyle]}>
@@ -218,7 +246,7 @@ function NavigationBar() {
             />
           ))}
         </View>
-      </View>
+      </Animated.View>
 
       {/* BOTTOM SHEET */}
       <BottomSheetModal
@@ -246,27 +274,8 @@ function NavigationBar() {
             style={{ width: 160, height: 160 }}
           />
 
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: '700',
-              marginTop: 10,
-              color: '#333',
-            }}
-          >
+          <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 10 }}>
             Fitur Dalam Pengembangan
-          </Text>
-
-          <Text
-            style={{
-              textAlign: 'center',
-              marginTop: 8,
-              color: '#666',
-              lineHeight: 20,
-            }}
-          >
-            Kami sedang menyiapkan fitur ini. Silakan cek kembali pada update
-            berikutnya.
           </Text>
 
           <TouchableOpacity

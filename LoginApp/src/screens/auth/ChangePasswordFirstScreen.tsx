@@ -14,10 +14,11 @@ import {
 } from 'react-native';
 
 import API from '../../services/api';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ChangePasswordFirstScreen = ({ route, navigation }: any) => {
+  const insets = useSafeAreaInsets();
   const { user_id, fromProfile } = route.params;
-
   const [oldPassword, setOldPassword] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -59,7 +60,10 @@ const ChangePasswordFirstScreen = ({ route, navigation }: any) => {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            { paddingTop: insets.top + 70 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.headerSection}>
@@ -135,7 +139,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     paddingHorizontal: 20,
-    paddingTop: 100,
     paddingBottom: 40,
   },
   headerSection: {

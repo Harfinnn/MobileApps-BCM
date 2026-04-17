@@ -5,7 +5,7 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: '#F3F4F6', // Latar belakang abu-abu sangat muda agar kartu terlihat timbul
+    backgroundColor: '#F3F4F6', 
   },
   center: {
     flex: 1,
@@ -13,9 +13,7 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    paddingTop: 85,
     paddingHorizontal: 16,
-    paddingBottom: 40,
   },
 
   /* --- MAP SECTION --- */

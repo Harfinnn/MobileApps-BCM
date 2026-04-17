@@ -5,18 +5,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   fetchWeatherAPI,
   fetchCAPAPI,
-  fetchNearestADM4,
 } from '../../../../services/weatherService';
+
+import { getDistrictFromSupabase } from '../../../../services/districtService';
 
 import { parseForecast } from '../../../../utils/weatherParser';
 import { DailyForecast, WeatherWarning } from '../../../../types/forecast';
 import { useLocation } from '../../../../contexts/LocationContext';
 
-import API from '../../../../services/api';
-
-const DEFAULT_ADM4 = '31.71.03.1001';
 const CACHE_DURATION = 10 * 60 * 1000;
-const REFETCH_INTERVAL = 15 * 60 * 1000; // 15 Menit
+const REFETCH_INTERVAL = 15 * 60 * 1000;
 
 const DEFAULT_WARNING: WeatherWarning = {
   type: 'safe',
@@ -33,108 +31,107 @@ export const useForecast = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const lastAdm4Ref = useRef<string | null>(null);
   const lastFetchRef = useRef<number>(0);
   const isMountedRef = useRef(true);
-
-  const saveUserLocation = async (adm4Id: number) => {
-    try {
-      await API.post('/user-location', { adm4_id: adm4Id });
-    } catch {}
-  };
 
   /* ==============================
      LOAD FORECAST
   ============================== */
 
-  const loadForecast = useCallback(
-    async (lat: number, lon: number, adm4: string) => {
-      if (lastAdm4Ref.current === adm4) return;
+  const loadForecast = useCallback(async (lat: number, lon: number) => {
+    try {
+      const [res, districtRes, capRes] = await Promise.all([
+        fetchWeatherAPI(lat, lon),
+        getDistrictFromSupabase(lat, lon),
+        fetchCAPAPI().catch(() => null),
+      ]);
 
-      lastAdm4Ref.current = adm4;
+      if (!isMountedRef.current) return;
 
-      try {
-        const [res, capRes] = await Promise.all([
-          fetchWeatherAPI(lat, lon, adm4),
-          fetchCAPAPI(locationName).catch(() => null),
-        ]);
+      /* ======================
+       PARSE WEATHER
+    ====================== */
 
-        if (!isMountedRef.current) return;
+      const parsed = parseForecast(res.forecast);
 
-        const parsed = parseForecast(res.forecast);
-
-        if (res.current && parsed.length > 0) {
-          // Mapping dari struktur OpenWeatherMap
-          parsed[0].summary.temp = Math.floor(res.current.main.temp);
-          parsed[0].summary.wind = Math.floor(
-            (res.current.wind?.speed ?? 0) * 3.6,
-          );
-
-          const desc = res.current.weather[0].description;
-          parsed[0].summary.condition =
-            desc.charAt(0).toUpperCase() + desc.slice(1);
-        }
-
-        setWeatherData(parsed);
-
-        await AsyncStorage.setItem(
-          'weather_cache',
-          JSON.stringify({
-            data: parsed,
-            timestamp: Date.now(),
-            lat,
-            lon,
-          }),
+      if (res.current && parsed.length > 0) {
+        parsed[0].summary.temp = Math.floor(res.current.main.temp);
+        parsed[0].summary.wind = Math.floor(
+          (res.current.wind?.speed ?? 0) * 3.6,
         );
 
-        const autoWarning = generateWeatherCodeWarning(res.current);
-
-        let list: WeatherWarning[] = [];
-
-        if (capRes && capRes.isLocal) {
-          list.push({
-            type: 'alert',
-            title: capRes.title,
-            description: capRes.description,
-          });
-        } else {
-          list.push(autoWarning);
-        }
-
-        setWarnings(list);
-      } catch (err) {
-        console.log('LOAD WEATHER ERROR:', err);
+        const desc = res.current.weather[0].description;
+        parsed[0].summary.condition =
+          desc.charAt(0).toUpperCase() + desc.slice(1);
       }
-    },
-    [locationName],
-  );
+
+      setWeatherData(parsed);
+
+      /* ======================
+       FIX DISTRICT (INI KUNCI 🔥)
+    ====================== */
+
+      const district = districtRes?.[0]; // ⬅️ FIX DI SINI
+
+      console.log('📍 DISTRICT RESULT:', district);
+
+      if (district) {
+        const locName = `${district.district}, ${district.city}`;
+        setLocationName(locName);
+      } else {
+        setLocationName('Lokasi tidak ditemukan');
+      }
+
+      /* ======================
+       CACHE
+    ====================== */
+
+      await AsyncStorage.setItem(
+        'weather_cache',
+        JSON.stringify({
+          data: parsed,
+          timestamp: Date.now(),
+          lat,
+          lon,
+        }),
+      );
+
+      /* ======================
+       WARNING
+    ====================== */
+
+      const autoWarning = generateWeatherCodeWarning(res.current);
+
+      let list: WeatherWarning[] = [];
+
+      if (capRes && capRes.isLocal) {
+        list.push({
+          type: 'alert',
+          title: capRes.title,
+          description: capRes.description,
+        });
+      } else {
+        list.push(autoWarning);
+      }
+
+      setWarnings(list);
+    } catch (err) {
+      console.log('LOAD WEATHER ERROR:', err);
+    }
+  }, []);
 
   /* ==============================
-     REFETCH FUNCTION
+     REFETCH
   ============================== */
 
   const refetch = useCallback(async () => {
     if (!location) return;
 
-    const nearest = await fetchNearestADM4(
-      location.latitude,
-      location.longitude,
-    );
-
-    if (!nearest?.data?.adm4) return;
-
-    // Reset ref agar bisa fetch ulang lokasi yang sama
-    lastAdm4Ref.current = null;
-
-    await loadForecast(
-      location.latitude,
-      location.longitude,
-      nearest.data.adm4,
-    );
+    await loadForecast(location.latitude, location.longitude);
   }, [location, loadForecast]);
 
   /* ==============================
-     LOCATION EFFECT (INITIAL FETCH)
+     INITIAL LOAD
   ============================== */
 
   useEffect(() => {
@@ -143,39 +140,11 @@ export const useForecast = () => {
     const run = async () => {
       const now = Date.now();
 
-      // Coba hindari spam fetch di bawah 1 menit
       if (now - lastFetchRef.current < 60000) return;
       lastFetchRef.current = now;
 
       try {
-        const nearest = await fetchNearestADM4(
-          location.latitude,
-          location.longitude,
-        );
-
-        if (!nearest?.data?.adm4) return;
-
-        const newAdm4 = nearest.data.adm4;
-
-        if (lastAdm4Ref.current === newAdm4) {
-          setLoading(false);
-          return;
-        }
-
-        const parts = [
-          nearest.data.kelurahan,
-          nearest.data.kecamatan,
-          nearest.data.kotkab,
-        ].filter(Boolean);
-
-        const locName = parts.join(', ');
-
-        setLocationName(locName);
-
-        await loadForecast(location.latitude, location.longitude, newAdm4);
-
-        saveUserLocation(nearest.data.id).catch(() => {});
-
+        await loadForecast(location.latitude, location.longitude);
         setLoading(false);
       } catch (e) {
         console.log('FORECAST ERROR:', e);
@@ -186,24 +155,22 @@ export const useForecast = () => {
   }, [location, loadForecast]);
 
   /* ==============================
-     AUTO UPDATE (INTERVAL & APPSTATE)
+     AUTO REFRESH
   ============================== */
 
   useEffect(() => {
-    // 1. Polling: Otomatis update setiap 15 menit ketika aplikasi aktif dibuka
     const intervalId = setInterval(() => {
-      console.log('🔄 INTERVAL: Memperbarui data cuaca...');
+      console.log('🔄 AUTO REFRESH');
       lastFetchRef.current = Date.now();
       refetch();
     }, REFETCH_INTERVAL);
 
-    // 2. AppState: Update ketika aplikasi kembali dibuka dari background
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
         const now = Date.now();
-        // Hanya update jika data sudah "basi" (lebih dari 15 menit)
+
         if (now - lastFetchRef.current > REFETCH_INTERVAL) {
-          console.log('☀️ APP ACTIVE: Data usang, melakukan pembaruan...');
+          console.log('☀️ APP ACTIVE REFRESH');
           lastFetchRef.current = now;
           refetch();
         }
@@ -245,7 +212,7 @@ export const useForecast = () => {
 };
 
 /* ==============================
-   WARNING GENERATOR (OPENWEATHERMAP)
+   WARNING GENERATOR
 ============================== */
 
 const generateWeatherCodeWarning = (current: any): WeatherWarning => {

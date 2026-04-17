@@ -29,11 +29,13 @@ import {
 } from '@react-navigation/native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/bencana/gempaDetailStyle';
 import API from '../../../services/api';
 import { getUnitsInRadius, UnitWithDistance } from '../../../utils/gempa';
 
 const GempaDetailScreen = () => {
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const { gempa } = route.params;
   const navigation = useNavigation<any>();
@@ -224,12 +226,21 @@ const GempaDetailScreen = () => {
   }, [affectedUnits, unitStatus, filterStatus]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top + 20,
+        },
+      ]}
+    >
       <StatusBar barStyle="dark-content" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 100,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

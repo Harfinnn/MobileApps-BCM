@@ -4,7 +4,6 @@ export const createStyles = (TAB_WIDTH: number, ACTIVE_WIDTH: number) =>
   StyleSheet.create({
     wrapper: {
       position: 'absolute',
-      bottom: 20,
       width: '100%',
       alignItems: 'center',
       zIndex: 10, 

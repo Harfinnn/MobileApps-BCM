@@ -115,14 +115,13 @@ export const styles = StyleSheet.create({
     marginTop: 30,
   },
 
-  headerCurve: {
-    position: 'absolute',
-    top: 0,
-    height: 280,
-    width: width,
-    borderBottomLeftRadius: 45,
-    borderBottomRightRadius: 45,
-  },
+headerCurve: {
+  position: 'absolute',
+  top: 0,
+  width: width,
+  borderBottomLeftRadius: 45,
+  borderBottomRightRadius: 45,
+},
 
   headerContent: {
     paddingTop: 80,

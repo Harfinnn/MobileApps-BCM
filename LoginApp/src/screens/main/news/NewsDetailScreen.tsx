@@ -17,11 +17,13 @@ import {
 import RenderHTML from 'react-native-render-html';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { styles } from '../../../styles/news/newsDetailStyle';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API from '../../../services/api';
 
 const BASE_IMAGE_URL = 'https://simpel-bcm.com/img/berita/';
 
 const NewsDetailScreen = () => {
+  const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const { id } = route.params as { id: number };
   const { width } = useWindowDimensions();
@@ -73,7 +75,11 @@ const NewsDetailScreen = () => {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" style={{ flex: 1 }} />;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   if (!news) {
@@ -90,9 +96,12 @@ const NewsDetailScreen = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 40 },
+        ]}
       >
-        <View style={styles.headerInfo}>
+        <View style={[styles.headerInfo, { paddingTop: insets.top + 70 }]}>
           <Text style={styles.title}>{news.dbe_judul}</Text>
           <Text style={styles.date}>
             {news.dbe_tgl} • {news.dbe_jam}

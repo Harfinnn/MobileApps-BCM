@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   },
   headerArea: {
     paddingHorizontal: 25,
-    paddingTop: 80,
+    paddingTop: 0,
     marginBottom: 30,
   },
   overTitle: {

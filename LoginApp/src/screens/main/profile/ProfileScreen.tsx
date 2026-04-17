@@ -15,11 +15,13 @@ import ConfirmLogoutModal from '../../../components/modal/ConfirmLogoutModal';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import { resolveImageUri } from '../../../utils/image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Avatar from '../../../components/common/Avatar';
 import { styles } from '../../../styles/profile/profileStyle';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
 
   const { setTitle, setHideNavbar, setShowBack, setOnBack, setShowSearch } =
@@ -124,9 +126,12 @@ export default function ProfileScreen() {
 
   return (
     <>
-      <LinearGradient colors={['#009B97', '#007A77']} style={styles.container}>
+      <LinearGradient
+        colors={['#009B97', '#007A77']}
+        style={[styles.container, { paddingTop: insets.top }]}
+      >
         {/* HEADER */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 70 }]}>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatarGlow}>
               <Avatar uri={avatarUri} initial={initial} size={96} />

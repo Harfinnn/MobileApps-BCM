@@ -10,6 +10,7 @@ import {
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import styles from '../../../styles/bencana/infoGempaStyle';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const AUTOGEMPA_URL = 'https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json';
 const DIRASAKAN_URL =
@@ -18,6 +19,7 @@ const DIRASAKAN_URL =
 const REFRESH_INTERVAL = 2 * 60 * 1000;
 
 const InfoGempaBumiScreen = () => {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const {
     setTitle,
@@ -117,7 +119,13 @@ const InfoGempaBumiScreen = () => {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[
+        styles.scrollContent,
+        {
+          paddingTop: insets.top + 70,
+          paddingBottom: insets.bottom + 40,
+        },
+      ]}
     >
       {/* HEADER */}
       <View style={styles.header}>
