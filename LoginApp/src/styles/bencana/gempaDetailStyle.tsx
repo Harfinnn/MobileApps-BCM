@@ -4,9 +4,173 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
+
+  header: {
+    marginBottom: 10,
+    left: 25,
+  },
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  updateText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
+  },
+  shadowWrapper: {
+    marginBottom: 30,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  premiumCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+  },
+  statColumn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  statValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+  },
+  statUnit: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  statValueSmall: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 4,
+  },
+  verticalDivider: {
+    width: 1,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 16,
+  },
+  horizontalDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginHorizontal: 20,
+  },
+  potensiWrapper: {
+    alignItems: 'center',
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  potensiPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  detailsContainer: {
+    padding: 20,
+  },
+  detailListRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    marginTop: 2,
+  },
+  detailTextWrapper: {
+    flex: 1,
+  },
+  detailListLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 4,
+  },
+  detailListValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+    lineHeight: 22,
+  },
+
+  shareButtonWrapper: {
+    position: 'absolute',
+    top: 12,
+    right: 16,
+    zIndex: 10,
+  },
+
+  shareButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    // shadow iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+
+    // shadow Android
+    elevation: 4,
+  },
+
+  shareIcon: {
+    fontSize: 18,
+  },
+
   topSection: {
     paddingHorizontal: 24,
-    paddingTop: 0, // biar dikontrol insets
+    paddingTop: 0,
   },
   dateHeader: {
     fontSize: 13,
@@ -84,7 +248,14 @@ export default StyleSheet.create({
     lineHeight: 22,
   },
 
-  footer: { padding: 24 },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 24,
+    backgroundColor: 'transparent', // penting
+  },
   closeButton: {
     backgroundColor: '#0F172A',
     paddingVertical: 16,
@@ -245,5 +416,47 @@ export default StyleSheet.create({
   emptyStateText: {
     color: '#94A3B8',
     fontSize: 14,
+  },
+  // --- STYLE PETA ---
+  mapSection: {
+    width: '100%',
+    height: 250,
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  mapWrapper: {
+    flex: 1,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  mapPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapOverlayTop: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+  },
+  overlayBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  overlayBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

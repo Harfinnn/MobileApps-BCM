@@ -76,7 +76,7 @@ const NewsScreen = () => {
       </View>
 
       <View style={styles.cardContent}>
-        <Text style={styles.category}>{item.dbe_tgl}</Text>
+        <Text style={styles.category}>{item.dbe_tgl} • {item.dbe_viewer} kali dilihat</Text>
         <Text style={styles.title} numberOfLines={2}>
           {item.dbe_judul}
         </Text>

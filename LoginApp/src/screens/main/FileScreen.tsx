@@ -21,6 +21,7 @@ import {
   BackHandler,
   LayoutAnimation,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,6 +71,13 @@ function FileScreen({ navigation }: any) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const { setHideHeader } = useLayout();
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: false });
+    }, 60);
+  };
 
   const copyMessage = (text: string) => {
     Clipboard.setString(text);
@@ -138,8 +146,11 @@ function FileScreen({ navigation }: any) {
     setInput('');
     setLoading(true);
 
+    scrollToBottom(); // 🔥 scroll setelah user kirim
+
     try {
       const response = await sendMessage(textToSend);
+
       const aiMessage: Message = {
         id: Date.now().toString() + '_ai',
         text: response.reply,
@@ -149,6 +160,8 @@ function FileScreen({ navigation }: any) {
 
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setMessages(prev => [...prev, aiMessage]);
+
+      scrollToBottom(); // 🔥 scroll setelah AI balas
     } catch (error) {
       console.log(error);
     } finally {
@@ -159,6 +172,20 @@ function FileScreen({ navigation }: any) {
   const handleSend = () => {
     executeSend(input);
   };
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () =>
+      setKeyboardVisible(true),
+    );
+    const hide = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardVisible(false),
+    );
+
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     const loadHistory = async () => {
@@ -192,10 +219,7 @@ function FileScreen({ navigation }: any) {
         ]);
 
         setMessages(formattedMessages);
-        setTimeout(
-          () => flatListRef.current?.scrollToEnd({ animated: false }),
-          100,
-        );
+        scrollToBottom();
       } catch (error) {
         setMessages([
           {
@@ -265,6 +289,14 @@ function FileScreen({ navigation }: any) {
                 { paddingBottom: insets.bottom + TAB_HEIGHT + 20 },
               ]}
               showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => {
+                setTimeout(() => {
+                  flatListRef.current?.scrollToEnd({ animated: false });
+                }, 80);
+              }}
+              onLayout={() => {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }}
               renderItem={({ item }) => {
                 const isAI = item.sender === 'ai';
                 return (
@@ -330,7 +362,8 @@ function FileScreen({ navigation }: any) {
               style={[
                 styles.inputWrapper,
                 {
-                  paddingBottom: insets.bottom + TAB_HEIGHT,
+                  paddingBottom:
+                    insets.bottom + (keyboardVisible ? 10 : TAB_HEIGHT),
                 },
               ]}
             >

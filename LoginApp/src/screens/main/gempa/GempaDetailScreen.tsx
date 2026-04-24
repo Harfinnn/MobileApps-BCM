@@ -13,8 +13,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Modal,
-  Image,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -27,12 +25,27 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
+import {
+  TrendingUp,
+  Waves,
+  MapPin,
+  Clock,
+  Navigation,
+  AlertTriangle,
+  Map as MapIcon,
+  ChevronDown,
+  Share2,
+} from 'lucide-react-native';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../../styles/bencana/gempaDetailStyle';
 import API from '../../../services/api';
+import WebView, { WebViewMessageEvent } from 'react-native-webview';
 import { getUnitsInRadius, UnitWithDistance } from '../../../utils/gempa';
+import { generateMapHTML } from '../../../utils/maps/generateMapHtml';
+import ViewShot from 'react-native-view-shot';
+import RNShare from 'react-native-share';
 
 const GempaDetailScreen = () => {
   const insets = useSafeAreaInsets();
@@ -47,6 +60,15 @@ const GempaDetailScreen = () => {
 
   // Logic: Cek apakah user adalah Super Admin (ID = 1)
   const isSuperAdmin = user?.jabatan?.jab_id === 1;
+  // Ekstraksi Latitude & Longitude dari object gempa
+  const coords = gempa?.Coordinates?.split(',') || [];
+  const latitude = coords[0] ? parseFloat(coords[0]) : null;
+  const longitude = coords[1] ? parseFloat(coords[1]) : null;
+
+  // State & Ref untuk Peta
+  const webviewRef = useRef<WebView>(null);
+  const mapShotRef = useRef<any>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // States
   const [isMapVisible, setIsMapVisible] = useState(false);
@@ -57,6 +79,7 @@ const GempaDetailScreen = () => {
   const [radiusRules, setRadiusRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [impactLoading, setImpactLoading] = useState(false);
 
   // State untuk Filter Status
   const [filterStatus, setFilterStatus] = useState<
@@ -64,6 +87,116 @@ const GempaDetailScreen = () => {
   >('all');
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (Platform.OS === 'android')
+      UIManager.setLayoutAnimationEnabledExperimental?.(true);
+    setTitle('Detail Gempa');
+    setHideNavbar(true);
+    setHideHeader(true);
+
+    return () => {
+      setShowSearch(true);
+      setHideNavbar(false);
+      setShowBack(true);
+    };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        navigation.navigate('Main', { screen: 'InfoGempaBumi' });
+        return true;
+      });
+      return () => sub.remove();
+    }, [navigation]),
+  );
+
+  useEffect(() => {
+    loadData();
+  }, [gempa, isSuperAdmin]);
+
+  useEffect(() => {
+    if (isMapReady && latitude && longitude && webviewRef.current) {
+      if (!isNaN(latitude) && !isNaN(longitude)) {
+        const script = `
+          document.dispatchEvent(new MessageEvent('message', {
+            data: JSON.stringify({
+              type: 'SET_EPICENTER',
+              payload: { lat: ${latitude}, lng: ${longitude} }
+            })
+          }));
+        `;
+        webviewRef.current.injectJavaScript(script);
+      }
+    }
+  }, [isMapReady, latitude, longitude]);
+
+  useEffect(() => {
+    if (isMapReady && affectedUnits.length > 0 && webviewRef.current) {
+      const script = `
+        document.dispatchEvent(new MessageEvent('message', {
+          data: JSON.stringify({
+            type: 'ADD_MARKERS',
+            payload: ${JSON.stringify(affectedUnits)}
+          })
+        }));
+      `;
+      webviewRef.current.injectJavaScript(script);
+    }
+  }, [isMapReady, affectedUnits]);
+
+  useEffect(() => {
+    if (isMapReady && latitude && longitude && radiusKm && webviewRef.current) {
+      const cleanLat = parseFloat(latitude.toString());
+      const cleanLng = parseFloat(longitude.toString());
+
+      const script = `
+        document.dispatchEvent(new MessageEvent('message', {
+          data: JSON.stringify({
+            type: 'SET_RADIUS',
+            payload: {
+              lat: ${cleanLat},
+              lng: ${cleanLng},
+              radius: ${radiusKm * 1000}
+            }
+          })
+        }));
+      `;
+
+      webviewRef.current.injectJavaScript(script);
+    }
+  }, [isMapReady, latitude, longitude, radiusKm]);
+
+  useEffect(() => {
+    if (isMapReady && webviewRef.current) {
+      const script = `
+        document.dispatchEvent(new MessageEvent('message', {
+          data: JSON.stringify({
+            type: 'SET_MARKER_COLOR',
+            payload: { color: '#10B981' } // HIJAU
+          })
+        }));
+      `;
+
+      webviewRef.current.injectJavaScript(script);
+    }
+  }, [isMapReady]);
+
+  useEffect(() => {
+    if (isMapReady && webviewRef.current) {
+      const script = `
+        document.dispatchEvent(new MessageEvent('message', {
+          data: JSON.stringify({
+            type: 'SET_CLUSTER_MODE',
+            payload: { enabled: false } // ❌ MATIKAN CLUSTER
+          })
+        }));
+      `;
+
+      webviewRef.current.injectJavaScript(script);
+    }
+  }, [isMapReady]);
 
   const calculateRadius = (magnitude: number, rules: any[]) => {
     if (!rules || rules.length === 0) return 50;
@@ -90,31 +223,6 @@ const GempaDetailScreen = () => {
     return 50;
   };
 
-  useEffect(() => {
-    if (Platform.OS === 'android')
-      UIManager.setLayoutAnimationEnabledExperimental?.(true);
-    setTitle('Detail Gempa');
-    setHideNavbar(true);
-    setHideHeader(true);
-
-    return () => {
-      setShowSearch(true);
-      setHideNavbar(false);
-      setShowBack(true);
-    };
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        navigation.navigate('Main', { screen: 'InfoGempaBumi' });
-        return true;
-      });
-      return () => sub.remove();
-    }, [navigation]),
-  );
-
-  // --- FUNGSI LOAD DATA ---
   const loadData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -168,10 +276,6 @@ const GempaDetailScreen = () => {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [gempa, isSuperAdmin]);
-
   const onRefresh = () => {
     loadData(true);
   };
@@ -193,7 +297,6 @@ const GempaDetailScreen = () => {
     return { label: 'AMAN', color: '#10B981' };
   };
 
-  // --- LOGIKA FILTER UNIT ---
   const unitStats = useMemo(() => {
     let reported = 0;
     let pending = 0;
@@ -225,6 +328,84 @@ const GempaDetailScreen = () => {
     };
   }, [affectedUnits, unitStatus, filterStatus]);
 
+  const onMapMessage = (event: WebViewMessageEvent) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'MAP_READY') {
+        setIsMapReady(true);
+      }
+    } catch (e) {
+      console.error('Map message error:', e);
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const impactSummary =
+        affectedUnits.length > 0
+          ? `\n📊 Dampak:\n- Total: ${unitStats.total}\n- Terlapor: ${unitStats.reported}\n- Pending: ${unitStats.pending}\n- Radius: ${radiusKm} km`
+          : '\n📊 Tidak ada unit terdampak.\n';
+
+      const unitList =
+        affectedUnits.length > 0
+          ? `\n🏢 Unit Terdekat:\n${affectedUnits
+              .slice(0, 5)
+              .map(
+                (u, i) =>
+                  `${i + 1}. ${u.mjs_nama} (${u.distance.toFixed(1)} km)`,
+              )
+              .join('\n')}${affectedUnits.length > 5 ? '\n...dan lainnya' : ''}`
+          : '';
+
+      const dirasakanText = gempa.Dirasakan
+        ? `\n🌐 Dirasakan: ${gempa.Dirasakan}`
+        : '';
+
+      const message = `📍 *INFO GEMPA TERKINI*
+
+📊 Magnitudo: ${gempa.Magnitude}
+📏 Kedalaman: ${gempa.Kedalaman}
+🕒 Waktu: ${gempa.Tanggal}, ${gempa.Jam}
+📌 Lokasi: ${gempa.Wilayah}
+📍 Koordinat: ${latitude}, ${longitude}${dirasakanText}
+${impactSummary}
+${unitList}
+
+🔗 Info Resmi BMKG:
+https://www.bmkg.go.id/gempabumi/
+
+Tetap waspada dan pastikan informasi dari sumber resmi.`;
+
+      if (mapShotRef.current && webviewRef.current) {
+        webviewRef.current.injectJavaScript(`
+          var controls = document.querySelector('.leaflet-control-container');
+          if(controls) controls.style.display = 'none';
+          true;
+        `);
+
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 200));
+
+        const uri = await mapShotRef.current.capture();
+
+        webviewRef.current.injectJavaScript(`
+          var controls = document.querySelector('.leaflet-control-container');
+          if(controls) controls.style.display = '';
+          true;
+        `);
+
+        await RNShare.open({
+          message: message.trim(),
+          url: uri,
+          title: 'Bagikan Info Gempa',
+        });
+      }
+    } catch (e: any) {
+      if (e.message !== 'User did not share') {
+        console.error('Share error:', e);
+      }
+    }
+  };
+
   return (
     <SafeAreaView
       style={[
@@ -250,284 +431,405 @@ const GempaDetailScreen = () => {
         }
       >
         {/* HEADER MAGNITUDE */}
-        <View style={styles.topSection}>
-          <Text style={styles.dateHeader}>
-            {gempa.Tanggal} • {gempa.Jam}
+        <View style={styles.header}>
+          <Text style={styles.mainTitle}>Gempa Terkini</Text>
+          <Text style={styles.updateText}>
+            Gempa utama terbaru menurut BMKG
           </Text>
-          <View style={styles.magRow}>
-            <Text
-              style={[
-                styles.magNumber,
-                { color: Number(gempa.Magnitude) >= 5 ? '#E11D48' : '#0F172A' },
-              ]}
-            >
-              {gempa.Magnitude}
-            </Text>
-            <Text style={styles.srText}>Magnitude</Text>
-          </View>
         </View>
 
-        <View style={styles.titleSection}>
-          <View style={styles.divider} />
-          <Text style={styles.wilayahText}>{gempa.Wilayah}</Text>
-          <View style={styles.potensiBadge}>
-            <Text style={styles.potensiText}>
-              {gempa.Potensi || 'Tidak Berpotensi Tsunami'}
-            </Text>
-          </View>
-        </View>
-
-        {/* SHAKEMAP */}
-        {gempa.Shakemap && (
-          <View style={{ paddingHorizontal: 24, marginBottom: 30 }}>
-            <TouchableOpacity
-              style={styles.mapTrigger}
-              onPress={() => setIsMapVisible(true)}
-            >
-              <Text style={styles.mapTriggerIcon}>🗺️</Text>
-              <View>
-                <Text style={styles.mapTriggerTitle}>Buka Peta Guncangan</Text>
-                <Text style={styles.mapTriggerSub}>
-                  Lihat persebaran dampak (ShakeMap)
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* DATA GRID */}
-        <View style={styles.dataGrid}>
-          <View style={styles.dataRow}>
-            <View style={styles.dataItem}>
-              <Text style={styles.label}>KEDALAMAN</Text>
-              <Text style={styles.value}>{gempa.Kedalaman}</Text>
-            </View>
-            <View style={styles.dataItem}>
-              <Text style={styles.label}>KOORDINAT</Text>
-              <Text style={styles.value}>{gempa.Coordinates}</Text>
-            </View>
-          </View>
-          <View style={styles.fullDataItem}>
-            <Text style={styles.label}>WILAYAH DIRASAKAN (MMI)</Text>
-            <Text style={styles.mmiValue}>
-              {gempa.Dirasakan || 'Data tidak dilaporkan'}
-            </Text>
-          </View>
-        </View>
-
-        {/* ANALISIS DAMPAK UNIT */}
-        <View style={{ paddingHorizontal: 24, marginTop: 32 }}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 15,
-            }}
-          >
-            <View>
-              <Text style={styles.sectionLabel}>ANALISIS DAMPAK</Text>
-              <Text style={styles.sectionTitle}>
-                Unit Terdekat ({radiusKm}km)
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={toggleRadius}
-              style={styles.expandButton}
-            >
-              <Animated.View
-                style={{
-                  transform: [
-                    {
-                      rotate: rotateAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '90deg'],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                <Text style={{ fontSize: 20 }}>{showRadius ? '✕' : '❯'}</Text>
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
-
-          {loading ? (
-            <ActivityIndicator color="#0F172A" style={{ marginTop: 20 }} />
-          ) : (
-            showRadius && (
-              <View>
-                {/* FILTER CHIPS (Hanya muncul jika Super Admin dan ada unit) */}
-                {isSuperAdmin && affectedUnits.length > 0 && (
-                  <View style={styles.filterWrapper}>
-                    <ScrollView
-                      horizontal
+        {/* MAIN CARD */}
+        {gempa && (
+          <View style={styles.shadowWrapper}>
+            {/* 1. PETA GUNCANGAN (HERO HEADER) */}
+            {/* PETA GUNCANGAN (LEAFLET) */}
+            <View style={styles.mapSection}>
+              {latitude && longitude ? (
+                <View style={styles.mapWrapper}>
+                  <ViewShot
+                    ref={mapShotRef}
+                    options={{ format: 'jpg', quality: 0.9 }}
+                    style={{ flex: 1, backgroundColor: '#E2E8F0' }} // Beri warna background agar jika telat render tidak hitam
+                  >
+                    <WebView
+                      ref={webviewRef}
+                      source={{
+                        html: generateMapHTML({ showZoomControl: true }),
+                      }}
+                      onMessage={onMapMessage}
+                      style={{ flex: 1, backgroundColor: 'transparent' }}
+                      originWhitelist={['*']}
+                      scrollEnabled={false}
+                      showsVerticalScrollIndicator={false}
                       showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.filterScroll}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                    />
+                  </ViewShot>
+                  <View style={{ position: 'absolute', top: 10, right: 10 }}>
+                    <TouchableOpacity
+                      onPress={handleShare}
+                      activeOpacity={0.8}
+                      style={styles.shareButton}
                     >
-                      <TouchableOpacity
-                        style={[
-                          styles.filterChip,
-                          filterStatus === 'all' && styles.filterChipActive,
-                        ]}
-                        onPress={() => setFilterStatus('all')}
-                      >
-                        <Text
-                          style={[
-                            styles.filterChipText,
-                            filterStatus === 'all' &&
-                              styles.filterChipTextActive,
-                          ]}
-                        >
-                          Semua ({unitStats.total})
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.filterChip,
-                          filterStatus === 'reported' &&
-                            styles.filterChipActive,
-                        ]}
-                        onPress={() => setFilterStatus('reported')}
-                      >
-                        <Text
-                          style={[
-                            styles.filterChipText,
-                            filterStatus === 'reported' &&
-                              styles.filterChipTextActive,
-                          ]}
-                        >
-                          ✅ Terlapor ({unitStats.reported})
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.filterChip,
-                          filterStatus === 'pending' && styles.filterChipActive,
-                        ]}
-                        onPress={() => setFilterStatus('pending')}
-                      >
-                        <Text
-                          style={[
-                            styles.filterChipText,
-                            filterStatus === 'pending' &&
-                              styles.filterChipTextActive,
-                          ]}
-                        >
-                          ⏳ Pending ({unitStats.pending})
-                        </Text>
-                      </TouchableOpacity>
-                    </ScrollView>
+                      <Share2 size={18} color="#0F172A" />
+                    </TouchableOpacity>
                   </View>
-                )}
+                </View>
+              ) : (
+                <View style={[styles.mapWrapper, styles.mapPlaceholder]}>
+                  <MapIcon
+                    size={32}
+                    color="#CBD5E1"
+                    style={{ marginBottom: 8 }}
+                  />
+                  <Text style={{ color: '#94A3B8', fontWeight: '500' }}>
+                    Peta tidak tersedia
+                  </Text>
+                </View>
+              )}
+            </View>
 
-                {/* LIST UNIT YANG SUDAH DIFILTER */}
-                {affectedUnits.length === 0 ? (
-                  <Text style={styles.emptyStateTextMsg}>
-                    Tidak ditemukan unit dalam radius {radiusKm} km
+            {/* 2. QUICK STATS ROW (3 Kolom) */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statColumn}>
+                <View
+                  style={[
+                    styles.statIconWrapper,
+                    { backgroundColor: '#EFF6FF' },
+                  ]}
+                >
+                  <TrendingUp size={20} color="#3B82F6" />
+                </View>
+                <View style={styles.statValueRow}>
+                  <Text style={styles.statValue}>{gempa.Magnitude}</Text>
+                </View>
+                <Text style={styles.statLabel}>Magnitudo</Text>
+              </View>
+
+              <View style={styles.verticalDivider} />
+
+              <View style={styles.statColumn}>
+                <View
+                  style={[
+                    styles.statIconWrapper,
+                    { backgroundColor: '#ECFEFF' },
+                  ]}
+                >
+                  <Waves size={20} color="#06B6D4" />
+                </View>
+                <View style={styles.statValueRow}>
+                  <Text style={styles.statValue}>
+                    {gempa.Kedalaman?.replace(' km', '')}
                   </Text>
-                ) : unitStats.filteredUnits.length === 0 ? (
-                  <Text style={styles.emptyStateTextMsg}>
-                    Tidak ada unit dengan status tersebut.
+                  <Text style={styles.statUnit}> km</Text>
+                </View>
+                <Text style={styles.statLabel}>Kedalaman</Text>
+              </View>
+
+              <View style={styles.verticalDivider} />
+
+              <View style={styles.statColumn}>
+                <View
+                  style={[
+                    styles.statIconWrapper,
+                    { backgroundColor: '#F0FDF4' },
+                  ]}
+                >
+                  <MapPin size={20} color="#10B981" />
+                </View>
+                <View style={styles.statValueRow}>
+                  <Text style={styles.statValueSmall}>{latitude}</Text>
+                </View>
+                <Text style={styles.statValueSmall}>{longitude}</Text>
+              </View>
+            </View>
+
+            <View style={styles.horizontalDivider} />
+
+            {/* 4. DETAIL LIST */}
+            <View style={styles.detailsContainer}>
+              {/* Waktu */}
+              <View style={styles.detailListRow}>
+                <View style={styles.iconCircle}>
+                  <Clock size={18} color="#64748B" />
+                </View>
+                <View style={styles.detailTextWrapper}>
+                  <Text style={styles.detailListLabel}>Waktu</Text>
+                  <Text style={styles.detailListValue}>
+                    {gempa.Tanggal}, {gempa.Jam}
                   </Text>
+                </View>
+              </View>
+
+              {/* Lokasi */}
+              <View style={styles.detailListRow}>
+                <View style={styles.iconCircle}>
+                  <Navigation size={18} color="#64748B" />
+                </View>
+                <View style={styles.detailTextWrapper}>
+                  <Text style={styles.detailListLabel}>Lokasi Gempa</Text>
+                  <Text style={styles.detailListValue}>{gempa.Wilayah}</Text>
+                </View>
+              </View>
+
+              {/* Dirasakan */}
+              {gempa.Dirasakan && (
+                <View
+                  style={[
+                    styles.detailListRow,
+                    { borderBottomWidth: 0, marginBottom: 0 },
+                  ]}
+                >
+                  <View
+                    style={[styles.iconCircle, { backgroundColor: '#FEF2F2' }]}
+                  >
+                    <AlertTriangle size={18} color="#EF4444" />
+                  </View>
+                  <View style={styles.detailTextWrapper}>
+                    <Text style={styles.detailListLabel}>
+                      Wilayah Dirasakan (Skala MMI)
+                    </Text>
+                    <Text
+                      style={[styles.detailListValue, { color: '#991B1B' }]}
+                    >
+                      {gempa.Dirasakan}
+                    </Text>
+                  </View>
+                </View>
+              )}
+              {/* ANALISIS DAMPAK UNIT - Bagian Header & Filter */}
+              <View style={{ marginTop: 40 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 10,
+                  }}
+                >
+                  <View>
+                    <Text style={styles.sectionLabel}>ANALISIS DAMPAK</Text>
+                    <Text style={styles.sectionTitle}>
+                      Unit Terdekat ({radiusKm}km)
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={toggleRadius}
+                    style={styles.expandButton}
+                  >
+                    <Animated.View
+                      style={{
+                        transform: [
+                          {
+                            rotate: rotateAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ['0deg', '180deg'], // Memutar panah ke atas
+                            }),
+                          },
+                        ],
+                      }}
+                    >
+                      {/* Menggunakan Lucide Chevron */}
+                      <ChevronDown size={24} color="#64748B" />
+                    </Animated.View>
+                  </TouchableOpacity>
+                </View>
+
+                {impactLoading ? (
+                  <ActivityIndicator
+                    color="#0F172A"
+                    style={{ marginTop: 20 }}
+                  />
                 ) : (
-                  unitStats.filteredUnits.map((unit, index) => {
-                    const statusData = unitStatus.find(
-                      s => s.mjs_id == unit.mjs_id,
-                    );
-                    const impact = getImpactLevel(unit.distance);
-                    const isReported =
-                      statusData?.status === 'reported' ||
-                      statusData?.reported_count > 0;
-
-                    return (
-                      <View key={index} style={styles.unitCard}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.unitName}>{unit.mjs_nama}</Text>
-                            <Text
-                              style={{
-                                color: impact.color,
-                                fontSize: 11,
-                                fontWeight: '800',
-                                marginTop: 4,
-                              }}
+                  showRadius && (
+                    <View>
+                      {isSuperAdmin && affectedUnits.length > 0 && (
+                        <View style={styles.filterWrapper}>
+                          <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.filterScroll}
+                          >
+                            <TouchableOpacity
+                              style={[
+                                styles.filterChip,
+                                filterStatus === 'all' &&
+                                  styles.filterChipActive,
+                              ]}
+                              onPress={() => setFilterStatus('all')}
                             >
-                              ● {impact.label}
-                            </Text>
-                          </View>
-
-                          {/* KOLOM STATUS: HANYA UNTUK SUPER ADMIN */}
-                          <View style={{ alignItems: 'flex-end' }}>
-                            {isSuperAdmin ? (
-                              <>
-                                <Text
-                                  style={{
-                                    fontSize: 12,
-                                    fontWeight: '700',
-                                    color: isReported ? '#10B981' : '#E11D48',
-                                  }}
-                                >
-                                  {isReported ? '✅ TERLAPOR' : '⏳ PENDING'}
-                                </Text>
-                                <Text
-                                  style={{
-                                    fontSize: 12,
-                                    color: '#000000',
-                                    fontWeight: '500',
-                                  }}
-                                >
-                                  {statusData?.reported_count || 0}/
-                                  {statusData?.total_user || 0} User
-                                </Text>
-                              </>
-                            ) : (
                               <Text
+                                style={[
+                                  styles.filterChipText,
+                                  filterStatus === 'all' &&
+                                    styles.filterChipTextActive,
+                                ]}
+                              >
+                                Semua ({unitStats.total})
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={[
+                                styles.filterChip,
+                                filterStatus === 'reported' &&
+                                  styles.filterChipActive,
+                              ]}
+                              onPress={() => setFilterStatus('reported')}
+                            >
+                              <Text
+                                style={[
+                                  styles.filterChipText,
+                                  filterStatus === 'reported' &&
+                                    styles.filterChipTextActive,
+                                ]}
+                              >
+                                Terlapor ({unitStats.reported})
+                              </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={[
+                                styles.filterChip,
+                                filterStatus === 'pending' &&
+                                  styles.filterChipActive,
+                              ]}
+                              onPress={() => setFilterStatus('pending')}
+                            >
+                              <Text
+                                style={[
+                                  styles.filterChipText,
+                                  filterStatus === 'pending' &&
+                                    styles.filterChipTextActive,
+                                ]}
+                              >
+                                Pending ({unitStats.pending})
+                              </Text>
+                            </TouchableOpacity>
+                          </ScrollView>
+                        </View>
+                      )}
+
+                      {/* LIST UNIT YANG SUDAH DIFILTER */}
+                      {affectedUnits.length === 0 ? (
+                        <Text style={styles.emptyStateTextMsg}>
+                          Tidak ditemukan unit dalam radius {radiusKm} km
+                        </Text>
+                      ) : unitStats.filteredUnits.length === 0 ? (
+                        <Text style={styles.emptyStateTextMsg}>
+                          Tidak ada unit dengan status tersebut.
+                        </Text>
+                      ) : (
+                        unitStats.filteredUnits.map((unit, index) => {
+                          const statusData = unitStatus.find(
+                            s => s.mjs_id == unit.mjs_id,
+                          );
+                          const impact = getImpactLevel(unit.distance);
+                          const isReported =
+                            statusData?.status === 'reported' ||
+                            (statusData?.reported_count ?? 0) > 0;
+
+                          return (
+                            <View key={index} style={styles.unitCard}>
+                              <View
                                 style={{
-                                  fontSize: 11,
-                                  color: '#94A3B8',
-                                  fontStyle: 'italic',
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
                                 }}
                               >
-                                Lokasi Terpantau
-                              </Text>
-                            )}
-                          </View>
-                        </View>
+                                <View style={{ flex: 1 }}>
+                                  <Text style={styles.unitName}>
+                                    {unit.mjs_nama}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      color: impact.color,
+                                      fontSize: 11,
+                                      fontWeight: '800',
+                                      marginTop: 4,
+                                    }}
+                                  >
+                                    ● {impact.label}
+                                  </Text>
+                                </View>
 
-                        {/* Distance Visualizer */}
-                        <View style={[styles.distanceTrack, { marginTop: 12 }]}>
-                          <View
-                            style={[
-                              styles.distanceFill,
-                              {
-                                width: `${Math.max(
-                                  10,
-                                  100 - (unit.distance / radiusKm) * 100,
-                                )}%`,
-                                backgroundColor: impact.color,
-                              },
-                            ]}
-                          />
-                        </View>
-                        <Text style={styles.distanceText}>
-                          {unit.distance.toFixed(1)} km dari episenter
-                        </Text>
-                      </View>
-                    );
-                  })
+                                {/* KOLOM STATUS: HANYA UNTUK SUPER ADMIN */}
+                                <View style={{ alignItems: 'flex-end' }}>
+                                  {isSuperAdmin ? (
+                                    <>
+                                      <Text
+                                        style={{
+                                          fontSize: 12,
+                                          fontWeight: '700',
+                                          color: isReported
+                                            ? '#10B981'
+                                            : '#E11D48',
+                                        }}
+                                      >
+                                        {isReported
+                                          ? '✅ TERLAPOR'
+                                          : '⏳ PENDING'}
+                                      </Text>
+                                      <Text
+                                        style={{
+                                          fontSize: 12,
+                                          color: '#000000',
+                                          fontWeight: '500',
+                                        }}
+                                      >
+                                        {statusData?.reported_count || 0}/
+                                        {statusData?.total_user || 0} User
+                                      </Text>
+                                    </>
+                                  ) : (
+                                    <Text
+                                      style={{
+                                        fontSize: 11,
+                                        color: '#94A3B8',
+                                        fontStyle: 'italic',
+                                      }}
+                                    >
+                                      Lokasi Terpantau
+                                    </Text>
+                                  )}
+                                </View>
+                              </View>
+
+                              {/* Distance Visualizer */}
+                              <View
+                                style={[
+                                  styles.distanceTrack,
+                                  { marginTop: 12 },
+                                ]}
+                              >
+                                <View
+                                  style={[
+                                    styles.distanceFill,
+                                    {
+                                      width: `${Math.max(
+                                        10,
+                                        100 - (unit.distance / radiusKm) * 100,
+                                      )}%`,
+                                      backgroundColor: impact.color,
+                                    },
+                                  ]}
+                                />
+                              </View>
+                              <Text style={styles.distanceText}>
+                                {unit.distance.toFixed(1)} km dari episenter
+                              </Text>
+                            </View>
+                          );
+                        })
+                      )}
+                    </View>
+                  )
                 )}
               </View>
-            )
-          )}
-        </View>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* FOOTER */}
@@ -541,37 +843,6 @@ const GempaDetailScreen = () => {
           <Text style={styles.closeButtonText}>Kembali ke Daftar</Text>
         </TouchableOpacity>
       </View>
-
-      {/* SHAKEMAP MODAL */}
-      <Modal visible={isMapVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <SafeAreaView style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => setIsMapVisible(false)}
-              style={styles.modalCloseBtn}
-            >
-              <Text style={styles.modalCloseText}>Tutup Peta</Text>
-            </TouchableOpacity>
-          </SafeAreaView>
-          <ScrollView
-            maximumZoomScale={4}
-            minimumZoomScale={1}
-            centerContent
-            contentContainerStyle={styles.modalScroll}
-          >
-            <Image
-              source={{
-                uri: `https://data.bmkg.go.id/DataMKG/TEWS/${gempa.Shakemap}`,
-              }}
-              style={styles.fullMapImage}
-              resizeMode="contain"
-            />
-          </ScrollView>
-          <View style={styles.modalFooter}>
-            <Text style={styles.zoomHint}>Gunakan dua jari untuk zoom</Text>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };

@@ -226,7 +226,7 @@ const MapScreen = () => {
       <View style={styles.mapContainer}>
         <WebView
           ref={webViewRef}
-          source={{ html: generateMapHTML() }}
+          source={{ html: generateMapHTML({ showZoomControl: false }) }}
           javaScriptEnabled
           originWhitelist={['*']}
           style={{ flex: 1 }}

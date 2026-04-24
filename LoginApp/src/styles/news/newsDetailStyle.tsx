@@ -54,6 +54,12 @@ export const styles = StyleSheet.create({
   body: {
     paddingHorizontal: 20,
   },
+  viewer: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 6,
+    fontWeight: '500',
+  },
   paragraph: {
     fontSize: 16,
     color: '#444',

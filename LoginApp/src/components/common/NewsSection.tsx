@@ -9,6 +9,7 @@ type NewsItem = {
   dbe_judul: string;
   dbe_gambar: string;
   dbe_tgl: string;
+  dbe_viewer: string;
 };
 
 type Props = {
@@ -62,7 +63,7 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
             {featuredNews.dbe_judul}
           </Text>
 
-          <Text style={styles.heroDate}>{featuredNews.dbe_tgl}</Text>
+          <Text style={styles.heroDate}>{featuredNews.dbe_tgl} • {featuredNews.dbe_viewer} kali dilihat</Text>
         </View>
       </TouchableOpacity>
 
@@ -92,7 +93,7 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
                   {item.dbe_judul}
                 </Text>
 
-                <Text style={styles.miniDate}>{item.dbe_tgl}</Text>
+                <Text style={styles.miniDate}>{item.dbe_tgl} • {item.dbe_viewer} kali dilihat</Text>
               </View>
             </TouchableOpacity>
           ))}

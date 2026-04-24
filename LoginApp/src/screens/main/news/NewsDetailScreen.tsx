@@ -104,7 +104,7 @@ const NewsDetailScreen = () => {
         <View style={[styles.headerInfo, { paddingTop: insets.top + 70 }]}>
           <Text style={styles.title}>{news.dbe_judul}</Text>
           <Text style={styles.date}>
-            {news.dbe_tgl} • {news.dbe_jam}
+            {news.dbe_tgl} • {news.dbe_jam} • {news.dbe_viewer} kali dilihat
           </Text>
         </View>
 
