@@ -8,6 +8,10 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API, { setAuthToken } from '../services/api';
 import LogoutAlert from '../components/modal/LogoutAlert';
+import {
+  getMessaging,
+  unsubscribeFromTopic,
+} from '@react-native-firebase/messaging';
 
 export type User = {
   user_id: number;
@@ -50,6 +54,16 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   */
   const logout = async () => {
     console.log('Manual logout');
+
+    try {
+      const messaging = getMessaging();
+      if (user?.user_jabatan == 1) {
+        await unsubscribeFromTopic(messaging, 'gempa_superadmin');
+      }
+      console.log('✅ UNSUBSCRIBE TOPIC');
+    } catch (e) {
+      console.log('Unsubscribe error', e);
+    }
 
     await AsyncStorage.multiRemove(['user', 'token']);
 

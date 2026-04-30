@@ -1,25 +1,48 @@
-import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  registerDeviceForRemoteMessages,
+  getToken,
+  subscribeToTopic,
+  unsubscribeFromTopic,
+} from '@react-native-firebase/messaging';
 import API from './api';
+import { Platform, PermissionsAndroid } from 'react-native';
+import { User } from '../contexts/UserContext';
 
-export async function registerFcmToken() {
+async function requestPermission() {
+  if (Platform.OS !== 'android') return true;
+  if (Platform.Version < 33) return true;
+
+  const granted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+  );
+
+  return granted === PermissionsAndroid.RESULTS.GRANTED;
+}
+
+export async function registerFcmToken(user: User | null) {
   try {
+    const allowed = await requestPermission();
+    if (!allowed) return;
 
-    const token = await messaging().getToken();
+    const messaging = getMessaging();
 
-    if (!token) {
-      console.log('❌ Gagal mendapatkan FCM Token');
-      return;
-    }
+    await registerDeviceForRemoteMessages(messaging);
 
-    console.log('🔥 FCM TOKEN (Login) =>', token);
+    const token = await getToken(messaging);
+    if (!token) return;
 
-    // 2. Kirim ke backend API
-    await API.post('/update-fcm-token', {
+    console.log('🔥 FCM TOKEN =>', token);
+
+    await API.post('/save-fcm-token', {
       fcm_token: token,
     });
 
-    console.log('✅ Token berhasil dikirim ke server');
+    if (user?.user_jabatan == 1) {
+      await subscribeToTopic(messaging, 'gempa_superadmin');
+      console.log('✅ SUBSCRIBE TOPIC gempa_superadmin');
+    }
   } catch (e) {
-    console.error('❌ FCM ERROR:', e);
+    console.log('FCM ERROR', e);
   }
 }

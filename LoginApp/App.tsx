@@ -3,16 +3,15 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import Toast from 'react-native-toast-message';
-import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 import { AppState } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppConfigProvider } from './src/contexts/AppConfigContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { LayoutProvider } from './src/contexts/LayoutContext';
 import { UserProvider } from './src/contexts/UserContext';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { getMessaging, onTokenRefresh } from '@react-native-firebase/messaging';
 
 import {
   navigationRef,
@@ -20,11 +19,10 @@ import {
   markOpenedFromNotification,
 } from './src/navigation/navigationRef';
 import { LocationProvider } from './src/contexts/LocationContext';
+import API from './src/services/api';
 
 // 🔧 Convert firebase data supaya semua string
-function normalizeData(
-  data?: Record<string, any>,
-): Record<string, string> | undefined {
+function normalizeData(data?: any): Record<string, string> | undefined {
   if (!data) return undefined;
 
   const result: Record<string, string> = {};
@@ -38,142 +36,106 @@ function normalizeData(
 }
 
 const App = () => {
-  // 🔔 SETUP PERMISSION, CHANNEL, & TOKEN (DIGABUNG AGAR TIDAK HANG)
+  // 🔥 GET FCM TOKEN
+  useEffect(() => {
+    messaging()
+      .getToken()
+      .then(token => {
+        console.log('🔥 FCM TOKEN:', token);
+      });
+  }, []);
+
+  // 🔔 SETUP PERMISSION + CHANNEL
   useEffect(() => {
     async function setupNotification() {
-      try {
-        // 1. Minta Izin Terlebih Dahulu
-        await messaging().requestPermission();
-        await notifee.requestPermission();
+      await messaging().requestPermission();
+      await notifee.requestPermission();
 
-        // 2. Buat Channel (Bypass Cache Android)
-        await notifee.createChannel({
-          id: 'sound_bencana_v1',
-          name: 'General Notification',
-          importance: AndroidImportance.HIGH,
-          badge: true,
-          sound: 'notif_bencana',
-        });
-
-        // 3. Ambil Token FCM (Hanya setelah izin beres)
-        const token = await messaging().getToken();
-        console.log('🔥 FCM TOKEN BERHASIL:', token);
-      } catch (error) {
-        console.error('❌ Gagal setup notifikasi:', error);
-      }
+      await notifee.createChannel({
+        id: 'custom-sound-v2',
+        name: 'General Notification',
+        importance: AndroidImportance.HIGH,
+        badge: true,
+        sound: 'notif_bencana', // tanpa .mp3
+      });
     }
 
     setupNotification();
   }, []);
 
-  // 🔔 HANDLE CLICK (FOREGROUND)
+  // 🔔 FOREGROUND MESSAGE
   useEffect(() => {
-    return notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS) {
-        const data = detail.notification?.data;
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log('MESSAGE RECEIVED', remoteMessage);
 
-        if (data) {
-          markOpenedFromNotification(data);
-          flushPendingNavigation();
-        }
-      }
+      const title = String(
+        remoteMessage.data?.title ??
+          remoteMessage.notification?.title ??
+          'Notifikasi',
+      );
+
+      const body = String(
+        remoteMessage.data?.body ?? remoteMessage.notification?.body ?? '',
+      );
+
+      await notifee.displayNotification({
+        title,
+        body,
+        data: normalizeData(remoteMessage.data),
+        android: {
+          channelId: 'custom-sound-v2',
+          sound: 'notif_bencana',
+          pressAction: {
+            id: 'default',
+          },
+        },
+      });
     });
+
+    return unsubscribe;
   }, []);
 
-  // 🔔 HANDLE CLICK (APP MATI)
+  // 🔔 HANDLE APP OPEN FROM NOTIFICATION
   useEffect(() => {
-    messaging()
-      .getInitialNotification()
-      .then(remoteMessage => {
-        if (remoteMessage?.data) {
-          markOpenedFromNotification(remoteMessage.data);
-        }
-      });
+    async function handleInitialNotification() {
+      const initial = await notifee.getInitialNotification();
+      if (!initial) return;
+
+      const data = initial.notification?.data;
+
+      if (data) {
+        markOpenedFromNotification(data);
+      }
+    }
+
+    handleInitialNotification();
   }, []);
 
   // 🔔 HANDLE NAVIGATION DELAY
   useEffect(() => {
-    const sub = AppState.addEventListener('change', async state => {
+    const sub = AppState.addEventListener('change', state => {
       if (state === 'active') {
         flushPendingNavigation();
-        await notifee.cancelAllNotifications();
       }
     });
 
     return () => sub.remove();
   }, []);
 
-  // KILLED APP
+  //Listener Token
   useEffect(() => {
-    const checkInitialNotif = async () => {
-      const initialNotif = await messaging().getInitialNotification();
+    const messaging = getMessaging();
 
-      if (
-        initialNotif?.data?.type === 'gempa' &&
-        initialNotif?.data?.user_jabatan !== '1'
-      ) {
-        await AsyncStorage.setItem(
-          'LAST_GEMPA_USER',
-          JSON.stringify(initialNotif.data),
-        );
+    const unsubscribe = onTokenRefresh(messaging, async token => {
+      console.log('🔄 TOKEN REFRESH:', token);
 
-        await AsyncStorage.setItem('GEMPA_REPORT_STATUS', 'pending');
+      try {
+        await API.post('/save-fcm-token', {
+          fcm_token: token,
+        });
+      } catch (e) {
+        console.log('Failed update token', e);
       }
-    };
-
-    checkInitialNotif();
-  }, []);
-
-  // BACKGROUND
-  useEffect(() => {
-    const unsubscribe = messaging().onNotificationOpenedApp(
-      async remoteMessage => {
-        if (
-          remoteMessage?.data?.type === 'gempa' &&
-          remoteMessage?.data?.user_jabatan !== '1'
-        ) {
-          await AsyncStorage.setItem(
-            'LAST_GEMPA_USER',
-            JSON.stringify(remoteMessage.data),
-          );
-
-          await AsyncStorage.setItem('GEMPA_REPORT_STATUS', 'pending');
-        }
-
-        if (remoteMessage?.data) {
-          markOpenedFromNotification(remoteMessage.data);
-        }
-      },
-    );
-
-    return unsubscribe;
-  }, []);
-
-  // FOREGROUND PUSH NOTIFICATION
-  useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      const data = remoteMessage.data;
-
-      if (!data) return;
-
-      // ✅ SIMPAN HANYA GEMPA + USER BIASA
-      if (data.type === 'gempa' && data.user_jabatan !== '1') {
-        await AsyncStorage.setItem('LAST_GEMPA_USER', JSON.stringify(data));
-        await AsyncStorage.setItem('GEMPA_REPORT_STATUS', 'pending');
-      }
-
-      await notifee.displayNotification({
-        title: String(data.title),
-        body: String(data.body),
-        data: normalizeData(data), // Tambahkan data payload ke notifee lokal
-        android: {
-          channelId: 'sound_bencana_v1', // 👈 PASTIKAN INI SAMA DENGAN ID BARU
-          pressAction: {
-            id: 'default',
-          },
-          sound: 'notif_bencana',
-        },
-      });
     });
 
     return unsubscribe;

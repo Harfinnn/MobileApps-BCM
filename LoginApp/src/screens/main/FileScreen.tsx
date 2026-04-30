@@ -2,8 +2,8 @@ import React, {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
   useCallback,
+  useLayoutEffect,
 } from 'react';
 import {
   View,
@@ -15,15 +15,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  UIManager,
   Linking,
   Alert,
   BackHandler,
-  LayoutAnimation,
   ScrollView,
   Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import LottieView from 'lottie-react-native';
@@ -37,13 +34,19 @@ import {
 } from '../../services/chatService';
 import { useLayout } from '../../contexts/LayoutContext';
 
+import CobChart from '../../components/AI/CobChart';
+import StageChart from '../../components/AI/StageChart';
+
+import { Dimensions } from 'react-native';
 import { styles, markdownStyles } from '../../styles/AI/BotStyle';
 
 type Message = {
   id: string;
-  text: string;
+  text?: string;
   sender: 'user' | 'ai';
   timestamp: string;
+  type?: 'text' | 'chart';
+  chartData?: any;
 };
 
 const TAB_HEIGHT = 90;
@@ -72,31 +75,17 @@ function FileScreen({ navigation }: any) {
   const flatListRef = useRef<FlatList>(null);
   const { setHideHeader } = useLayout();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const screenWidth = Dimensions.get('window').width;
+  const isTablet = screenWidth > 600;
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: false });
-    }, 60);
-  };
-
-  const copyMessage = (text: string) => {
-    Clipboard.setString(text);
-    Alert.alert('Teks Disalin', 'Pesan berhasil disalin ke clipboard.');
-  };
-
+  // Navigasi dikembalikan ke standar normal
   useLayoutEffect(() => {
-    if (navigation) navigation.setOptions({ headerShown: false });
+    navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
   useEffect(() => {
     setHideHeader(true);
     return () => setHideHeader(false);
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      UIManager.setLayoutAnimationEnabledExperimental?.(true);
-    }
   }, []);
 
   useFocusEffect(
@@ -113,11 +102,22 @@ function FileScreen({ navigation }: any) {
     }, [navigation]),
   );
 
+  // Scroll dikembalikan ke animasi standar
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+  };
+
+  const copyMessage = (text: string) => {
+    Clipboard.setString(text);
+    Alert.alert('Teks Disalin', 'Pesan berhasil disalin ke clipboard.');
+  };
+
   const executeClearChat = async () => {
     setShowDeleteModal(false);
     try {
       await clearChatHistory();
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setMessages([
         {
           id: 'reset',
@@ -141,29 +141,70 @@ function FileScreen({ navigation }: any) {
       timestamp: getCurrentTime(),
     };
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
-
-    scrollToBottom(); // 🔥 scroll setelah user kirim
+    scrollToBottom();
 
     try {
       const response = await sendMessage(textToSend);
 
-      const aiMessage: Message = {
-        id: Date.now().toString() + '_ai',
-        text: response.reply,
-        sender: 'ai',
-        timestamp: getCurrentTime(),
-      };
+      if (response.type === 'chart') {
+        const newMessages: Message[] = [];
 
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setMessages(prev => [...prev, aiMessage]);
+        if (response.message) {
+          newMessages.push({
+            id: Date.now().toString() + '_info',
+            text: response.message,
+            sender: 'ai',
+            timestamp: getCurrentTime(),
+            type: 'text',
+          });
+        }
 
-      scrollToBottom(); // 🔥 scroll setelah AI balas
-    } catch (error) {
-      console.log(error);
+        newMessages.push({
+          id: Date.now().toString() + '_chart',
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'chart',
+          chartData: response.data,
+        });
+
+        setMessages(prev => [...prev, ...newMessages]);
+      } else {
+        const aiMessage: Message = {
+          id: Date.now().toString() + '_ai',
+          text: response.reply || response.message,
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      }
+
+      scrollToBottom();
+    } catch (error: any) {
+      let errorMessage =
+        'Maaf, gagal terhubung ke server atau terjadi kesalahan jaringan.';
+
+      if (error.response && error.response.status === 429) {
+        errorMessage =
+          error.response.data?.reply ||
+          '⚠️ Sistem mendeteksi pesan terlalu cepat. Mohon tunggu 1 menit.';
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now().toString() + '_warning',
+          text: errorMessage,
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+        },
+      ]);
+      scrollToBottom();
     } finally {
       setLoading(false);
     }
@@ -180,13 +221,13 @@ function FileScreen({ navigation }: any) {
     const hide = Keyboard.addListener('keyboardDidHide', () =>
       setKeyboardVisible(false),
     );
-
     return () => {
       show.remove();
       hide.remove();
     };
   }, []);
 
+  // INI ADALAH FUNGSI YANG MEMBUAT GRAFIK TIDAK HILANG SAAT RELOAD
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -203,23 +244,64 @@ function FileScreen({ navigation }: any) {
           return;
         }
 
-        const formattedMessages = history.flatMap((item: any) => [
-          {
-            id: item.id + '_user',
-            text: item.message,
-            sender: 'user' as const,
-            timestamp: item.timestamp || getCurrentTime(),
-          },
-          {
-            id: item.id + '_ai',
-            text: item.reply,
-            sender: 'ai' as const,
-            timestamp: item.replyTimestamp || getCurrentTime(),
-          },
-        ]);
+        const formattedMessages = history.flatMap((item: any) => {
+          let aiText = item.reply || '';
+          let isChart = false;
+          let chartData = null;
+
+          try {
+            const parsedReply = JSON.parse(item.reply);
+            if (parsedReply && parsedReply.type === 'chart') {
+              isChart = true;
+              aiText = parsedReply.message;
+              chartData = parsedReply.data;
+            }
+          } catch (e) {
+            // Abaikan jika balasan bukan JSON (teks biasa)
+          }
+
+          const msgs: Message[] = [
+            {
+              id: item.id + '_user',
+              text: item.message,
+              sender: 'user' as const,
+              timestamp: item.timestamp || getCurrentTime(),
+            },
+          ];
+
+          if (isChart) {
+            if (aiText) {
+              msgs.push({
+                id: item.id + '_info',
+                text: aiText,
+                sender: 'ai' as const,
+                timestamp: item.replyTimestamp || getCurrentTime(),
+                type: 'text',
+              });
+            }
+            msgs.push({
+              id: item.id + '_chart',
+              sender: 'ai' as const,
+              timestamp: item.replyTimestamp || getCurrentTime(),
+              type: 'chart',
+              chartData: chartData,
+            });
+          } else {
+            msgs.push({
+              id: item.id + '_ai',
+              text: aiText,
+              sender: 'ai' as const,
+              timestamp: item.replyTimestamp || getCurrentTime(),
+              type: 'text',
+            });
+          }
+          return msgs;
+        });
 
         setMessages(formattedMessages);
-        scrollToBottom();
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false });
+        }, 200);
       } catch (error) {
         setMessages([
           {
@@ -239,12 +321,14 @@ function FileScreen({ navigation }: any) {
       <View
         style={[
           styles.safeArea,
-          {
-            paddingTop: insets.top,
-          },
+          { paddingTop: insets.top, backgroundColor: 'transparent' },
         ]}
       >
-        <StatusBar barStyle="dark-content" backgroundColor="#F4F7F6" />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor="transparent"
+          translucent={true}
+        />
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -252,7 +336,6 @@ function FileScreen({ navigation }: any) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
         >
           <View style={styles.container}>
-            {/* ===== FLOATING BANNER ===== */}
             <View style={styles.floatingBanner}>
               <View style={styles.bannerInfo}>
                 <LottieView
@@ -289,14 +372,7 @@ function FileScreen({ navigation }: any) {
                 { paddingBottom: insets.bottom + TAB_HEIGHT + 20 },
               ]}
               showsVerticalScrollIndicator={false}
-              onContentSizeChange={() => {
-                setTimeout(() => {
-                  flatListRef.current?.scrollToEnd({ animated: false });
-                }, 80);
-              }}
-              onLayout={() => {
-                flatListRef.current?.scrollToEnd({ animated: false });
-              }}
+              onContentSizeChange={scrollToBottom}
               renderItem={({ item }) => {
                 const isAI = item.sender === 'ai';
                 return (
@@ -311,30 +387,42 @@ function FileScreen({ navigation }: any) {
                         <Text style={styles.avatarEmoji}>🤖</Text>
                       </View>
                     )}
-
                     <TouchableOpacity
-                      activeOpacity={0.8}
-                      onLongPress={() => copyMessage(item.text)}
-                      delayLongPress={300}
+                      activeOpacity={1}
+                      onLongPress={() => item.text && copyMessage(item.text)}
+                      delayLongPress={500}
                       style={[
                         styles.bubble,
                         isAI ? styles.aiBubble : styles.userBubble,
+                        item.type === 'chart'
+                          ? {
+                              width: screenWidth * (isTablet ? 0.7 : 0.85),
+                              maxWidth: '100%',
+                            }
+                          : { maxWidth: isTablet ? '65%' : '80%' },
                       ]}
                     >
                       {isAI ? (
-                        <Markdown
-                          style={markdownStyles}
-                          onLinkPress={url => {
-                            Linking.openURL(url);
-                            return true;
-                          }}
-                        >
-                          {item.text}
-                        </Markdown>
+                        item.type === 'chart' ? (
+                          item.chartData?.datasets?.length > 2 ? (
+                            <StageChart chartData={item.chartData} />
+                          ) : (
+                            <CobChart chartData={item.chartData} />
+                          )
+                        ) : (
+                          <Markdown
+                            style={markdownStyles}
+                            onLinkPress={url => {
+                              Linking.openURL(url);
+                              return true;
+                            }}
+                          >
+                            {item.text || ''}
+                          </Markdown>
+                        )
                       ) : (
                         <Text style={styles.userText}>{item.text}</Text>
                       )}
-
                       <Text
                         style={[
                           styles.timestampText,

@@ -1,6 +1,7 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import styles from '../../styles/news/newsSectionStyle';
+import FastImage from 'react-native-fast-image';
 
 const BASE_IMAGE_URL = 'https://simpel-bcm.com/img/berita/';
 
@@ -21,6 +22,14 @@ type Props = {
 const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
   const safeData = Array.isArray(data) ? data : [];
 
+  useEffect(() => {
+    const images = safeData.map(item => ({
+      uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
+    }));
+
+    FastImage.preload(images);
+  }, [safeData]);
+
   if (safeData.length === 0) return null;
 
   const featuredNews = safeData[0];
@@ -33,7 +42,7 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
         <View>
           <Text style={styles.title}>Berita Terkini</Text>
           <Text style={styles.subtitle}>
-            Informasi terbaru seputar kebencanaan
+            Informasi terbaru dan penting untuk Anda
           </Text>
         </View>
         <TouchableOpacity onPress={onPressAll} activeOpacity={0.7}>
@@ -47,11 +56,13 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
         onPress={() => onItemPress?.(featuredNews)}
         activeOpacity={0.9}
       >
-        <Image
+        <FastImage
           source={{
             uri: `${BASE_IMAGE_URL}${featuredNews.dbe_gambar?.trim()}`,
+            priority: FastImage.priority.high,
           }}
           style={styles.heroImage}
+          resizeMode={FastImage.resizeMode.cover}
         />
 
         <View style={styles.heroOverlay}>
@@ -63,7 +74,9 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
             {featuredNews.dbe_judul}
           </Text>
 
-          <Text style={styles.heroDate}>{featuredNews.dbe_tgl} • {featuredNews.dbe_viewer} kali dilihat</Text>
+          <Text style={styles.heroDate}>
+            {featuredNews.dbe_tgl} • {featuredNews.dbe_viewer} kali dilihat
+          </Text>
         </View>
       </TouchableOpacity>
 
@@ -81,11 +94,13 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
               onPress={() => onItemPress?.(item)}
               activeOpacity={0.8}
             >
-              <Image
+              <FastImage
                 source={{
                   uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
+                  priority: FastImage.priority.normal,
                 }}
                 style={styles.miniThumbnail}
+                resizeMode={FastImage.resizeMode.cover}
               />
 
               <View style={styles.miniContent}>
@@ -93,7 +108,9 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
                   {item.dbe_judul}
                 </Text>
 
-                <Text style={styles.miniDate}>{item.dbe_tgl} • {item.dbe_viewer} kali dilihat</Text>
+                <Text style={styles.miniDate}>
+                  {item.dbe_tgl} • {item.dbe_viewer} kali dilihat
+                </Text>
               </View>
             </TouchableOpacity>
           ))}

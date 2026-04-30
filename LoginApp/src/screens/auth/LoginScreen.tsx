@@ -74,7 +74,7 @@ const LoginScreen: React.FC = () => {
       await setUser(user);
 
       // kirim fcm token ke backend
-      await registerFcmToken();
+      await registerFcmToken(user);
 
       // masuk ke aplikasi
       navigation.replace('Main');

@@ -409,58 +409,86 @@ const InfoGempaBumiScreen = () => {
 
   const handleShare = async () => {
     try {
-      const impactSummary =
-        affectedUnits.length > 0
-          ? `\n📊 Dampak:\n- Total: ${unitStats.total}\n- Terlapor: ${unitStats.reported}\n- Pending: ${unitStats.pending}\n- Radius: ${radiusKm} km`
-          : '\n📊 Tidak ada unit terdampak.\n';
-
-      const unitList =
-        affectedUnits.length > 0
-          ? `\n🏢 Unit Terdekat:\n${affectedUnits
-              .slice(0, 5)
-              .map(
-                (u, i) =>
-                  `${i + 1}. ${u.mjs_nama} (${u.distance.toFixed(1)} km)`,
-              )
-              .join('\n')}${affectedUnits.length > 5 ? '\n...dan lainnya' : ''}`
-          : '';
-
+      // 1. Kondisi untuk status 'Dirasakan'
       const dirasakanText = mainGempa.Dirasakan
-        ? `\n🌐 Dirasakan: ${mainGempa.Dirasakan}`
+        ? `\n🌐 Dirasakan   : ${mainGempa.Dirasakan}`
         : '';
 
-      const message = `📍 *INFO mainGempa TERKINI*
+      // 2. Kondisi untuk status 'Potensi Tsunami'
+      const potensiTsunamiText = mainGempa.Potensi
+        ? `\n🌊 Potensi     : *${mainGempa.Potensi}*`
+        : '';
 
-📊 Magnitudo: ${mainGempa.Magnitude}
-📏 Kedalaman: ${mainGempa.Kedalaman}
-🕒 Waktu: ${mainGempa.Tanggal}, ${mainGempa.Jam}
-📌 Lokasi: ${mainGempa.Wilayah}
-📍 Koordinat: ${latitude}, ${longitude}${dirasakanText}
-${impactSummary}
-${unitList}
+      // 3. Tambahan Radius pada blok parameter utama
+      const radiusText = `\n⭕ Radius      : ${radiusKm} km`;
 
-🔗 Info Resmi BMKG:
-https://www.bmkg.go.id/gempabumi/
+      // 4. Daftar Unit Terdekat (Hanya muncul jika ada unit terdampak)
+      const unitListText =
+        affectedUnits.length > 0
+          ? `\n\n🏢 *Unit Terdekat (Dalam Radius ${radiusKm} km):*\n${affectedUnits
+              .slice(0, 5)
+              .map((u, i) => `• ${u.mjs_nama} (${u.distance.toFixed(1)} km)`)
+              .join('\n')}${
+              affectedUnits.length > 5 ? '\n• ...dan lainnya' : ''
+            }`
+          : '';
 
-Tetap waspada dan pastikan informasi dari sumber resmi.`;
+      // 5. Template Pesan Final
+      const message = `Assalamualaikum Warahmatullahi Wabarakaatuh,
+
+🚨 *INFORMASI GEMPABUMI TERKINI* 🚨
+
+📊 Magnitudo   : ${mainGempa.Magnitude}
+📏 Kedalaman   : ${mainGempa.Kedalaman}
+🕒 Waktu       : ${mainGempa.Tanggal}, ${mainGempa.Jam}
+📌 Pusat Gempa : ${mainGempa.Wilayah}
+📍 Koordinat   : ${latitude}, ${longitude}${radiusText}${potensiTsunamiText}${dirasakanText}${unitListText}
+
+⚠️ * Tindakan Penting yang Harus Segera Dilakukan:*
+
+*1. Tetap tenang dan waspada*
+Jangan terpengaruh informasi yang belum pasti. Pastikan hanya mengikuti update resmi dari BMKG.
+
+*2. Lindungi diri saat gempa terjadi*
+Segera berlindung di bawah meja atau dekat struktur yang kuat. Setelah gempa berhenti, lakukan evakuasi menuju titik kumpul terbuka sesuai prosedur.
+
+*3. Antisipasi gempa susulan*
+Tetap siaga terhadap kemungkinan gempa susulan.
+
+*4. Aktifkan prosedur komunikasi darurat (Call Tree)*
+Segera laporkan kondisi diri, keluarga, dan aset Bank Syariah Indonesia melalui jalur yang telah ditentukan.
+
+Keselamatan adalah prioritas. Kesiapan adalah kunci. Kami mengimbau seluruh pegawai untuk tetap tenang, sigap, dan mengikuti prosedur yang berlaku dengan disiplin.
+
+BCM.... Siap..... Siaga.....
+
+----------------------------------------
+Demikian informasi yang kami sampaikan.
+Business Continuity Management
+
+*Source:* BCM24`;
 
       if (mapShotRef.current && webviewRef.current) {
+        // Sembunyikan kontrol peta sebelum screenshot
         webviewRef.current.injectJavaScript(`
-          var controls = document.querySelector('.leaflet-control-container');
-          if(controls) controls.style.display = 'none';
-          true;
-        `);
+        var controls = document.querySelector('.leaflet-control-container');
+        if(controls) controls.style.display = 'none';
+        true;
+      `);
 
-        await new Promise<void>(resolve => setTimeout(() => resolve(), 200));
+        // Jeda 500ms agar elemen DOM WebView benar-benar hilang sebelum direkam
+        await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
 
         const uri = await mapShotRef.current.capture();
 
+        // Kembalikan kontrol peta setelah screenshot selesai
         webviewRef.current.injectJavaScript(`
-          var controls = document.querySelector('.leaflet-control-container');
-          if(controls) controls.style.display = '';
-          true;
-        `);
+        var controls = document.querySelector('.leaflet-control-container');
+        if(controls) controls.style.display = '';
+        true;
+      `);
 
+        // Buka menu share bawaan perangkat
         await RNShare.open({
           message: message.trim(),
           url: uri,
@@ -671,7 +699,9 @@ Tetap waspada dan pastikan informasi dari sumber resmi.`;
                   </View>
                 </View>
               )}
+
               {/* ANALISIS DAMPAK UNIT - Bagian Header & Filter */}
+              {isSuperAdmin && (
               <View style={{ paddingHorizontal: 24, marginTop: 40 }}>
                 <View
                   style={{
@@ -918,13 +948,14 @@ Tetap waspada dan pastikan informasi dari sumber resmi.`;
                   )
                 )}
               </View>
+              )}
             </View>
           </View>
         </View>
       )}
 
       {/* LIST */}
-      <Text style={styles.sectionTitle}>Gempa Dirasakan</Text>
+      <Text style={styles.sectionTitle}>History Gempa Bumi</Text>
 
       {listGempa.slice(0, 5).map((item, index) => (
         <TouchableOpacity
