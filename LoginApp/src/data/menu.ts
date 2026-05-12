@@ -111,13 +111,14 @@ export const MORE_MENU: MenuItemType[] = [
   },
   {
     id: 9,
-    title: 'Dashboard Non-IT',
+    title: 'Dashboard Non-IT (TEST)',
     image: require('../assets/newIcon/dashboard_2.png'),
-    route: 'DashboardNonIT',
+    route: 'ChatBeta',
     color: 'rgba(0, 163, 157, 0.22)',
     iconWidth: 130,
     iconHeight: 130,
     offsetBottom: -40,
     offsetRight: -35,
   },
+
 ];

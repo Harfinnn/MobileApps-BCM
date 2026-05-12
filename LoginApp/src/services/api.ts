@@ -5,7 +5,13 @@ import { triggerLogout } from './authHandler';
 
 const API = axios.create({
   baseURL: `${BASE_URL}/api`,
-  timeout: 10000,
+  timeout: 30000,
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'User-Agent':
+      'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.105 Mobile Safari/537.36',
+  },
 });
 
 API.interceptors.request.use(

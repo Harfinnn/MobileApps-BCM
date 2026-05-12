@@ -10,7 +10,10 @@ import {
   LayoutAnimation,
   FlatList,
   InteractionManager,
+  PermissionsAndroid,
 } from 'react-native';
+
+import { promptForEnableLocationIfNeeded } from 'react-native-android-location-enabler';
 
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -46,9 +49,39 @@ export default function F3dScreen() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
+  const [locationError, setLocationError] = useState<boolean>(false);
 
   const { setHideHeader, setHideNavbar, setShowBack, setTitle, setShowSearch } =
     useLayout();
+
+  const checkLocationAndGPS = useCallback(async () => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setLocationError(true);
+          return;
+        }
+
+        const enableResult = await promptForEnableLocationIfNeeded({
+          interval: 10000,
+        });
+
+        if (enableResult === 'already-enabled' || enableResult === 'enabled') {
+          setLocationError(false);
+          refetch(); 
+        }
+      } catch (err: any) {
+        console.log('Error/User Cancelled GPS Prompt:', err.message);
+        setLocationError(true);
+      }
+    } else {
+      setLocationError(false);
+    }
+  }, [refetch]);
 
   /* ===============================
      ICON + STYLE
@@ -241,6 +274,10 @@ export default function F3dScreen() {
 
     return () => task.cancel();
   }, []);
+
+  useEffect(() => {
+    checkLocationAndGPS();
+  }, [checkLocationAndGPS]);
 
   /* ===============================
      LOADING

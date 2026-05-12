@@ -702,7 +702,7 @@ Business Continuity Management
 
               {/* ANALISIS DAMPAK UNIT - Bagian Header & Filter */}
               {isSuperAdmin && (
-              <View style={{ paddingHorizontal: 24, marginTop: 40 }}>
+              <View style={{ paddingHorizontal: 2, marginTop: 40 }}>
                 <View
                   style={{
                     flexDirection: 'row',
@@ -727,7 +727,7 @@ Business Continuity Management
                           {
                             rotate: rotateAnim.interpolate({
                               inputRange: [0, 1],
-                              outputRange: ['0deg', '180deg'], // Memutar panah ke atas
+                              outputRange: ['0deg', '180deg'],
                             }),
                           },
                         ],

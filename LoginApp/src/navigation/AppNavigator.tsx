@@ -33,6 +33,7 @@ import ChangePasswordFirstScreen from '../screens/auth/ChangePasswordFirstScreen
 import LaporGempaScreen from '../screens/main/bencana/LaporGempaScreen';
 import BookScreen from '../screens/main/playbook/BookScreen';
 import BookViewScreen from '../screens/main/playbook/BookViewScreen';
+import ChatBetaScreen from '../screens/main/ChatBetaScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -55,7 +56,10 @@ function MainStackScreen() {
         <MainStack.Screen name="Maps" component={MapScreen} />
         <MainStack.Screen name="Book" component={BookScreen} />
 
-        <RootStack.Screen name="ChangePassword" component={ChangePasswordFirstScreen} />
+        <RootStack.Screen
+          name="ChangePassword"
+          component={ChangePasswordFirstScreen}
+        />
 
         <MainStack.Screen name="Profile" component={ProfileScreen} />
         <MainStack.Screen name="EditProfile" component={EditProfileScreen} />
@@ -107,6 +111,8 @@ function MainStackScreen() {
           name="PanggilanDarurat"
           component={EmergencyCallScreen}
         />
+
+        <MainStack.Screen name="ChatBeta" component={ChatBetaScreen} />
       </MainStack.Navigator>
     </MainLayout>
   );
@@ -145,7 +151,10 @@ export default function AppNavigator() {
               name="ForgotPassword"
               component={ForgotPasswordScreen}
             />
-            <RootStack.Screen name="ChangePasswordFirst" component={ChangePasswordFirstScreen} />
+            <RootStack.Screen
+              name="ChangePasswordFirst"
+              component={ChangePasswordFirstScreen}
+            />
             <RootStack.Screen name="Register" component={RegisterScreen} />
           </>
         )}

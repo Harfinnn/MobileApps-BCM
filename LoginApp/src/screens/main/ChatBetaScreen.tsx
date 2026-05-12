@@ -27,19 +27,19 @@ import LottieView from 'lottie-react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Markdown from 'react-native-markdown-display';
 
-import {
-  sendMessage,
-  getChatHistory,
-  clearChatHistory,
-} from '../../services/chatService';
+// Import service bawaan untuk history & clear
+import { getChatHistory, clearChatHistory } from '../../services/chatService';
 import { useLayout } from '../../contexts/LayoutContext';
+
+// Import instance API milik Anda untuk menembak rute Beta
+import API from '../../services/api';
 
 import CobChart from '../../components/AI/CobChart';
 import StageChart from '../../components/AI/StageChart';
+import CobPredictionChart from '../../components/AI/CobPredictionChart';
 
 import { Dimensions } from 'react-native';
 import { styles, markdownStyles } from '../../styles/AI/BotStyle';
-import CobPredictionChart from '../../components/AI/CobPredictionChart';
 
 type Message = {
   id: string;
@@ -60,14 +60,14 @@ const getCurrentTime = () => {
 };
 
 const QUICK_CHATS = [
-  'Bagaimana cuaca hari ini?',
-  'Apa isi tas siaga bencana?',
+  'Bagaimana performa COB hari ini?',
+  'Apakah ada gempa bumi hari ini?',
   'Tanda-tanda akan terjadi tsunami',
   'Cara berlindung saat gempa bumi',
   'Apa itu mitigasi bencana?',
 ];
 
-function FileScreen({ navigation }: any) {
+function ChatBetaScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -86,7 +86,6 @@ function FileScreen({ navigation }: any) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Navigasi dikembalikan ke standar normal
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
@@ -110,7 +109,6 @@ function FileScreen({ navigation }: any) {
     }, [navigation]),
   );
 
-  // Scroll dikembalikan ke animasi standar
   const scrollToBottom = () => {
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -155,9 +153,10 @@ function FileScreen({ navigation }: any) {
     scrollToBottom();
 
     try {
-      const response = await sendMessage(textToSend);
+      // 🔥 PERUBAHAN UTAMA: Tembak ke Endpoint Beta menggunakan axios instance Anda
+      const res = await API.post('/chat-beta', { message: textToSend });
+      const response = res.data;
 
-      // UBAH BARIS INI
       if (response.type === 'chart' || response.type === 'compare_chart') {
         const newMessages: Message[] = [];
 
@@ -205,12 +204,12 @@ function FileScreen({ navigation }: any) {
       scrollToBottom();
     } catch (error: any) {
       let errorMessage =
-        'Maaf, gagal terhubung ke server atau terjadi kesalahan jaringan.';
+        'Maaf, gagal terhubung ke server AI Beta atau terjadi kesalahan jaringan.';
 
       if (error.response && error.response.status === 429) {
         errorMessage =
-          error.response.data?.reply ||
-          '⚠️ Sistem mendeteksi pesan terlalu cepat. Mohon tunggu 1 menit.';
+          error.response.data?.message ||
+          '⚠️ Sistem mendeteksi pesan terlalu cepat. Mohon tunggu sebentar.';
       }
 
       setMessages(prev => [
@@ -246,7 +245,6 @@ function FileScreen({ navigation }: any) {
     };
   }, []);
 
-  // INI ADALAH FUNGSI YANG MEMBUAT GRAFIK TIDAK HILANG SAAT RELOAD
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -255,7 +253,7 @@ function FileScreen({ navigation }: any) {
           setMessages([
             {
               id: 'welcome',
-              text: 'Halo 👋 Saya Akbar-AI. **Ada yang bisa saya bantu** terkait keberlangsungan operasional hari ini?',
+              text: 'Halo 👋 Saya Akbar-AI **(Versi Beta)**. Ada yang bisa saya bantu terkait operasional hari ini?',
               sender: 'ai',
               timestamp: getCurrentTime(),
             },
@@ -341,7 +339,7 @@ function FileScreen({ navigation }: any) {
         setMessages([
           {
             id: 'welcome',
-            text: 'Halo 👋 Saya Akbar-AI. Ada yang bisa saya bantu?',
+            text: 'Halo 👋 Saya Akbar-AI **(Versi Beta)**. Ada yang bisa saya bantu?',
             sender: 'ai',
             timestamp: getCurrentTime(),
           },
@@ -362,7 +360,7 @@ function FileScreen({ navigation }: any) {
         <StatusBar
           barStyle="dark-content"
           backgroundColor="transparent"
-          translucent={false}
+          translucent={true}
         />
 
         <KeyboardAvoidingView
@@ -381,8 +379,16 @@ function FileScreen({ navigation }: any) {
                   style={styles.bannerLottie}
                 />
                 <View>
-                  <Text style={styles.bannerTitle}>Akbar-AI</Text>
-                  <Text style={styles.bannerSubtitle}>Asisten Operasional</Text>
+                  {/* 🔥 TAMBAHAN LABEL BETA DI HEADER */}
+                  <Text style={styles.bannerTitle}>
+                    Akbar-AI{' '}
+                    <Text style={{ fontSize: 10, color: '#FFD700' }}>
+                      [BETA]
+                    </Text>
+                  </Text>
+                  <Text style={styles.bannerSubtitle}>
+                    Asisten MCP (TypeScript)
+                  </Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -506,7 +512,7 @@ function FileScreen({ navigation }: any) {
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" color="#00A39D" />
                 <Text style={styles.loadingText}>
-                  Akbar-AI sedang mengetik...
+                  Akbar-AI sedang berpikir...
                 </Text>
               </View>
             )}
@@ -610,4 +616,4 @@ function FileScreen({ navigation }: any) {
   );
 }
 
-export default FileScreen;
+export default ChatBetaScreen;

@@ -1,14 +1,11 @@
-// Path: src/styles/AI/BotStyle.ts (Sesuaikan dengan struktur foldermu)
-
 import { StyleSheet, Platform } from 'react-native';
-import { normalize } from '../../utils/responsive';
 
 // --- MARKDOWN STYLES ---
 export const markdownStyles = StyleSheet.create({
   body: {
     color: '#334155',
-    fontSize: normalize(14.5),
-    lineHeight: normalize(22),
+    fontSize: 14.5,
+    lineHeight: 22,
   },
   strong: {
     fontWeight: 'bold',
@@ -28,8 +25,8 @@ export const markdownStyles = StyleSheet.create({
   },
   code_inline: {
     backgroundColor: '#F1F5F9',
-    borderRadius: normalize(4),
-    paddingHorizontal: normalize(4),
+    borderRadius: 4,
+    paddingHorizontal: 4,
     color: '#EF4444',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
@@ -46,39 +43,39 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    marginHorizontal: normalize(14),
-    paddingVertical: normalize(10),
-    paddingHorizontal: normalize(14),
-    borderRadius: normalize(16),
+    marginHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2F4F3',
     shadowColor: '#00A39D',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    marginBottom: normalize(10),
-    marginTop: normalize(20),
+    marginBottom: 10,
+    marginTop: 20,
     elevation: 3,
   },
   bannerInfo: { flexDirection: 'row', alignItems: 'center' },
   bannerTitle: {
-    fontSize: normalize(16),
+    fontSize: 16,
     fontWeight: '700',
     color: '#1E2A38',
   },
   bannerSubtitle: {
-    fontSize: normalize(12),
+    fontSize: 12,
     color: '#64748B',
     fontWeight: '500',
   },
   bannerLottie: {
-    width: normalize(50),
-    height: normalize(50),
-    marginRight: normalize(8),
+    width: 50,
+    height: 50,
+    marginRight: 8,
   },
   clearLottie: {
-    width: normalize(30),
-    height: normalize(30),
+    width: 30,
+    height: 30,
   },
 
   // --- CHAT LAYOUT ---
@@ -94,22 +91,22 @@ export const styles = StyleSheet.create({
 
   // --- AVATAR ---
   avatarContainer: {
-    width: normalize(32), // Ukuran avatar dinamis
-    height: normalize(32),
-    borderRadius: normalize(16),
+    width: 32, // Ukuran avatar dinamis
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#E2F4F3',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: normalize(8),
-    marginBottom: normalize(4),
+    marginRight: 8,
+    marginBottom: 4,
   },
-  avatarEmoji: { fontSize: normalize(18) },
+  avatarEmoji: { fontSize: 18 },
 
   // --- BUBBLE ---
   bubble: {
-    paddingHorizontal: normalize(14),
-    paddingVertical: normalize(10),
-    borderRadius: normalize(20),
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
     maxWidth: '80%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -129,14 +126,14 @@ export const styles = StyleSheet.create({
   },
   userText: {
     color: '#FFFFFF',
-    fontSize: normalize(14.5), // Teks user dinamis
-    lineHeight: normalize(22),
+    fontSize: 14.5, // Teks user dinamis
+    lineHeight: 22,
   },
 
   // --- TIMESTAMP ---
   timestampText: {
-    fontSize: normalize(10), // Waktu kecil tapi tetap terbaca
-    marginTop: normalize(4),
+    fontSize: 10, // Waktu kecil tapi tetap terbaca
+    marginTop: 4,
     alignSelf: 'flex-end',
   },
   timestampUser: { color: '#D1FAE5' },
@@ -160,34 +157,34 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     backgroundColor: '#FFFFFF',
-    borderRadius: normalize(24),
-    paddingLeft: normalize(16),
-    paddingRight: normalize(8),
-    paddingVertical: normalize(8),
+    borderRadius: 24,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 8,
     borderWidth: 1.5,
     borderColor: '#E2F4F3',
     elevation: 3,
   },
   input: {
     flex: 1,
-    fontSize: normalize(15), // Teks input dinamis
+    fontSize: 15, // Teks input dinamis
     color: '#1E2A38',
-    maxHeight: normalize(100),
-    paddingTop: Platform.OS === 'ios' ? normalize(10) : normalize(8),
-    paddingBottom: Platform.OS === 'ios' ? normalize(10) : normalize(8),
+    maxHeight: 100,
+    paddingTop: Platform.OS === 'ios' ? 10 : 8,
+    paddingBottom: Platform.OS === 'ios' ? 10 : 8,
   },
   sendButton: {
     backgroundColor: '#00A39D',
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(10),
-    borderRadius: normalize(20),
-    marginLeft: normalize(8),
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginLeft: 8,
   },
   sendButtonDisabled: { backgroundColor: '#CBD5E1' },
   sendText: {
     color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: normalize(14),
+    fontSize: 14,
   },
   // --- MODAL ---
   modalOverlay: {
@@ -204,33 +201,33 @@ export const styles = StyleSheet.create({
   modalBox: {
     backgroundColor: '#FFFFFF',
     width: '85%',
-    maxWidth: normalize(400), // Batasi lebar maksimal agar tidak terlalu lebar di Tablet
-    borderRadius: normalize(24),
-    padding: normalize(24),
+    maxWidth: 400, // Batasi lebar maksimal agar tidak terlalu lebar di Tablet
+    borderRadius: 24,
+    padding: 24,
     alignItems: 'center',
     elevation: 10,
   },
   modalIconContainer: {
-    width: normalize(64),
-    height: normalize(64),
-    borderRadius: normalize(32),
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#FEE2E2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: normalize(16),
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: normalize(20),
+    fontSize: 20,
     fontWeight: '800',
     color: '#1E2A38',
-    marginBottom: normalize(8),
+    marginBottom: 8,
   },
   modalDesc: {
-    fontSize: normalize(14),
+    fontSize: 14,
     color: '#64748B',
     textAlign: 'center',
-    lineHeight: normalize(22),
-    marginBottom: normalize(24),
+    lineHeight: 22,
+    marginBottom: 24,
   },
   modalBtnRow: {
     flexDirection: 'row',
@@ -239,21 +236,21 @@ export const styles = StyleSheet.create({
   },
   btnCancel: {
     flex: 1,
-    paddingVertical: normalize(14),
-    borderRadius: normalize(16),
+    paddingVertical: 14,
+    borderRadius: 16,
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    marginRight: normalize(8),
+    marginRight: 8,
     alignItems: 'center',
   },
   btnCancelText: { color: '#64748B', fontWeight: '700', fontSize: 15 },
   btnConfirm: {
     flex: 1,
-    paddingVertical: normalize(14),
-    borderRadius: normalize(16),
+    paddingVertical: 14,
+    borderRadius: 16,
     backgroundColor: '#EF4444',
-    marginLeft: normalize(8),
+    marginLeft: 8,
     alignItems: 'center',
   },
   btnConfirmText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
@@ -267,10 +264,10 @@ export const styles = StyleSheet.create({
   },
   quickChatButton: {
     backgroundColor: '#E2F4F3',
-    paddingHorizontal: normalize(16),
-    paddingVertical: normalize(8),
-    borderRadius: normalize(20),
-    marginRight: normalize(10),
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
     borderWidth: 1,
     borderColor: '#00A39D',
   },
@@ -280,7 +277,7 @@ export const styles = StyleSheet.create({
   },
   quickChatText: {
     color: '#00A39D',
-    fontSize: normalize(13),
+    fontSize: 13,
     fontWeight: '600',
   },
   quickChatTextDisabled: {

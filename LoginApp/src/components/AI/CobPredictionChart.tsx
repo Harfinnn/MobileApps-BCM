@@ -8,11 +8,13 @@ import {
 } from 'react-native'; // <-- Tambahkan InteractionManager
 import { BarChart } from 'react-native-gifted-charts';
 
-interface CobChartProps {
+interface CobPredictionChartProps {
   chartData: any;
 }
 
-const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
+const CobPredictionChart: React.FC<CobPredictionChartProps> = ({
+  chartData,
+}) => {
   const screenWidth = Dimensions.get('window').width;
 
   const [isReady, setIsReady] = useState(false);
@@ -37,7 +39,7 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
     };
   }, []);
 
-  // --- KONDISI PENTING: TAMPILKAN LOADING SAAT DELAY ---
+  // --- TAMPILKAN LOADING SAAT DELAY UNTUK MENCEGAH NODE ERROR ---
   if (!isReady) {
     return (
       <View
@@ -50,19 +52,18 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
           marginTop: 10,
         }}
       >
-        <ActivityIndicator size="small" color="#20A090" />
+        <ActivityIndicator size="small" color="#FFC107" />
       </View>
     );
   }
-  // -------------------------------------------------------------------
 
   if (!chartData || !chartData.datasets || chartData.datasets.length < 1) {
-    return <Text style={{ color: 'red' }}>Data grafik tidak valid</Text>;
+    return <Text style={{ color: 'red' }}>Data prediksi tidak valid</Text>;
   }
 
-  // --- HELPERS ---
+  // --- HELPERS PEMBERSIH ANGKA ---
   const cleanNumber = (val: any) => {
-    if (val === null || val === undefined) return 0;
+    if (val === null || val === undefined || val === '') return 0;
     if (typeof val === 'number') return val;
     if (typeof val === 'string') {
       const cleanStr = val.replace(/[^0-9.-]+/g, '');
@@ -98,36 +99,80 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
         : parts[0] * 60 + parts[1] + Math.round((parts[2] || 0) / 60);
     }
     const num = cleanNumber(val);
-    if (num > 0)
-      return num > 100000
-        ? Math.round(num / 60000)
-        : num > 1440
-        ? Math.round(num / 60)
-        : num;
+    if (num > 0) {
+      if (num > 100000) return Math.round(num / 60000);
+      if (num > 1440) return Math.round(num / 60);
+      return num;
+    }
     return 0;
   };
 
-  const findDataset = (keywords: string[]) =>
-    chartData.datasets.find((ds: any) =>
-      keywords.some(kw => (ds.name || '').toLowerCase().includes(kw)),
+  // --- PENCARIAN DATASET SPESIFIK FORECAST ---
+  let barDataset = chartData.datasets.find((ds: any) => {
+    const name = (ds.name || '').toLowerCase();
+    return (
+      (name.includes('forecast') || name.includes('prediksi')) &&
+      !name.includes('duration') &&
+      !name.includes('durasi')
     );
-  let barDataset = findDataset([
-    'transaction',
-    'transaksi',
-    'volume',
-    'actual',
-    'aktual',
-  ]) ||
-    chartData.datasets[0] || { data: [] };
-  let lineDataset =
-    findDataset(['duration', 'durasi', 'waktu']) ||
-    (chartData.datasets.length > 1 ? chartData.datasets[1] : { data: [] });
+  });
 
-  // --- SKALA KIRI (BATANG) ---
+  let lineDataset = chartData.datasets.find((ds: any) => {
+    const name = (ds.name || '').toLowerCase();
+    return (
+      (name.includes('forecast') || name.includes('prediksi')) &&
+      (name.includes('duration') || name.includes('durasi'))
+    );
+  });
+
+  if (!barDataset) barDataset = chartData.datasets[0] || { data: [] };
+  if (!lineDataset)
+    lineDataset =
+      chartData.datasets.length > 1 ? chartData.datasets[1] : { data: [] };
+
+  // =========================================================
+  // FILTERING EKSTREM (BUANG TANGGAL YANG NILAINYA 0)
+  // =========================================================
+  const rawLabels = chartData.labels || [];
+  const rawBarData = barDataset.data || [];
+  const rawLineData = lineDataset.data || [];
+
+  const finalLabels: string[] = [];
+  const finalBarData: any[] = [];
+  const finalLineData: any[] = [];
+
+  for (let i = 0; i < rawLabels.length; i++) {
+    const bVal = rawBarData[i];
+    const lVal = rawLineData[i];
+
+    const bNum = cleanNumber(bVal);
+    let lNum = 0;
+    if (typeof lVal === 'string' && lVal.includes(':')) {
+      const parts = lVal.split(':').map(Number);
+      lNum = parts.length >= 2 ? parts[0] * 60 + parts[1] : 0;
+    } else {
+      lNum = cleanNumber(lVal);
+    }
+
+    if (bNum > 0 || lNum > 0) {
+      finalLabels.push(rawLabels[i]);
+      finalBarData.push(bVal);
+      finalLineData.push(lVal);
+    }
+  }
+
+  if (finalLabels.length === 0) {
+    finalLabels.push(...rawLabels);
+    finalBarData.push(...rawBarData);
+    finalLineData.push(...rawLineData);
+  }
+
+  // =========================================================================
+  // 1. SKALA KIRI (BATANG PREDIKSI) - "SMART CEILING" ALGORITHM
+  // =========================================================================
   const maxTrx =
-    barDataset.data && barDataset.data.length > 0
-      ? Math.max(...barDataset.data.map(formatToJuta))
-      : 0;
+    finalBarData.length > 0 ? Math.max(...finalBarData.map(formatToJuta)) : 0;
+
   let leftStep = Math.ceil(maxTrx / 3.5);
   if (leftStep < 1) leftStep = 1;
   const chartMaxValue = leftStep * 4;
@@ -140,22 +185,24 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
     `${chartMaxValue} Jt`,
   ];
 
-  // --- SKALA KANAN (GARIS) ---
+  // =========================================================================
+  // 2. SKALA KANAN (GARIS PREDIKSI) - DYNAMIC BASE OFFSET
+  // =========================================================================
   const lineValues =
-    lineDataset.data && lineDataset.data.length > 0
-      ? lineDataset.data.map(normalizeDuration)
-      : [0];
+    finalLineData.length > 0 ? finalLineData.map(normalizeDuration) : [0];
   const maxLineMinutes = Math.max(...lineValues);
   const minLineMinutes = Math.min(...lineValues);
 
   const baseOffset = Math.max(0, Math.floor((minLineMinutes - 30) / 30) * 30);
   let spread = maxLineMinutes - baseOffset;
   if (spread <= 0) spread = 60;
+
   const virtualTotalRange = spread / 0.6;
 
   let niceInterval = Math.ceil(virtualTotalRange / 4 / 30) * 30;
   if (niceInterval < 30) niceInterval = 30;
   const virtualMaxLine = baseOffset + niceInterval * 4;
+
   const scaleRatio = chartMaxValue / (virtualMaxLine - baseOffset);
 
   const rightYAxisLabels = [
@@ -166,48 +213,19 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
     formatMinutesToHHMM(virtualMaxLine),
   ];
 
-  // =========================================================================
-  // FILTER CATATAN (FOOTNOTES)
-  // =========================================================================
-  const notesData = (chartData.labels || [])
-    .map((lbl: string, i: number) => ({
-      label: lbl,
-      ket:
-        chartData.keterangan && chartData.keterangan[i]
-          ? chartData.keterangan[i]
-          : '',
-    }))
-    .filter((n: any) => n.ket && n.ket.trim() !== '');
+  // --- MAPPING DATA BARCHART (KUNING PREDIKSI) ---
+  const barData = finalLabels.map((label: string, index: number) => {
+    const rawVal = finalBarData[index];
+    const valJt = formatToJuta(rawVal);
 
-  // --- MAPPING DATA BARCHART (DENGAN TANDA BINTANG) ---
-  const barData = (chartData.labels || []).map(
-    (label: string, index: number) => {
-      const rawVal = barDataset.data ? barDataset.data[index] : 0;
-      const valJt = formatToJuta(rawVal);
+    const isPrediction = label.includes('Est');
 
-      const ket =
-        chartData.keterangan && chartData.keterangan[index]
-          ? chartData.keterangan[index]
-          : '';
-      const hasKet = ket.trim().length > 0;
-
-      return {
-        value: valJt,
-        labelComponent: () => (
-          <Text
-            style={{
-              color: hasKet ? '#FFC107' : '#ccc',
-              fontSize: 9,
-              marginTop: 5,
-              textAlign: 'center',
-            }}
-          >
-            {label}
-            {hasKet ? '*' : ''}
-          </Text>
-        ),
-        frontColor: '#20A090',
-        topLabelComponent: () => (
+    return {
+      value: valJt,
+      label: label,
+     frontColor: isPrediction ? '#FFC107' : '#20A090',
+      topLabelComponent: () =>
+        valJt > 0 ? (
           <Text
             style={{
               color: '#fff',
@@ -224,47 +242,54 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
           >
             {valJt} Jt
           </Text>
-        ),
-      };
-    },
-  );
+        ) : null,
+    };
+  });
 
-  // --- MAPPING DATA LINECHART ---
-  const lineData = lineValues.map((val: number) => ({
-    value: Math.max(0, (val - baseOffset) * scaleRatio),
-    customDataPoint: () => (
-      <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            backgroundColor: '#FFC107',
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: '#0D1117',
-            zIndex: 10,
-          }}
-        />
-        <Text
-          style={{
-            color: '#FFC107',
-            fontSize: 9,
-            fontWeight: 'bold',
-            position: 'absolute',
-            top: 12,
-            width: 50,
-            textAlign: 'center',
-            zIndex: 10,
-            textShadowColor: 'rgba(0,0,0,0.9)',
-            textShadowOffset: { width: 1, height: 1 },
-            textShadowRadius: 3,
-          }}
-        >
-          {formatMinutesToHHMM(val)}
-        </Text>
-      </View>
-    ),
-  }));
+  // --- MAPPING DATA LINECHART (PUTIH PREDIKSI) ---
+  const lineData = finalLineData.map((val: any) => {
+    const fixedVal = normalizeDuration(val);
+    const lineValue = Math.max(0, (fixedVal - baseOffset) * scaleRatio);
+
+    return {
+      value: lineValue,
+      customDataPoint: () =>
+        fixedVal > 0 ? (
+          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={{
+                width: 8,
+                height: 8,
+                backgroundColor: '#FFFFFF',
+                borderRadius: 4,
+                borderWidth: 1,
+                borderColor: '#0D1117',
+                zIndex: 10,
+              }}
+            />
+            <Text
+              style={{
+                color: '#FFFFFF',
+                fontSize: 9,
+                fontWeight: 'bold',
+                position: 'absolute',
+                top: 12,
+                width: 50,
+                textAlign: 'center',
+                zIndex: 10,
+                textShadowColor: 'rgba(0,0,0,0.9)',
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 3,
+              }}
+            >
+              {formatMinutesToHHMM(fixedVal)}
+            </Text>
+          </View>
+        ) : (
+          <View />
+        ),
+    };
+  });
 
   return (
     <View
@@ -277,33 +302,22 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
         overflow: 'hidden',
       }}
     >
-      {chartData.title && (
-        <Text
-          style={{
-            color: '#20A090',
-            fontSize: 14,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: 15,
-          }}
-        >
-          {chartData.title}
-        </Text>
-      )}
-
+      {/* Legend */}
       <View
         style={{
           flexDirection: 'row',
           justifyContent: 'center',
           marginBottom: 25,
-          gap: 20,
+          gap: 15,
         }}
       >
-        <LegendItem color="#20A090" label="Transaction" />
-        <LegendItem color="#7B61FF" label="Duration" isCircle />
+        <LegendItem color="#FFC107" label="Forecast Transaction" />
+        <LegendItem color="#7B61FF" label="Forecast Duration" isCircle />
       </View>
 
-      <View style={{ position: 'relative', paddingRight: 55 }}>
+      {/* Area Chart Utama */}
+      <View style={{ position: 'relative' }}>
+        {/* Sumbu Kanan: Diberi Background Solid agar grafik di baliknya tertutup */}
         <View
           pointerEvents="none"
           style={{
@@ -335,7 +349,7 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
 
         <BarChart
           data={barData}
-          width={screenWidth * 0.55}
+          width={screenWidth * 0.75} // Lebarkan agar masuk ke bawah sumbu kanan
           height={200}
           isAnimated={false}
           barWidth={24}
@@ -349,6 +363,11 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
           xAxisColor="#444"
           yAxisLabelWidth={35}
           yAxisTextStyle={{ color: '#ccc', fontSize: 10 }}
+          xAxisLabelTextStyle={{
+            color: '#ccc',
+            fontSize: 9,
+            marginTop: 5,
+          }}
           rulesType="dashed"
           rulesColor="#333"
           showLine
@@ -356,46 +375,6 @@ const CobChart: React.FC<CobChartProps> = ({ chartData }) => {
           lineConfig={{ color: '#7B61FF', thickness: 2 }}
         />
       </View>
-
-      {/* FOOTNOTE */}
-      {notesData.length > 0 && (
-        <View
-          style={{
-            marginTop: 20,
-            paddingTop: 15,
-            paddingRight: 15,
-            borderTopWidth: 1,
-            borderColor: '#333',
-          }}
-        >
-          <Text
-            style={{
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 'bold',
-              marginBottom: 8,
-            }}
-          >
-            Catatan Operasional:
-          </Text>
-          {notesData.map((n: any, i: number) => (
-            <Text
-              key={i}
-              style={{
-                color: '#aaa',
-                fontSize: 9,
-                marginBottom: 4,
-                lineHeight: 13,
-              }}
-            >
-              <Text style={{ color: '#FFC107', fontWeight: 'bold' }}>
-                {n.label} * :{' '}
-              </Text>
-              {n.ket}
-            </Text>
-          ))}
-        </View>
-      )}
     </View>
   );
 };
@@ -414,4 +393,4 @@ const LegendItem = ({ color, label, isCircle }: any) => (
   </View>
 );
 
-export default CobChart;
+export default CobPredictionChart;
