@@ -36,6 +36,9 @@ import { useLayout } from '../../contexts/LayoutContext';
 
 import CobChart from '../../components/AI/CobChart';
 import StageChart from '../../components/AI/StageChart';
+import IncidentChart from '../../components/AI/IncidentChart';
+import DailyIncidentChart from '../../components/AI/DailyIncidentChart';
+import MonthlyIncidentChart from '../../components/AI/MonthlyIncidentChart';
 
 import { Dimensions } from 'react-native';
 import { styles, markdownStyles } from '../../styles/AI/BotStyle';
@@ -46,7 +49,12 @@ type Message = {
   text?: string;
   sender: 'user' | 'ai';
   timestamp: string;
-  type?: 'text' | 'chart' | 'compare_chart';
+  type?:
+    | 'text'
+    | 'chart'
+    | 'compare_chart'
+    | 'operational_risk'
+    | 'incident_correlation';
   chartData?: any;
 };
 
@@ -157,7 +165,6 @@ function FileScreen({ navigation }: any) {
     try {
       const response = await sendMessage(textToSend);
 
-      // UBAH BARIS INI
       if (response.type === 'chart' || response.type === 'compare_chart') {
         const newMessages: Message[] = [];
 
@@ -186,6 +193,66 @@ function FileScreen({ navigation }: any) {
             sender: 'ai',
             timestamp: getCurrentTime(),
             type: 'text',
+          });
+        }
+
+        setMessages(prev => [...prev, ...newMessages]);
+      }
+
+      // =====================================
+      // OPERATIONAL RISK
+      // =====================================
+      else if (response.type === 'operational_risk') {
+        const aiMessage: Message = {
+          id: Date.now().toString() + '_risk',
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'operational_risk',
+          chartData: response.data,
+          text: response.reply,
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.type === 'incident_correlation') {
+        const aiMessage: Message = {
+          id: Date.now().toString() + '_correlation',
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+          text: response.summary,
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.type === 'incident_dashboard') {
+        const newMessages: Message[] = [];
+
+        // =====================================
+        // SUMMARY
+        // =====================================
+
+        if (response.summary_context) {
+          newMessages.push({
+            id: Date.now().toString() + '_summary',
+            text: response.summary_context,
+            sender: 'ai',
+            timestamp: getCurrentTime(),
+            type: 'text',
+          });
+        }
+
+        // =====================================
+        // MULTI CHARTS
+        // =====================================
+
+        if (Array.isArray(response.charts)) {
+          response.charts.forEach((chart: any, index: number) => {
+            newMessages.push({
+              id: Date.now().toString() + '_chart_' + index,
+              sender: 'ai',
+              timestamp: getCurrentTime(),
+              type: 'chart',
+              chartData: chart.data,
+            });
           });
         }
 
@@ -422,7 +489,9 @@ function FileScreen({ navigation }: any) {
                         <Text style={styles.avatarEmoji}>🤖</Text>
                       </View>
                     )}
-                    {item.type === 'chart' || item.type === 'compare_chart' ? (
+                    {item.type === 'chart' ||
+                    item.type === 'compare_chart' ||
+                    item.type === 'operational_risk' ? (
                       <View
                         style={[
                           styles.bubble,
@@ -433,7 +502,111 @@ function FileScreen({ navigation }: any) {
                           },
                         ]}
                       >
-                        {item.type === 'compare_chart' ? (
+                        {item.type === 'operational_risk' ? (
+                          <View
+                            style={{
+                              backgroundColor: '#101827',
+                              borderRadius: 16,
+                              padding: 18,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: '#FFFFFF',
+                                fontSize: 22,
+                                fontWeight: 'bold',
+                                marginBottom: 10,
+                              }}
+                            >
+                              Operational Risk Assessment
+                            </Text>
+
+                            <Text
+                              style={{
+                                color:
+                                  item.chartData?.risk_level === 'CRITICAL'
+                                    ? '#EF4444'
+                                    : item.chartData?.risk_level === 'HIGH'
+                                    ? '#F59E0B'
+                                    : '#10B981',
+
+                                fontSize: 32,
+                                fontWeight: 'bold',
+                              }}
+                            >
+                              {item.chartData?.risk_level}
+                            </Text>
+
+                            <Text
+                              style={{
+                                color: '#D1D5DB',
+                                marginTop: 8,
+                                fontSize: 14,
+                              }}
+                            >
+                              Risk Score: {item.chartData?.risk_score}
+                            </Text>
+
+                            <Text
+                              style={{
+                                color: '#D1D5DB',
+                                marginTop: 4,
+                                fontSize: 14,
+                              }}
+                            >
+                              Total Incident: {item.chartData?.total_incident}
+                            </Text>
+
+                            <Text
+                              style={{
+                                color: '#D1D5DB',
+                                marginTop: 4,
+                                fontSize: 14,
+                              }}
+                            >
+                              Total Downtime: {item.chartData?.total_downtime}{' '}
+                              menit
+                            </Text>
+
+                            <View style={{ marginTop: 14 }}>
+                              <Text
+                                style={{
+                                  color: '#FFFFFF',
+                                  fontWeight: 'bold',
+                                  marginBottom: 6,
+                                }}
+                              >
+                                Risk Indicators
+                              </Text>
+
+                              {item.chartData?.reasons?.length > 0 ? (
+                                item.chartData.reasons.map(
+                                  (reason: string, idx: number) => (
+                                    <Text
+                                      key={idx}
+                                      style={{
+                                        color: '#FCA5A5',
+                                        fontSize: 13,
+                                        marginBottom: 4,
+                                      }}
+                                    >
+                                      • {reason}
+                                    </Text>
+                                  ),
+                                )
+                              ) : (
+                                <Text
+                                  style={{
+                                    color: '#9CA3AF',
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  Tidak ditemukan indikator risiko signifikan.
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        ) : item.type === 'compare_chart' ? (
                           <View style={{ gap: 15 }}>
                             {Array.isArray(item.chartData) &&
                               item.chartData.map(
@@ -445,6 +618,15 @@ function FileScreen({ navigation }: any) {
                                 ),
                               )}
                           </View>
+                        ) : item.chartData?.chart_category === 'incident' ? (
+                          item.chartData?.chart_mode === 'daily_incident' ? (
+                            <DailyIncidentChart data={item.chartData} />
+                          ) : item.chartData?.chart_mode ===
+                            'monthly_incident' ? (
+                            <MonthlyIncidentChart data={item.chartData} />
+                          ) : (
+                            <IncidentChart chartData={item.chartData} />
+                          )
                         ) : item.chartData?.datasets?.some(
                             (ds: any) => ds.name === 'Application',
                           ) ? (
@@ -458,7 +640,6 @@ function FileScreen({ navigation }: any) {
                         ) : (
                           <CobChart chartData={item.chartData} />
                         )}
-
                         <Text
                           style={[
                             styles.timestampText,

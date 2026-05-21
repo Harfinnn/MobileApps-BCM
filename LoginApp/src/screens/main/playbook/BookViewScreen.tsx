@@ -7,34 +7,41 @@ import {
   BackHandler,
   StatusBar,
 } from 'react-native';
+
 import { WebView } from 'react-native-webview';
+
 import {
   useRoute,
   useNavigation,
   useFocusEffect,
 } from '@react-navigation/native';
+
 import { useLayout } from '../../../contexts/LayoutContext';
 
 const INJECTED_JAVASCRIPT = `
   const meta = document.createElement('meta');
-  meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0');
+  meta.setAttribute(
+    'content',
+    'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0'
+  );
   meta.setAttribute('name', 'viewport');
   document.getElementsByTagName('head')[0].appendChild(meta);
-  true; 
+  true;
 `;
 
 const BookViewScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+
   const webViewRef = useRef<WebView>(null);
+
   const [canGoBackWeb, setCanGoBackWeb] = useState(false);
 
-  const { url, title } = route.params || {};
-  const { setHideNavbar, setHideHeader, setTitle, setShowBack } = useLayout();
+  const { url } = route.params || {};
+
+  const { setHideNavbar, setHideHeader } = useLayout();
 
   useEffect(() => {
-    // Sembunyikan elemen UI Global, tapi biarkan header jika ingin judul tetap tampil
-    // Di sini saya asumsikan ingin benar-benar full screen
     setHideNavbar(true);
     setHideHeader(true);
 
@@ -44,7 +51,6 @@ const BookViewScreen = () => {
     };
   }, []);
 
-  // Handle tombol Back Fisik
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
@@ -52,19 +58,18 @@ const BookViewScreen = () => {
           webViewRef.current.goBack();
           return true;
         }
+
         navigation.goBack();
         return true;
       };
 
-      // Simpan return value dari addEventListener ke dalam variabel
       const backHandlerSubscription = BackHandler.addEventListener(
         'hardwareBackPress',
         onBackPress,
       );
 
-      // Gunakan .remove() pada variabel tersebut di fungsi cleanup
       return () => backHandlerSubscription.remove();
-    }, [canGoBackWeb, navigation]), // Pastikan navigation masuk dependency jika digunakan
+    }, [canGoBackWeb, navigation]),
   );
 
   const renderLoading = () => (
@@ -76,6 +81,7 @@ const BookViewScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       {url ? (
         <WebView
           ref={webViewRef}
@@ -83,13 +89,19 @@ const BookViewScreen = () => {
           style={styles.webview}
           startInLoadingState={true}
           renderLoading={renderLoading}
+          injectedJavaScript={INJECTED_JAVASCRIPT}
           onNavigationStateChange={navState =>
             setCanGoBackWeb(navState.canGoBack)
           }
-          injectedJavaScript={INJECTED_JAVASCRIPT}
+          cacheEnabled={true}
+          originWhitelist={['*']}
+          allowsInlineMediaPlayback
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
           scalesPageToFit={false}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
+          mixedContentMode="always"
         />
       ) : (
         <View style={styles.errorContainer}>
@@ -103,8 +115,15 @@ const BookViewScreen = () => {
 export default BookViewScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  webview: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+
+  webview: {
+    flex: 1,
+  },
+
   loadingContainer: {
     position: 'absolute',
     inset: 0,
@@ -113,5 +132,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     zIndex: 10,
   },
-  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
