@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WeatherHourly extends Model
 {
+    protected $table = 'mobile_weather_hourlies';
+
     protected $fillable = [
         'adm4_id',
         'local_datetime',

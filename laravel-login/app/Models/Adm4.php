@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Adm4 extends Model
 {
-    protected $table = 'adm4';
+    protected $table = 'mobile_adm4';
 
     protected $fillable = [
         'adm4',

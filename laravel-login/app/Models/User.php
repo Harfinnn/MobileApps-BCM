@@ -78,4 +78,9 @@ class User extends Authenticatable
             'mjs_id'
         );
     }
+
+    public function location()
+    {
+        return $this->hasOne(UserLocation::class, 'user_id', 'user_id');
+    }
 }

@@ -18,7 +18,7 @@ class Adm4Controller extends Controller
         $lon = $request->lon;
         $range = 0.3;
 
-        $nearest = DB::table('adm4')
+        $nearest = DB::table('mobile_adm4')
             ->whereBetween('lat', [$lat - $range, $lat + $range])
             ->whereBetween('lon', [$lon - $range, $lon + $range])
             ->selectRaw("

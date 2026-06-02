@@ -1,0 +1,36 @@
+[13-May-2026 01:22:14 UTC] PHP Warning:  require(/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php): Failed to open stream: No such file or directory in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:22:14 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php(45): {closure}()
+#1 /home/lensasya/public_html/simple_app/api/vendor/autoload.php(22): ComposerAutoloaderInit6831a053f9da246d358c35767e678fa0::getLoader()
+#2 /home/lensasya/public_html/simple_app/api/public/index.php(14): require('/home/lensasya/...')
+#3 {main}
+  thrown in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:22:14 UTC] PHP Warning:  require(/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php): Failed to open stream: No such file or directory in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:22:14 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php(45): {closure}()
+#1 /home/lensasya/public_html/simple_app/api/vendor/autoload.php(22): ComposerAutoloaderInit6831a053f9da246d358c35767e678fa0::getLoader()
+#2 /home/lensasya/public_html/simple_app/api/public/index.php(14): require('/home/lensasya/...')
+#3 {main}
+  thrown in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:23:03 UTC] PHP Warning:  require(/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php): Failed to open stream: No such file or directory in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:23:03 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php(45): {closure}()
+#1 /home/lensasya/public_html/simple_app/api/vendor/autoload.php(22): ComposerAutoloaderInit6831a053f9da246d358c35767e678fa0::getLoader()
+#2 /home/lensasya/public_html/simple_app/api/public/index.php(14): require('/home/lensasya/...')
+#3 {main}
+  thrown in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:24:04 UTC] PHP Warning:  require(/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php): Failed to open stream: No such file or directory in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[13-May-2026 01:24:04 UTC] PHP Fatal error:  Uncaught Error: Failed opening required '/home/lensasya/public_html/simple_app/api/vendor/composer/../symfony/deprecation-contracts/function.php' (include_path='.:/opt/alt/php83/usr/share/pear:/opt/alt/php83/usr/share/php:/usr/share/pear:/usr/share/php') in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php(45): {closure}()
+#1 /home/lensasya/public_html/simple_app/api/vendor/autoload.php(22): ComposerAutoloaderInit6831a053f9da246d358c35767e678fa0::getLoader()
+#2 /home/lensasya/public_html/simple_app/api/public/index.php(14): require('/home/lensasya/...')
+#3 {main}
+  thrown in /home/lensasya/public_html/simple_app/api/vendor/composer/autoload_real.php on line 41
+[19-May-2026 10:55:42 Asia/Jakarta] PHP Fatal error:  Cannot declare class App\Services\Parser\Rules\IncidentRule, because the name is already in use in /home/lensasya/public_html/simple_app/api/app/Services/Incident/IncidentChartService.php on line 5
+[19-May-2026 10:58:59 Asia/Jakarta] PHP Fatal error:  Cannot declare class App\Services\Parser\Rules\IncidentRule, because the name is already in use in /home/lensasya/public_html/simple_app/api/app/Services/Incident/IncidentChartService.php on line 5
+[19-May-2026 11:02:32 Asia/Jakarta] PHP Fatal error:  Cannot declare class App\Services\Parser\Rules\IncidentRule, because the name is already in use in /home/lensasya/public_html/simple_app/api/app/Services/Incident/IncidentChartService.php on line 5
+[19-May-2026 11:02:35 Asia/Jakarta] PHP Fatal error:  Cannot declare class App\Services\Parser\Rules\IncidentRule, because the name is already in use in /home/lensasya/public_html/simple_app/api/app/Services/Incident/IncidentChartService.php on line 5

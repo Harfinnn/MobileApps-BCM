@@ -12,29 +12,26 @@ class BeritaController extends Controller
         return response()->json(
             DataBerita::where('dbe_status', 1)
                 ->orderBy('dbe_id', 'desc')
-                ->limit(5)
-                ->get([
-                    'dbe_id',
-                    'dbe_judul',
-                    'dbe_gambar',
-                    'dbe_tgl'
-                ])
+                ->get()
         );
     }
 
     // ✅ Ambil detail berdasarkan ID
     public function show($id)
-    {
-        $berita = DataBerita::where('dbe_status', 1)
-            ->where('dbe_id', $id)
-            ->first();
+{
+    $berita = DataBerita::where('dbe_status', 1)
+        ->where('dbe_id', $id)
+        ->first();
 
-        if (!$berita) {
-            return response()->json([
-                'message' => 'Data tidak ditemukan'
-            ], 404);
-        }
-
-        return response()->json($berita);
+    if (!$berita) {
+        return response()->json([
+            'message' => 'Data tidak ditemukan'
+        ], 404);
     }
+
+    $berita->increment('dbe_viewer');
+
+    return response()->json($berita);
+}
+
 }

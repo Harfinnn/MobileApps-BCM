@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MLabel extends Model
 {
-    protected $table = 'm_label';
+    protected $table = 'mobile_m_label';
 
     protected $primaryKey = 'mla_id';
 

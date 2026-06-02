@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class LaporBencana extends Model
 {
-    protected $table = 'lapor_bencana';
+    protected $table = 'mobile_lapor_bencana';
 
     protected $fillable = [
         'user_id',
@@ -18,6 +18,8 @@ class LaporBencana extends Model
         'terdampak',
         'ada_kerusakan',
         'foto',
+        'source',      
+        'gempa_ref',   
     ];
 
     protected $casts = [

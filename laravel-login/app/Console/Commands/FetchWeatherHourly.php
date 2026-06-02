@@ -21,19 +21,16 @@ class FetchWeatherHourly extends Command
         foreach ($adm4List as $adm4Id) {
 
             $adm4 = \App\Models\Adm4::find($adm4Id);
-            if (!$adm4)
-                continue;
+            if (!$adm4) continue;
 
             $response = \Illuminate\Support\Facades\Http::get(
                 "https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4={$adm4->adm4}"
             );
 
-            if (!$response->successful())
-                continue;
+            if (!$response->successful()) continue;
 
             $data = $response->json();
-            if (!isset($data['data']))
-                continue;
+            if (!isset($data['data'])) continue;
 
             $now = Carbon::now();
             $allCuaca = [];
@@ -47,8 +44,7 @@ class FetchWeatherHourly extends Command
                 }
             }
 
-            if (empty($allCuaca))
-                continue;
+            if (empty($allCuaca)) continue;
 
             // Ambil waktu paling dekat dengan sekarang
             $closest = collect($allCuaca)->sortBy(function ($item) use ($now) {
@@ -62,12 +58,12 @@ class FetchWeatherHourly extends Command
                         'local_datetime' => $closest['local_datetime'],
                     ],
                     [
-                        'temperature' => $closest['t'] ?? null,
-                        'humidity' => $closest['hu'] ?? null,
-                        'wind_speed' => $closest['ws'] ?? null,
-                        'wind_direction' => $closest['wd'] ?? null,
-                        'weather_code' => $closest['weather'] ?? null,
-                        'weather_desc' => $closest['weather_desc'] ?? null,
+                        'temperature'     => $closest['t'] ?? null,
+                        'humidity'        => $closest['hu'] ?? null,
+                        'wind_speed'      => $closest['ws'] ?? null,
+                        'wind_direction'  => $closest['wd'] ?? null,
+                        'weather_code'    => $closest['weather'] ?? null,
+                        'weather_desc'    => $closest['weather_desc'] ?? null,
                     ]
                 );
             }
