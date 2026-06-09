@@ -40,7 +40,12 @@ export async function registerFcmToken(user: User | null) {
 
     if (user?.user_jabatan == 1) {
       await subscribeToTopic(messaging, 'gempa_superadmin');
+
       console.log('✅ SUBSCRIBE TOPIC gempa_superadmin');
+
+      await subscribeToTopic(messaging, 'tsunami_superadmin');
+
+      console.log('✅ SUBSCRIBE TOPIC tsunami_superadmin');
     }
   } catch (e) {
     console.log('FCM ERROR', e);

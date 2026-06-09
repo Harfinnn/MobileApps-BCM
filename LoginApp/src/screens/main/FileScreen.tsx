@@ -257,6 +257,63 @@ function FileScreen({ navigation }: any) {
         }
 
         setMessages(prev => [...prev, ...newMessages]);
+      } else if (response.type === 'incident_availability') {
+        const aiMessage: Message = {
+          id: Date.now().toString(),
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+          text:
+            `Availability Critical Activity Tahun ${response.data.tahun}\n\n` +
+            `• Availability : ${response.data.availability_percentage}%\n` +
+            `• Total Incident : ${response.data.total_incident}\n` +
+            `• Total Downtime : ${response.data.total_downtime_minutes} menit\n` +
+            `• Total Downtime (Jam) : ${response.data.total_downtime_hours} jam`,
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.type === 'incident_response_time') {
+        const aiMessage: Message = {
+          id: Date.now().toString(),
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+
+          text:
+            `Average BCM Response Time\n\n` +
+            `• Average Response : ${response.data.average_response_minutes} menit\n` +
+            `• Total Incident : ${response.data.total_incident}`,
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.type === 'incident_recovery_time') {
+        const aiMessage: Message = {
+          id: Date.now().toString(),
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+
+          text:
+            `Average Temporary Solution Time\n\n` +
+            `• Average Temporary Solution : ${response.data.average_temporary_solution_minutes} menit\n` +
+            `• Total Incident : ${response.data.total_incident}`,
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else if (response.type === 'incident_resolution_time') {
+
+        const aiMessage: Message = {
+          id: Date.now().toString(),
+          sender: 'ai',
+          timestamp: getCurrentTime(),
+          type: 'text',
+          text:
+            `Average Incident Resolution Time\n\n` +
+            `• Average Resolution : ${response.data.average_resolution_minutes} menit\n` +
+            `• Total Incident : ${response.data.total_incident}`,
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
       } else {
         const aiMessage: Message = {
           id: Date.now().toString() + '_ai',

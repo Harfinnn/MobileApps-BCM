@@ -34,6 +34,8 @@ import LaporGempaScreen from '../screens/main/bencana/LaporGempaScreen';
 import BookScreen from '../screens/main/playbook/BookScreen';
 import BookViewScreen from '../screens/main/playbook/BookViewScreen';
 import ChatBetaScreen from '../screens/main/ChatBetaScreen';
+import TsunamiHistoryScreen from '../screens/main/gempa/TsunamiHistoryScreen';
+import TsunamiDetailScreen from '../screens/main/gempa/TsunamiDetailScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -113,6 +115,10 @@ function MainStackScreen() {
         />
 
         <MainStack.Screen name="ChatBeta" component={ChatBetaScreen} />
+
+        <MainStack.Screen name="TsunamiHistory" component={TsunamiHistoryScreen} />
+        <MainStack.Screen name="TsunamiDetail" component={TsunamiDetailScreen} />
+        
       </MainStack.Navigator>
     </MainLayout>
   );

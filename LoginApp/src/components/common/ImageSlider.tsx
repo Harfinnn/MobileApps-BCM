@@ -7,12 +7,14 @@ const BANNER_HEIGHT = 280;
 import Img1 from '../../assets/banners/tumb_1.png';
 import Img2 from '../../assets/banners/tumb_2.png';
 import Img3 from '../../assets/banners/tumb_3.png';
+import Img4 from '../../assets/banners/tumb_4.png';
 
 const DATA = [
   { id: '1', src: Img1 },
   { id: '2', src: Img2 },
   { id: '3', src: Img3 },
-  { id: '1-clone', src: Img1 }, // loop halus
+  { id: '4', src: Img4 },
+  { id: '1-clone', src: Img1 },
 ];
 
 export default function ImageSlider() {

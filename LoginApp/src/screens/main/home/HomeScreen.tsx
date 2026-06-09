@@ -19,6 +19,7 @@ import HomeMenu from '../../../components/menu/HomeMenu';
 import DashboardMenu from '../../../components/menu/DashboardMenu';
 import NewsSection from '../../../components/common/NewsSection';
 import HomeSkeleton from '../../../components/skeleton/HomeSkeleton';
+import TsunamiWarningCard from '../../../components/common/TsunamiWarningCard';
 
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
@@ -42,6 +43,8 @@ const HomeScreen = () => {
   const [panduan, setPanduan] = useState([]);
   const [showGempaPopup, setShowGempaPopup] = useState(false);
   const [gempaData, setGempaData] = useState<any>(null);
+  const [showTsunamiWarning, setShowTsunamiWarning] = useState(true);
+  const [tsunamiData, setTsunamiData] = useState<any>(null);
 
   const { user } = useUser();
   const isSuperAdmin = user?.jabatan?.jab_id === 1;
@@ -67,8 +70,21 @@ const HomeScreen = () => {
     }
   };
 
+  const fetchTsunami = async () => {
+    try {
+      const res = await API.get('/tsunami/latest');
+
+      if (res.data?.status) {
+        setTsunamiData(res.data.data);
+      }
+    } catch (error) {
+      console.log('ERROR FETCH TSUNAMI', error);
+    }
+  };
+
   useEffect(() => {
     fetchNews();
+    fetchTsunami();
   }, []);
 
   useEffect(() => {
@@ -205,6 +221,21 @@ const HomeScreen = () => {
     }, [setShowBack, setHideNavbar, setShowSearch]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchTsunami();
+
+      const interval = setInterval(() => {
+        console.log('REFRESH TSUNAMI...');
+        fetchTsunami();
+      }, 60000);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }, []),
+  );
+
   /* ================= REFRESH ================= */
   const onRefresh = useCallback(() => {
     if (refreshing) return;
@@ -227,6 +258,32 @@ const HomeScreen = () => {
     },
     [navigation],
   );
+
+  const formatTsunamiDate = (dateString: string) => {
+    if (!dateString) return '-';
+
+    try {
+      const cleanDate = dateString.replace('WIB', '');
+
+      const date = new Date(cleanDate);
+
+      return (
+        date.toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+        ' ' +
+        date.toLocaleTimeString('id-ID', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }) +
+        ' WIB'
+      );
+    } catch {
+      return dateString;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -269,6 +326,21 @@ const HomeScreen = () => {
               <View style={styles.section}>
                 <HomeMenu onDashboardPress={handleDashboardPress} />
               </View>
+
+              {showTsunamiWarning && tsunamiData && tsunamiData.is_active && (
+                <TsunamiWarningCard
+                  magnitude={tsunamiData.magnitude}
+                  area={tsunamiData.area}
+                  potential={tsunamiData.potential}
+                  sent={formatTsunamiDate(tsunamiData.sent)}
+                  onPress={() =>
+                    navigation.navigate('TsunamiDetail', {
+                      tsunamiData,
+                    })
+                  }
+                  onClose={() => setShowTsunamiWarning(false)}
+                />
+              )}
 
               <SmallBanner panduan={panduan} />
 

@@ -66,7 +66,6 @@ export default function ProfileMenu({ visible, onClose }: Props) {
             navigation.navigate('Main', { screen: 'Profile' });
           }}
         >
-          <View style={styles.dotIcon} />
           <Text style={styles.menuLabel}>Pengaturan</Text>
         </TouchableOpacity>
 
@@ -81,7 +80,7 @@ export default function ProfileMenu({ visible, onClose }: Props) {
             navigation.navigate('Main', { screen: 'PanggilanDarurat' });
           }}
         >
-          <View style={[styles.dotIcon, { backgroundColor: '#EF4444' }]} />
+          <View style={{ backgroundColor: '#EF4444' }} />
           <Text style={[styles.menuLabel, styles.logoutLabel]}>Panggilan Darurat</Text>
         </TouchableOpacity>
 

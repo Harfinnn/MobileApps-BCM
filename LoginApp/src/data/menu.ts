@@ -101,6 +101,16 @@ export const MAIN_MENU: MenuItemType[] = [
 export const MORE_MENU: MenuItemType[] = [
   {
     id: 8,
+    title: 'Tsunami',
+    image: require('../assets/newIcon/tsunami.png'),
+    route: 'TsunamiHistory',
+    iconWidth: 80,
+    iconHeight: 80,
+    offsetBottom: -13,
+    offsetRight: -15,
+  },
+  {
+    id: 9,
     title: 'Dashboard IT',
     image: require('../assets/newIcon/dashboard1.png'),
     route: 'DashboardIT',
@@ -110,10 +120,10 @@ export const MORE_MENU: MenuItemType[] = [
     offsetRight: -32,
   },
   {
-    id: 9,
-    title: 'Dashboard Non-IT (TEST)',
+    id: 10,
+    title: 'Dashboard Non-IT',
     image: require('../assets/newIcon/dashboard_2.png'),
-    route: 'ChatBeta',
+    route: 'DashboardNonIT',
     color: 'rgba(0, 163, 157, 0.22)',
     iconWidth: 130,
     iconHeight: 130,
