@@ -2,6 +2,7 @@ import {
   createNavigationContainerRef,
   CommonActions,
 } from '@react-navigation/native';
+import API from '../services/api';
 
 export const navigationRef = createNavigationContainerRef<any>();
 
@@ -27,6 +28,8 @@ export function navigate(name: string, params?: any) {
  * Simpan data notif saat cold start / background click
  */
 export function markOpenedFromNotification(data?: any) {
+  console.log('MARK NOTIFICATION', data);
+
   openedFromNotification = true;
 
   pendingNotificationData = {
@@ -38,8 +41,19 @@ export function markOpenedFromNotification(data?: any) {
 /**
  * Eksekusi navigation yang tertunda
  */
-export function flushPendingNavigation() {
-  if (!pendingNotificationData || !navigationRef.isReady()) return;
+export async function flushPendingNavigation() {
+  console.log('FLUSH DIPANGGIL');
+
+  if (!pendingNotificationData || !navigationRef.isReady()) {
+    console.log('FLUSH BATAL', {
+      pendingNotificationData,
+      isReady: navigationRef.isReady(),
+    });
+
+    return;
+  }
+
+  console.log('FLUSH JALAN', pendingNotificationData);
 
   const payload = pendingNotificationData;
 
@@ -147,6 +161,40 @@ export function flushPendingNavigation() {
             ],
           }),
         );
+        break;
+
+      case 'tsunami':
+        console.log('TSUNAMI CLICKED', data);
+
+        try {
+          const res = await API.get(`/tsunami/event/${data.event_id}`);
+
+          console.log('TSUNAMI API RESULT', res.data);
+
+          if (!res.data?.status) {
+            return;
+          }
+
+          navigationRef.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'Main',
+                  params: {
+                    screen: 'TsunamiDetail',
+                    params: {
+                      tsunamiData: res.data.data,
+                    },
+                  },
+                },
+              ],
+            }),
+          );
+        } catch (error) {
+          console.log('FAILED OPEN TSUNAMI DETAIL', error);
+        }
+
         break;
 
       default:

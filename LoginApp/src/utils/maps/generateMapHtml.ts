@@ -116,6 +116,7 @@ let markerMap = {};
 let activeMarker = null;
 let epicenterMarker = null;
 let impactCircle = null;
+let faultLayer = null;
 let markerColor = '#3B82F6';
 
 
@@ -258,6 +259,25 @@ document.addEventListener('message',function(e){
         fillOpacity: 0.25,
         weight: 2,
       }).addTo(map);
+    }
+
+    /* 🔴 FAULTS */
+    if(msg.type === 'SET_FAULTS'){
+
+      console.log('FAULT RECEIVED', msg.payload);
+
+      if(faultLayer){
+        map.removeLayer(faultLayer);
+      }
+
+      faultLayer = L.geoJSON(msg.payload,{
+        style:{
+          color:'#DC2626',
+          weight:3,
+          opacity:0.9
+        }
+      }).addTo(map);
+
     }
 
     /* OTHER CONTROLS */

@@ -55,6 +55,7 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
 
 // HANDLE CLICK
 notifee.onBackgroundEvent(async ({ type, detail }) => {
+  console.log('BACKGROUND PRESS');
   if (type === EventType.PRESS) {
     const data = detail.notification?.data;
     if (data) {

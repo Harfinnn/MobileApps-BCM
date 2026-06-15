@@ -80,6 +80,7 @@ const GempaDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [impactLoading, setImpactLoading] = useState(false);
+  const [faultsGeoJson, setFaultsGeoJson] = useState<any>(null);
 
   // State untuk Filter Status
   const [filterStatus, setFilterStatus] = useState<
@@ -114,6 +115,7 @@ const GempaDetailScreen = () => {
 
   useEffect(() => {
     loadData();
+    fetchFaults();
   }, [gempa, isSuperAdmin]);
 
   useEffect(() => {
@@ -198,6 +200,24 @@ const GempaDetailScreen = () => {
     }
   }, [isMapReady]);
 
+  useEffect(() => {
+    if (!isMapReady || !webviewRef.current || !faultsGeoJson) {
+      return;
+    }
+
+    webviewRef.current.injectJavaScript(`
+    document.dispatchEvent(
+      new MessageEvent('message', {
+        data: JSON.stringify({
+          type:'SET_FAULTS',
+          payload:${JSON.stringify(faultsGeoJson)}
+        })
+      })
+    );
+    true;
+  `);
+  }, [isMapReady, faultsGeoJson]);
+
   const calculateRadius = (magnitude: number, rules: any[]) => {
     if (!rules || rules.length === 0) return 50;
     const mag = Number(magnitude);
@@ -221,6 +241,18 @@ const GempaDetailScreen = () => {
         200
       );
     return 50;
+  };
+
+  const fetchFaults = async () => {
+    try {
+      const res = await API.get('/faults');
+
+      if (res.data) {
+        setFaultsGeoJson(res.data);
+      }
+    } catch (e) {
+      console.error('Gagal load faults', e);
+    }
   };
 
   const loadData = async (isRefresh = false) => {

@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import Toast from 'react-native-toast-message';
-import notifee, { AndroidImportance } from '@notifee/react-native';
+import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import { AppState } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -109,6 +109,55 @@ const App = () => {
     }
 
     handleInitialNotification();
+  }, []);
+
+  useEffect(() => {
+    async function checkInitialFcmNotification() {
+      const remoteMessage = await messaging().getInitialNotification();
+
+      console.log('FCM INITIAL NOTIFICATION', remoteMessage?.data);
+
+      if (remoteMessage?.data) {
+        markOpenedFromNotification(remoteMessage.data);
+      }
+    }
+
+    checkInitialFcmNotification();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = messaging().onNotificationOpenedApp(remoteMessage => {
+      console.log('FCM OPENED APP', remoteMessage?.data);
+
+      if (remoteMessage?.data) {
+        markOpenedFromNotification(remoteMessage.data);
+
+        setTimeout(() => {
+          console.log('CALL FLUSH');
+          flushPendingNavigation();
+        }, 500);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = notifee.onForegroundEvent(async ({ type, detail }) => {
+      if (type === EventType.PRESS) {
+        const data = detail.notification?.data;
+
+        console.log('FOREGROUND NOTIFICATION CLICK', data);
+
+        if (data) {
+          markOpenedFromNotification(data);
+
+          await flushPendingNavigation();
+        }
+      }
+    });
+
+    return unsubscribe;
   }, []);
 
   // 🔔 HANDLE NAVIGATION DELAY

@@ -107,10 +107,10 @@ const TsunamiDetailScreen = () => {
 
     return () => {
       setShowSearch(true);
-      setHideNavbar(false);
+      setHideNavbar(true);
       setHideHeader(false);
       setShowSearch(false);
-      setOnBack(undefined); 
+      setOnBack(undefined);
     };
   }, [
     navigation,
@@ -158,6 +158,15 @@ const TsunamiDetailScreen = () => {
 
     return () => clearTimeout(timer);
   }, [isMapReady, latitude, longitude, selectedMap]);
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log(
+        'NAVIGATION STATE',
+        JSON.stringify(navigation.getState(), null, 2),
+      );
+    }, [navigation]),
+  );
 
   const getLevelColor = (level: string) => {
     switch (level?.toUpperCase()) {

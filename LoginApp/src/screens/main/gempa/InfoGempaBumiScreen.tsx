@@ -84,6 +84,7 @@ const InfoGempaBumiScreen = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [impactLoading, setImpactLoading] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [faultsGeoJson, setFaultsGeoJson] = useState<any>(null);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const mapShotRef = useRef<any>(null);
@@ -120,6 +121,7 @@ const InfoGempaBumiScreen = () => {
     setHideNavbar(true);
     setShowBack(true);
     fetchGempa(true);
+    fetchFaults();
     setShowSearch(false);
     setHideHeaderLeft(false);
     setHideHeader(false);
@@ -213,8 +215,23 @@ const InfoGempaBumiScreen = () => {
     }
   `;
 
+    if (faultsGeoJson) {
+
+      webviewRef.current.injectJavaScript(`
+        document.dispatchEvent(
+          new MessageEvent('message', {
+            data: JSON.stringify({
+              type:'SET_FAULTS',
+              payload:${JSON.stringify(faultsGeoJson)}
+            })
+          })
+        );
+        true;
+      `);
+    }
+
     webviewRef.current.injectJavaScript(script);
-  }, [isMapReady, affectedUnits, latitude, longitude, radiusKm]);
+  }, [isMapReady, affectedUnits, latitude, longitude, radiusKm, faultsGeoJson]);
 
   const fetchGempa = async (showLoading: boolean) => {
     try {
@@ -248,6 +265,18 @@ const InfoGempaBumiScreen = () => {
       console.error('Gagal update gempa', e);
     } finally {
       if (showLoading) setLoading(false);
+    }
+  };
+
+  const fetchFaults = async () => {
+    try {
+      const res = await API.get('/faults');
+
+      if (res.data) {
+        setFaultsGeoJson(res.data);
+      }
+    } catch (e) {
+      console.error('Gagal load faults', e);
     }
   };
 
@@ -401,6 +430,9 @@ const InfoGempaBumiScreen = () => {
       }
       if (data.type === 'MARKER_CLICK') {
         // Logika detail unit
+      }
+      if (data.type === 'FAULT_DEBUG') {
+        console.log('FAULT_DEBUG', data.count);
       }
     } catch (e) {
       console.error('Map message error:', e);
@@ -702,252 +734,253 @@ Business Continuity Management
 
               {/* ANALISIS DAMPAK UNIT - Bagian Header & Filter */}
               {isSuperAdmin && (
-              <View style={{ paddingHorizontal: 2, marginTop: 40 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 10,
-                  }}
-                >
-                  <View>
-                    <Text style={styles.sectionLabel}>ANALISIS DAMPAK</Text>
-                    <Text style={styles.sectionTitle}>
-                      Unit Terdekat ({radiusKm}km)
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    onPress={toggleRadius}
-                    style={styles.expandButton}
+                <View style={{ paddingHorizontal: 2, marginTop: 40 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 10,
+                    }}
                   >
-                    <Animated.View
-                      style={{
-                        transform: [
-                          {
-                            rotate: rotateAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: ['0deg', '180deg'],
-                            }),
-                          },
-                        ],
-                      }}
-                    >
-                      {/* Menggunakan Lucide Chevron */}
-                      <ChevronDown size={24} color="#64748B" />
-                    </Animated.View>
-                  </TouchableOpacity>
-                </View>
-
-                {impactLoading ? (
-                  <ActivityIndicator
-                    color="#0F172A"
-                    style={{ marginTop: 20 }}
-                  />
-                ) : (
-                  showRadius && (
                     <View>
-                      {isSuperAdmin && affectedUnits.length > 0 && (
-                        <View style={styles.filterWrapper}>
-                          <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.filterScroll}
-                          >
-                            <TouchableOpacity
-                              style={[
-                                styles.filterChip,
-                                filterStatus === 'all' &&
-                                  styles.filterChipActive,
-                              ]}
-                              onPress={() => setFilterStatus('all')}
+                      <Text style={styles.sectionLabel}>ANALISIS DAMPAK</Text>
+                      <Text style={styles.sectionTitle}>
+                        Unit Terdekat ({radiusKm}km)
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={toggleRadius}
+                      style={styles.expandButton}
+                    >
+                      <Animated.View
+                        style={{
+                          transform: [
+                            {
+                              rotate: rotateAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0deg', '180deg'],
+                              }),
+                            },
+                          ],
+                        }}
+                      >
+                        {/* Menggunakan Lucide Chevron */}
+                        <ChevronDown size={24} color="#64748B" />
+                      </Animated.View>
+                    </TouchableOpacity>
+                  </View>
+
+                  {impactLoading ? (
+                    <ActivityIndicator
+                      color="#0F172A"
+                      style={{ marginTop: 20 }}
+                    />
+                  ) : (
+                    showRadius && (
+                      <View>
+                        {isSuperAdmin && affectedUnits.length > 0 && (
+                          <View style={styles.filterWrapper}>
+                            <ScrollView
+                              horizontal
+                              showsHorizontalScrollIndicator={false}
+                              contentContainerStyle={styles.filterScroll}
                             >
-                              <Text
+                              <TouchableOpacity
                                 style={[
-                                  styles.filterChipText,
+                                  styles.filterChip,
                                   filterStatus === 'all' &&
-                                    styles.filterChipTextActive,
+                                    styles.filterChipActive,
                                 ]}
+                                onPress={() => setFilterStatus('all')}
                               >
-                                Semua ({unitStats.total})
-                              </Text>
-                            </TouchableOpacity>
+                                <Text
+                                  style={[
+                                    styles.filterChipText,
+                                    filterStatus === 'all' &&
+                                      styles.filterChipTextActive,
+                                  ]}
+                                >
+                                  Semua ({unitStats.total})
+                                </Text>
+                              </TouchableOpacity>
 
-                            <TouchableOpacity
-                              style={[
-                                styles.filterChip,
-                                filterStatus === 'reported' &&
-                                  styles.filterChipActive,
-                              ]}
-                              onPress={() => setFilterStatus('reported')}
-                            >
-                              <CheckCircle2
-                                size={14}
-                                color={
-                                  filterStatus === 'reported'
-                                    ? '#FFF'
-                                    : '#10B981'
-                                }
-                                style={{ marginRight: 6 }}
-                              />
-                              <Text
+                              <TouchableOpacity
                                 style={[
-                                  styles.filterChipText,
+                                  styles.filterChip,
                                   filterStatus === 'reported' &&
-                                    styles.filterChipTextActive,
+                                    styles.filterChipActive,
                                 ]}
+                                onPress={() => setFilterStatus('reported')}
                               >
-                                Terlapor ({unitStats.reported})
-                              </Text>
-                            </TouchableOpacity>
+                                <CheckCircle2
+                                  size={14}
+                                  color={
+                                    filterStatus === 'reported'
+                                      ? '#FFF'
+                                      : '#10B981'
+                                  }
+                                  style={{ marginRight: 6 }}
+                                />
+                                <Text
+                                  style={[
+                                    styles.filterChipText,
+                                    filterStatus === 'reported' &&
+                                      styles.filterChipTextActive,
+                                  ]}
+                                >
+                                  Terlapor ({unitStats.reported})
+                                </Text>
+                              </TouchableOpacity>
 
-                            <TouchableOpacity
-                              style={[
-                                styles.filterChip,
-                                filterStatus === 'pending' &&
-                                  styles.filterChipActive,
-                              ]}
-                              onPress={() => setFilterStatus('pending')}
-                            >
-                              <Hourglass
-                                size={14}
-                                color={
-                                  filterStatus === 'pending'
-                                    ? '#FFF'
-                                    : '#F59E0B'
-                                }
-                                style={{ marginRight: 6 }}
-                              />
-                              <Text
+                              <TouchableOpacity
                                 style={[
-                                  styles.filterChipText,
+                                  styles.filterChip,
                                   filterStatus === 'pending' &&
-                                    styles.filterChipTextActive,
+                                    styles.filterChipActive,
                                 ]}
+                                onPress={() => setFilterStatus('pending')}
                               >
-                                Pending ({unitStats.pending})
-                              </Text>
-                            </TouchableOpacity>
-                          </ScrollView>
-                        </View>
-                      )}
+                                <Hourglass
+                                  size={14}
+                                  color={
+                                    filterStatus === 'pending'
+                                      ? '#FFF'
+                                      : '#F59E0B'
+                                  }
+                                  style={{ marginRight: 6 }}
+                                />
+                                <Text
+                                  style={[
+                                    styles.filterChipText,
+                                    filterStatus === 'pending' &&
+                                      styles.filterChipTextActive,
+                                  ]}
+                                >
+                                  Pending ({unitStats.pending})
+                                </Text>
+                              </TouchableOpacity>
+                            </ScrollView>
+                          </View>
+                        )}
 
-                      {/* LIST UNIT YANG SUDAH DIFILTER */}
-                      {affectedUnits.length === 0 ? (
-                        <Text style={styles.emptyStateTextMsg}>
-                          Tidak ditemukan unit dalam radius {radiusKm} km
-                        </Text>
-                      ) : unitStats.filteredUnits.length === 0 ? (
-                        <Text style={styles.emptyStateTextMsg}>
-                          Tidak ada unit dengan status tersebut.
-                        </Text>
-                      ) : (
-                        unitStats.filteredUnits.map((unit, index) => {
-                          const statusData = unitStatus.find(
-                            s => s.mjs_id == unit.mjs_id,
-                          );
-                          const impact = getImpactLevel(unit.distance);
-                          const isReported =
-                            statusData?.status === 'reported' ||
-                            (statusData?.reported_count ?? 0) > 0;
+                        {/* LIST UNIT YANG SUDAH DIFILTER */}
+                        {affectedUnits.length === 0 ? (
+                          <Text style={styles.emptyStateTextMsg}>
+                            Tidak ditemukan unit dalam radius {radiusKm} km
+                          </Text>
+                        ) : unitStats.filteredUnits.length === 0 ? (
+                          <Text style={styles.emptyStateTextMsg}>
+                            Tidak ada unit dengan status tersebut.
+                          </Text>
+                        ) : (
+                          unitStats.filteredUnits.map((unit, index) => {
+                            const statusData = unitStatus.find(
+                              s => s.mjs_id == unit.mjs_id,
+                            );
+                            const impact = getImpactLevel(unit.distance);
+                            const isReported =
+                              statusData?.status === 'reported' ||
+                              (statusData?.reported_count ?? 0) > 0;
 
-                          return (
-                            <View key={index} style={styles.unitCard}>
-                              <View
-                                style={{
-                                  flexDirection: 'row',
-                                  justifyContent: 'space-between',
-                                }}
-                              >
-                                <View style={{ flex: 1 }}>
-                                  <Text style={styles.unitName}>
-                                    {unit.mjs_nama}
-                                  </Text>
-                                  <Text
-                                    style={{
-                                      color: impact.color,
-                                      fontSize: 11,
-                                      fontWeight: '800',
-                                      marginTop: 4,
-                                    }}
-                                  >
-                                    ● {impact.label}
-                                  </Text>
-                                </View>
-
-                                {/* KOLOM STATUS: HANYA UNTUK SUPER ADMIN */}
-                                <View style={{ alignItems: 'flex-end' }}>
-                                  {isSuperAdmin ? (
-                                    <>
-                                      <Text
-                                        style={{
-                                          fontSize: 12,
-                                          fontWeight: '700',
-                                          color: isReported
-                                            ? '#10B981'
-                                            : '#E11D48',
-                                        }}
-                                      >
-                                        {isReported
-                                          ? '✅ TERLAPOR'
-                                          : '⏳ PENDING'}
-                                      </Text>
-                                      <Text
-                                        style={{
-                                          fontSize: 12,
-                                          color: '#000000',
-                                          fontWeight: '500',
-                                        }}
-                                      >
-                                        {statusData?.reported_count || 0}/
-                                        {statusData?.total_user || 0} User
-                                      </Text>
-                                    </>
-                                  ) : (
+                            return (
+                              <View key={index} style={styles.unitCard}>
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                  }}
+                                >
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={styles.unitName}>
+                                      {unit.mjs_nama}
+                                    </Text>
                                     <Text
                                       style={{
+                                        color: impact.color,
                                         fontSize: 11,
-                                        color: '#94A3B8',
-                                        fontStyle: 'italic',
+                                        fontWeight: '800',
+                                        marginTop: 4,
                                       }}
                                     >
-                                      Lokasi Terpantau
+                                      ● {impact.label}
                                     </Text>
-                                  )}
-                                </View>
-                              </View>
+                                  </View>
 
-                              {/* Distance Visualizer */}
-                              <View
-                                style={[
-                                  styles.distanceTrack,
-                                  { marginTop: 12 },
-                                ]}
-                              >
+                                  {/* KOLOM STATUS: HANYA UNTUK SUPER ADMIN */}
+                                  <View style={{ alignItems: 'flex-end' }}>
+                                    {isSuperAdmin ? (
+                                      <>
+                                        <Text
+                                          style={{
+                                            fontSize: 12,
+                                            fontWeight: '700',
+                                            color: isReported
+                                              ? '#10B981'
+                                              : '#E11D48',
+                                          }}
+                                        >
+                                          {isReported
+                                            ? '✅ TERLAPOR'
+                                            : '⏳ PENDING'}
+                                        </Text>
+                                        <Text
+                                          style={{
+                                            fontSize: 12,
+                                            color: '#000000',
+                                            fontWeight: '500',
+                                          }}
+                                        >
+                                          {statusData?.reported_count || 0}/
+                                          {statusData?.total_user || 0} User
+                                        </Text>
+                                      </>
+                                    ) : (
+                                      <Text
+                                        style={{
+                                          fontSize: 11,
+                                          color: '#94A3B8',
+                                          fontStyle: 'italic',
+                                        }}
+                                      >
+                                        Lokasi Terpantau
+                                      </Text>
+                                    )}
+                                  </View>
+                                </View>
+
+                                {/* Distance Visualizer */}
                                 <View
                                   style={[
-                                    styles.distanceFill,
-                                    {
-                                      width: `${Math.max(
-                                        10,
-                                        100 - (unit.distance / radiusKm) * 100,
-                                      )}%`,
-                                      backgroundColor: impact.color,
-                                    },
+                                    styles.distanceTrack,
+                                    { marginTop: 12 },
                                   ]}
-                                />
+                                >
+                                  <View
+                                    style={[
+                                      styles.distanceFill,
+                                      {
+                                        width: `${Math.max(
+                                          10,
+                                          100 -
+                                            (unit.distance / radiusKm) * 100,
+                                        )}%`,
+                                        backgroundColor: impact.color,
+                                      },
+                                    ]}
+                                  />
+                                </View>
+                                <Text style={styles.distanceText}>
+                                  {unit.distance.toFixed(1)} km dari episenter
+                                </Text>
                               </View>
-                              <Text style={styles.distanceText}>
-                                {unit.distance.toFixed(1)} km dari episenter
-                              </Text>
-                            </View>
-                          );
-                        })
-                      )}
-                    </View>
-                  )
-                )}
-              </View>
+                            );
+                          })
+                        )}
+                      </View>
+                    )
+                  )}
+                </View>
               )}
             </View>
           </View>
