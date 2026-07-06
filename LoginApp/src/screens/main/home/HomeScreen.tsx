@@ -20,6 +20,7 @@ import DashboardMenu from '../../../components/menu/DashboardMenu';
 import NewsSection from '../../../components/common/NewsSection';
 import HomeSkeleton from '../../../components/skeleton/HomeSkeleton';
 import TsunamiWarningCard from '../../../components/common/TsunamiWarningCard';
+import GempaWarningCard from '../../../components/common/GempaWarningCard';
 
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
@@ -43,8 +44,13 @@ const HomeScreen = () => {
   const [panduan, setPanduan] = useState([]);
   const [showGempaPopup, setShowGempaPopup] = useState(false);
   const [gempaData, setGempaData] = useState<any>(null);
+
   const [showTsunamiWarning, setShowTsunamiWarning] = useState(true);
   const [tsunamiData, setTsunamiData] = useState<any>(null);
+
+  // State untuk management card gempa (Disederhanakan tanpa status unread)
+  const [showGempaCard, setShowGempaCard] = useState(true);
+  const [latestGempaInfo, setLatestGempaInfo] = useState<any>(null);
 
   const { user } = useUser();
   const isSuperAdmin = user?.jabatan?.jab_id === 1;
@@ -52,7 +58,7 @@ const HomeScreen = () => {
   const backPressedOnce = useRef(false);
   const { setHideHeader } = useLayout();
 
-  /* ================= FETCH NEWS ================= */
+  /* ================= FETCH DATA FUNCTIONS ================= */
   const fetchNews = async () => {
     try {
       const res = await API.get('/berita');
@@ -82,9 +88,21 @@ const HomeScreen = () => {
     }
   };
 
+  const fetchLatestGempa = async () => {
+    try {
+      const res = await API.get('/gempa/latest');
+
+      if (res.data?.status && res.data.data) {
+        setLatestGempaInfo(res.data.data);
+        setShowGempaCard(true); // Selalu munculkan kembali jika data berhasil dimuat/di-refresh
+      }
+    } catch (error) {
+      console.log('ERROR FETCH LATEST GEMPA', error);
+    }
+  };
+
   useEffect(() => {
     fetchNews();
-    fetchTsunami();
   }, []);
 
   useEffect(() => {
@@ -162,7 +180,6 @@ const HomeScreen = () => {
   }, [route.params]);
 
   /* ================= FETCH PANDUAN ================= */
-
   useEffect(() => {
     const fetchPanduan = async () => {
       try {
@@ -181,7 +198,7 @@ const HomeScreen = () => {
   /* ================= EXIT APP ================= */
   useFocusEffect(
     useCallback(() => {
-      if (showGempaPopup) return; // 🔥 TAMBAHKAN INI
+      if (showGempaPopup) return;
 
       const subscription = BackHandler.addEventListener(
         'hardwareBackPress',
@@ -221,13 +238,16 @@ const HomeScreen = () => {
     }, [setShowBack, setHideNavbar, setShowSearch]),
   );
 
+  /* ================= BACKGROUND POLLING & FOCUS REFRESH ================= */
   useFocusEffect(
     useCallback(() => {
       fetchTsunami();
+      fetchLatestGempa();
 
       const interval = setInterval(() => {
-        console.log('REFRESH TSUNAMI...');
+        console.log('REFRESH TSUNAMI & GEMPA...');
         fetchTsunami();
+        fetchLatestGempa();
       }, 60000);
 
       return () => {
@@ -241,9 +261,11 @@ const HomeScreen = () => {
     if (refreshing) return;
     setRefreshing(true);
     fetchNews();
+    fetchTsunami();
+    fetchLatestGempa();
   }, [refreshing]);
 
-  /* ================= CALLBACKS ================= */
+  /* ================= CALLBACKS / HANDLERS ================= */
   const handleDashboardPress = useCallback(() => {
     setShowDashboard(true);
   }, []);
@@ -283,6 +305,26 @@ const HomeScreen = () => {
     } catch {
       return dateString;
     }
+  };
+
+  const handleGempaPress = (gempa: any) => {
+    // Ubah data huruf kecil dari database menjadi format PascalCase yang diminta oleh GempaDetailScreen
+    const mappedGempa = {
+      Magnitude: gempa.magnitude,
+      Wilayah: gempa.wilayah,
+      Jam: gempa.jam,
+      Tanggal: gempa.tanggal,
+      Kedalaman: gempa.kedalaman,
+      Coordinates: gempa.coordinates,
+      Dirasakan: gempa.dirasakan || null,
+      Potensi: gempa.potensi || null,
+    };
+
+    navigation.navigate('DetailGempa', { gempa: mappedGempa });
+  };
+
+  const handleCloseGempaCard = () => {
+    setShowGempaCard(false); // Hanya menyembunyikan card secara lokal sampai di-refresh kembali
   };
 
   return (
@@ -327,6 +369,19 @@ const HomeScreen = () => {
                 <HomeMenu onDashboardPress={handleDashboardPress} />
               </View>
 
+              {/* ================= BANNER RINGKASAN GEMPA TERKINI ================= */}
+              {showGempaCard && latestGempaInfo && (
+                <GempaWarningCard
+                  Magnitude={latestGempaInfo.magnitude}
+                  Wilayah={latestGempaInfo.wilayah}
+                  Jam={latestGempaInfo.jam}
+                  Kedalaman={latestGempaInfo.kedalaman}
+                  onPress={() => handleGempaPress(latestGempaInfo)}
+                  onClose={handleCloseGempaCard}
+                />
+              )}
+
+              {/* ================= TSUNAMI WARNING CARD ================= */}
               {showTsunamiWarning && tsunamiData && tsunamiData.is_active && (
                 <TsunamiWarningCard
                   magnitude={tsunamiData.magnitude}

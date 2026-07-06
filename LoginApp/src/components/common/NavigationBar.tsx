@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Map, Home, Bot, SwatchBook } from 'lucide-react-native';
+import { Map, Home, Bot, BookCopy, MapPinHouse } from 'lucide-react-native';
 import { createStyles } from '../../styles/navigation/navigationStyle';
 import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useLayout } from '../../contexts/LayoutContext';
@@ -30,9 +30,9 @@ import {
 ======================= */
 const TABS = [
   { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },
-  { icon: Map, label: 'KCP', route: 'Maps', color: '#F8AD3CFF' },
+  { icon: MapPinHouse, label: 'KCP', route: 'Maps', color: '#F8AD3CFF', size: 25 },
   {
-    icon: SwatchBook,
+    icon: BookCopy,
     label: 'Book',
     route: 'Book',
     color: '#F8AD3CFF',
