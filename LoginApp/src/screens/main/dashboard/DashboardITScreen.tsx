@@ -1,36 +1,123 @@
 import React, { useEffect, useState } from 'react';
 import {
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
   View,
   Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
-  Dimensions,
 } from 'react-native';
-import { useLayout } from '../../../contexts/LayoutContext';
-import {
-  Server,
-  Cpu,
-  Database,
-  Activity,
-  HardDrive,
-  CheckCircle2,
-} from 'lucide-react-native';
-import LottieView from 'lottie-react-native';
+import axios from 'axios';
+import API from '../../../services/api';
+import { LineChart } from 'react-native-gifted-charts';
 
-const { width } = Dimensions.get('window');
-const FEATURE_DASHBOARD_IT_ENABLED = false;
+import { useLayout } from '../../../contexts/LayoutContext';
+import { PieChart } from 'react-native-gifted-charts';
 
 export default function DashboardITScreen() {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
-  const [uptime, setUptime] = useState('99.98%');
+  const [dashboard, setDashboard] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [cobMonthly, setCobMonthly] = useState<any>(null);
+  const [cobStage, setCobStage] = useState<any[]>([]);
+
+  const loadDashboard = async () => {
+    try {
+      setLoading(true);
+
+      const { data } = await API.get('/dashboard-it');
+
+      setDashboard(data);
+    } catch (error) {
+      console.log('Dashboard Error', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCobMonthly = async () => {
+    try {
+      const { data } = await API.get('/dashboard-it/cob-monthly');
+      setCobMonthly(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const loadCobStage = async () => {
+    try {
+      const { data } = await API.get('/dashboard-it/cob-stage');
+      setCobStage(data);
+    } catch (error) {
+      console.log('COB Stage Error', error);
+    }
+  };
+
+  const applicationPieData =
+    dashboard?.application?.chart?.map((item: any) => ({
+      value: item.total,
+      color: item.dbmak_color || '#2563EB',
+      text: String(item.total),
+      label: item.dbmak_nama,
+    })) ?? [];
+
+  const cobTrendData =
+    dashboard?.cob?.trend?.map((item: any) => ({
+      value: Math.round(item.trx / 1000000),
+      label: item.tanggal.substring(5),
+    })) ?? [];
+
+  const cobTransactionData =
+    dashboard?.cob?.trend?.map((item: any) => ({
+      value: Number((item.trx / 1000000).toFixed(2)),
+      label: item.tanggal.substring(5),
+    })) ?? [];
+
+  const cobDurationData =
+    dashboard?.cob?.trend?.map((item: any) => ({
+      value: item.durasi_hour,
+    })) ?? [];
+
+  const monthStartData =
+    cobMonthly?.month_start?.map((item: any) => ({
+      value: Number((item.trx / 1000000).toFixed(2)),
+      label: item.tanggal.substring(5, 7),
+    })) ?? [];
+
+  const monthEndData =
+    cobMonthly?.month_end?.map((item: any) => ({
+      value: Number((item.trx / 1000000).toFixed(2)),
+    })) ?? [];
+
+  const applicationData = cobStage.map((item: any) => ({
+    value: item.application,
+    label: item.tanggal.substring(5),
+  }));
+
+  const systemWideData = cobStage.map((item: any) => ({
+    value: item.system_wide,
+  }));
+
+  const reportingData = cobStage.map((item: any) => ({
+    value: item.reporting,
+  }));
+
+  const sodData = cobStage.map((item: any) => ({
+    value: item.sod,
+  }));
+
+  const onlineData = cobStage.map((item: any) => ({
+    value: item.online,
+  }));
 
   useEffect(() => {
     setTitle('Dashboard IT');
     setHideNavbar(true);
     setShowBack(true);
+
+    loadDashboard();
+    loadCobMonthly();
+    loadCobStage();
 
     return () => {
       setHideNavbar(false);
@@ -38,142 +125,378 @@ export default function DashboardITScreen() {
     };
   }, [setTitle, setHideNavbar, setShowBack]);
 
-  const stats = [
-    {
-      label: 'CPU Load',
-      value: '24%',
-      icon: <Cpu size={20} color="#3B82F6" />,
-      color: '#EFF6FF',
-    },
-    {
-      label: 'RAM Usage',
-      value: '4.2GB',
-      icon: <Activity size={20} color="#10B981" />,
-      color: '#ECFDF5',
-    },
-    {
-      label: 'Storage',
-      value: '1.2TB',
-      icon: <HardDrive size={20} color="#F59E0B" />,
-      color: '#FFFBEB',
-    },
-  ];
-
-  const ComingSoon = () => (
-    <View style={styles.comingSoonContainer}>
-      <LottieView
-        source={require('../../../assets/Web.json')}
-        autoPlay
-        loop
-        style={{ width: 160, height: 160 }}
-      />
-
-      <Text style={styles.csTitle}>Fitur Dalam Pengembangan</Text>
-
-      <Text style={styles.csText}>
-        Dashboard IT sedang dalam tahap pengembangan. Nantikan pembaruan pada
-        versi berikutnya.
-      </Text>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {!FEATURE_DASHBOARD_IT_ENABLED ? (
-        <ComingSoon />
-      ) : (
-        <>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerSubtitle}>INFRASTRUCTURE OVERVIEW</Text>
-              <Text style={styles.headerTitle}>IT Dashboard</Text>
-            </View>
-            <TouchableOpacity style={styles.refreshBtn}>
-              <Text style={styles.refreshText}>Live</Text>
-            </TouchableOpacity>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Dashboard IT</Text>
+
+          <Text style={styles.subtitle}>Business Continuity Monitoring</Text>
+        </View>
+
+        <View style={styles.grid}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Application</Text>
+
+            <Text style={styles.cardValue}>
+              {dashboard?.application?.total ?? 0}
+            </Text>
+
+            <Text style={styles.cardFooter}>Total Application</Text>
           </View>
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            {/* Main Health Card */}
-            <View style={styles.healthCard}>
-              <View style={styles.healthInfo}>
-                <CheckCircle2 size={32} color="#10B981" />
-                <View style={styles.healthTextContainer}>
-                  <Text style={styles.healthStatus}>
-                    All Systems Operational
-                  </Text>
-                  <Text style={styles.healthDesc}>
-                    Uptime: {uptime} (Last 30 days)
-                  </Text>
-                </View>
-              </View>
-            </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Availability</Text>
 
-            {/* Stats Grid */}
-            <View style={styles.grid}>
-              {stats.map((item, index) => (
-                <View
-                  key={index}
-                  style={[styles.statBox, { backgroundColor: item.color }]}
-                >
-                  <View style={styles.iconCircle}>{item.icon}</View>
-                  <Text style={styles.statValue}>{item.value}</Text>
-                  <Text style={styles.statLabel}>{item.label}</Text>
+            <Text style={styles.cardValue}>
+              {dashboard?.availability?.percentage ?? 0}%
+            </Text>
+
+            <Text style={styles.cardFooter}>Current Availability</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>DRP</Text>
+
+            <Text style={styles.cardValue}>
+              {dashboard?.drp?.summary?.completed ?? 0}
+            </Text>
+
+            <Text style={styles.cardFooter}>Completed DRP</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>COB</Text>
+
+            <Text style={styles.cardValue}>
+              {dashboard?.cob?.trend?.length ?? 0}
+            </Text>
+
+            <Text style={styles.cardFooter}>Latest COB</Text>
+          </View>
+        </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Application Overview</Text>
+
+          <View style={styles.chartCard}>
+            <PieChart
+              data={applicationPieData}
+              donut
+              radius={90}
+              innerRadius={45}
+              showText
+              textColor="white"
+              textSize={12}
+              focusOnPress
+            />
+
+            <View style={{ marginTop: 20 }}>
+              {applicationPieData.map((item: any, index: number) => (
+                <View key={index} style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      {
+                        backgroundColor: item.color,
+                      },
+                    ]}
+                  />
+
+                  <Text style={styles.legendLabel}>{item.label}</Text>
+
+                  <Text style={styles.legendValue}>{item.value}</Text>
                 </View>
               ))}
             </View>
+          </View>
+        </View>
 
-            {/* Server List Section */}
-            <Text style={styles.sectionTitle}>Active Nodes</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Availability</Text>
 
-            {[
-              {
-                name: 'Primary DB Cluster',
-                status: 'Online',
-                ip: '192.168.1.10',
-                load: '12%',
-              },
-              {
-                name: 'Main API Gateway',
-                status: 'Online',
-                ip: '192.168.1.12',
-                load: '45%',
-              },
-              {
-                name: 'Backup Storage S3',
-                status: 'Online',
-                ip: '10.0.0.5',
-                load: '05%',
-              },
-            ].map((server, i) => (
-              <View key={i} style={styles.serverItem}>
-                <View style={styles.serverIcon}>
-                  <Server size={22} color="#64748B" />
-                </View>
-                <View style={styles.serverInfo}>
-                  <Text style={styles.serverName}>{server.name}</Text>
-                  <Text style={styles.serverIp}>{server.ip}</Text>
-                </View>
-                <View style={styles.serverMeta}>
-                  <Text style={styles.loadText}>{server.load}</Text>
-                  <View style={styles.onlineIndicator} />
-                </View>
+          <View style={styles.availabilityCard}>
+            <Text style={styles.availabilityValue}>
+              {dashboard?.availability?.percentage ?? 0}%
+            </Text>
+
+            <Text style={styles.availabilityLabel}>System Availability</Text>
+
+            <View style={styles.rowStats}>
+              <View style={styles.smallCard}>
+                <Text style={styles.smallValue}>
+                  {dashboard?.availability?.downtime_hour ?? 0}
+                </Text>
+
+                <Text style={styles.smallLabel}>Downtime</Text>
               </View>
-            ))}
 
-            {/* Bottom Action */}
-            <TouchableOpacity style={styles.primaryAction}>
-              <Database size={20} color="#FFF" style={{ marginRight: 10 }} />
-              <Text style={styles.primaryActionText}>View Database Logs</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </>
-      )}
+              <View style={styles.smallCard}>
+                <Text style={styles.smallValue}>
+                  {dashboard?.availability?.incident ?? 0}
+                </Text>
+
+                <Text style={styles.smallLabel}>Incident</Text>
+              </View>
+
+              <View style={styles.smallCard}>
+                <Text style={styles.smallValue}>
+                  {dashboard?.availability?.tat_hour ?? 0}
+                </Text>
+
+                <Text style={styles.smallLabel}>Avg TAT</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>COB Trend</Text>
+
+          <View style={styles.chartCard}>
+            <LineChart
+              areaChart
+              curved
+              data={cobTransactionData}
+              data2={cobDurationData}
+              color1="#2563EB"
+              color2="#10B981"
+              startFillColor1="#93C5FD"
+              endFillColor1="#FFFFFF"
+              startOpacity={0.25}
+              endOpacity={0}
+              thickness1={3}
+              thickness2={3}
+              hideDataPoints={false}
+              spacing={45}
+              initialSpacing={10}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideRules
+              hideYAxisText
+            />
+          </View>
+          <View style={styles.chartLegend}>
+            <View style={styles.legendBox}>
+              <View
+                style={[styles.legendColor, { backgroundColor: '#2563EB' }]}
+              />
+
+              <Text>Transaction</Text>
+            </View>
+
+            <View style={styles.legendBox}>
+              <View
+                style={[styles.legendColor, { backgroundColor: '#10B981' }]}
+              />
+
+              <Text>Duration</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>COB Monthly</Text>
+
+          <View style={styles.chartCard}>
+            <LineChart
+              curved
+              areaChart
+              data={monthStartData}
+              data2={monthEndData}
+              color1="#F59E0B"
+              color2="#EF4444"
+              startFillColor1="#FDE68A"
+              startFillColor2="#FCA5A5"
+              endFillColor1="#FFFFFF"
+              endFillColor2="#FFFFFF"
+              thickness1={3}
+              thickness2={3}
+              hideRules
+              hideYAxisText
+              yAxisThickness={0}
+              xAxisThickness={0}
+            />
+
+            <View style={styles.chartLegend}>
+              <View style={styles.legendBox}>
+                <View
+                  style={[
+                    styles.legendColor,
+                    {
+                      backgroundColor: '#F59E0B',
+                    },
+                  ]}
+                />
+                <Text>Beginning</Text>
+              </View>
+
+              <View style={styles.legendBox}>
+                <View
+                  style={[
+                    styles.legendColor,
+                    {
+                      backgroundColor: '#EF4444',
+                    },
+                  ]}
+                />
+                <Text>End</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>COB Stage</Text>
+
+          <View style={styles.chartCard}>
+            <LineChart
+              data={applicationData}
+              data2={systemWideData}
+              data3={reportingData}
+              data4={sodData}
+              data5={onlineData}
+              curved
+              color1="#2563EB"
+              color2="#10B981"
+              color3="#F59E0B"
+              color4="#EF4444"
+              color5="#8B5CF6"
+              thickness1={3}
+              thickness2={3}
+              thickness3={3}
+              thickness4={3}
+              thickness5={3}
+              hideDataPoints={false}
+              hideRules
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideYAxisText
+              spacing={38}
+              initialSpacing={10}
+            />
+
+            <View style={styles.stageLegend}>
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendColor, { backgroundColor: '#2563EB' }]}
+                />
+                <Text style={styles.legendText}>Application</Text>
+              </View>
+
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendColor, { backgroundColor: '#10B981' }]}
+                />
+                <Text style={styles.legendText}>System Wide</Text>
+              </View>
+
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendColor, { backgroundColor: '#F59E0B' }]}
+                />
+                <Text style={styles.legendText}>Reporting</Text>
+              </View>
+
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendColor, { backgroundColor: '#EF4444' }]}
+                />
+                <Text style={styles.legendText}>SOD</Text>
+              </View>
+
+              <View style={styles.legendRow}>
+                <View
+                  style={[styles.legendColor, { backgroundColor: '#8B5CF6' }]}
+                />
+                <Text style={styles.legendText}>Online</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>DRP Summary</Text>
+
+          <View style={styles.grid}>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Total</Text>
+
+              <Text style={styles.cardValue}>
+                {dashboard?.drp?.summary?.total ?? 0}
+              </Text>
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Completed</Text>
+
+              <Text style={styles.cardValue}>
+                {dashboard?.drp?.summary?.completed ?? 0}
+              </Text>
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Outstanding</Text>
+
+              <Text style={styles.cardValue}>
+                {dashboard?.drp?.summary?.outstanding ?? 0}
+              </Text>
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>This Month</Text>
+
+              <Text style={styles.cardValue}>
+                {dashboard?.drp?.summary?.this_month ?? 0}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Outstanding DRP</Text>
+
+          <View style={styles.chartCard}>
+            {dashboard?.drp?.outstanding_list?.length ? (
+              dashboard.drp.outstanding_list.map((item: any) => (
+                <View key={item.dr_id} style={styles.drpItem}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.drpTitle}>{item.dbma_nama}</Text>
+
+                    <Text style={styles.drpSubtitle}>
+                      {item.target_dc} → {item.target_drc}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.drpDate}>{item.dr_tgl_new_propose}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>Tidak ada Outstanding DRP</Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>RSD</Text>
+
+          <View style={styles.placeholderCard}>
+            <Text style={styles.placeholderText}>RSD Summary & Monthly</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>History</Text>
+
+          <View style={styles.placeholderCard}>
+            <Text style={styles.placeholderText}>List History</Text>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -183,183 +506,247 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+
+  content: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 80,
-    paddingBottom: 15,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    marginTop: 70,
+    marginBottom: 20,
   },
-  headerSubtitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#94A3B8',
-    letterSpacing: 1.5,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
-  refreshBtn: {
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#10B981',
-  },
-  refreshText: {
-    fontSize: 11,
+
+  title: {
+    fontSize: 26,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#111827',
   },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 10,
-    paddingBottom: 40,
+
+  subtitle: {
+    marginTop: 4,
+    color: '#6B7280',
   },
-  healthCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 24,
-  },
-  healthInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  healthTextContainer: {
-    marginLeft: 16,
-  },
-  healthStatus: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  healthDesc: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
+
   grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 32,
   },
-  statBox: {
-    width: (width - 48) / 3 - 8,
-    padding: 16,
-    borderRadius: 24,
-    alignItems: 'flex-start',
+
+  card: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 18,
+    marginBottom: 14,
+    elevation: 2,
   },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+
+  cardTitle: {
+    color: '#6B7280',
+    fontSize: 13,
+  },
+
+  cardValue: {
+    marginTop: 10,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  cardFooter: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#6B7280',
+  },
+
+  section: {
+    marginTop: 24,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+
+  placeholderCard: {
     backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
+    borderRadius: 14,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+
+  placeholderText: {
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
+
+  chartCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 18,
+    elevation: 2,
+  },
+
+  chartItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 12,
+  },
+
+  chartLabel: {
+    flex: 1,
+    fontSize: 15,
+    color: '#111827',
+  },
+
+  chartValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  legendItem: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-  statValue: {
-    fontSize: 16,
+
+  legendDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 10,
+  },
+
+  legendLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#374151',
+  },
+
+  legendValue: {
+    fontWeight: '700',
+    fontSize: 15,
+    color: '#111827',
+  },
+
+  availabilityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+  },
+
+  availabilityValue: {
+    fontSize: 42,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#10B981',
+    textAlign: 'center',
   },
-  statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#64748B',
-    marginTop: 2,
+
+  availabilityLabel: {
+    textAlign: 'center',
+    color: '#6B7280',
+    marginTop: 4,
+    marginBottom: 20,
   },
-  sectionTitle: {
+
+  rowStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  smallCard: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  smallValue: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-    marginBottom: 16,
+    fontWeight: '700',
+    color: '#111827',
   },
-  serverItem: {
+
+  smallLabel: {
+    marginTop: 4,
+    color: '#6B7280',
+    fontSize: 12,
+  },
+
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 18,
+  },
+
+  legendBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
+    marginHorizontal: 12,
+  },
+
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+
+  stageLegend: {
+    marginTop: 20,
+  },
+
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  legendText: {
+    fontSize: 13,
+    color: '#374151',
+  },
+
+  drpItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: '#F1F5F9',
+    borderBottomColor: '#F3F4F6',
   },
-  serverIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  serverInfo: {
-    flex: 1,
-  },
-  serverName: {
+
+  drpTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1E293B',
+    fontWeight: '600',
+    color: '#111827',
   },
-  serverIp: {
+
+  drpSubtitle: {
+    marginTop: 4,
     fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
+    color: '#6B7280',
   },
-  serverMeta: {
-    alignItems: 'flex-end',
-  },
-  loadText: {
+
+  drpDate: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  onlineIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10B981',
-    marginTop: 6,
-  },
-  primaryAction: {
-    backgroundColor: '#0F172A',
-    flexDirection: 'row',
-    paddingVertical: 18,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  primaryActionText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
+    color: '#9CA3AF',
   },
 
-  comingSoonContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-
-  csTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginTop: 10,
-    color: '#0F172A',
+  emptyText: {
     textAlign: 'center',
-  },
-
-  csText: {
-    marginTop: 8,
-    textAlign: 'center',
-    color: '#64748B',
-    lineHeight: 20,
+    color: '#9CA3AF',
+    paddingVertical: 20,
   },
 });

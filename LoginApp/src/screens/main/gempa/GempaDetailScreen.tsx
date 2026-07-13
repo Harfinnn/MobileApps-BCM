@@ -51,6 +51,7 @@ const GempaDetailScreen = () => {
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const { gempa } = route.params;
+
   const navigation = useNavigation<any>();
 
   // Auth & Layout Context
@@ -97,8 +98,8 @@ const GempaDetailScreen = () => {
     setHideHeader(true);
 
     return () => {
-      setShowSearch(true);
-      setHideNavbar(false);
+      setShowSearch(false);
+      setHideHeader(false);
       setShowBack(true);
     };
   }, []);
@@ -106,9 +107,10 @@ const GempaDetailScreen = () => {
   useFocusEffect(
     useCallback(() => {
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        navigation.navigate('Main', { screen: 'InfoGempaBumi' });
+        navigation.goBack();
         return true;
       });
+
       return () => sub.remove();
     }, [navigation]),
   );
@@ -892,15 +894,13 @@ Business Continuity Management
         )}
       </ScrollView>
 
-      {/* FOOTER */}
       <View style={styles.footer}>
         <TouchableOpacity
+          activeOpacity={0.85}
           style={styles.closeButton}
-          onPress={() =>
-            navigation.navigate('Main', { screen: 'InfoGempaBumi' })
-          }
+          onPress={() => navigation.goBack()}
         >
-          <Text style={styles.closeButtonText}>Kembali ke Daftar</Text>
+          <Text style={styles.closeButtonText}>Kembali</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

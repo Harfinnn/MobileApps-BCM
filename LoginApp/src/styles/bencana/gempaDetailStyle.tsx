@@ -249,20 +249,34 @@ export default StyleSheet.create({
   },
 
   footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 24,
-    backgroundColor: 'transparent', // penting
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 30,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
+
   closeButton: {
+    height: 56,
+    borderRadius: 18,
     backgroundColor: '#0F172A',
-    paddingVertical: 16,
-    borderRadius: 12,
+
+    justifyContent: 'center',
     alignItems: 'center',
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  closeButtonText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+  },
 
   /* MODAL STYLES */
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)' },

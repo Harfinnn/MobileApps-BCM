@@ -308,7 +308,6 @@ const HomeScreen = () => {
   };
 
   const handleGempaPress = (gempa: any) => {
-    // Ubah data huruf kecil dari database menjadi format PascalCase yang diminta oleh GempaDetailScreen
     const mappedGempa = {
       Magnitude: gempa.magnitude,
       Wilayah: gempa.wilayah,
@@ -320,7 +319,9 @@ const HomeScreen = () => {
       Potensi: gempa.potensi || null,
     };
 
-    navigation.navigate('DetailGempa', { gempa: mappedGempa });
+    navigation.navigate('GempaDetail', {
+      gempa: mappedGempa,
+    });
   };
 
   const handleCloseGempaCard = () => {
