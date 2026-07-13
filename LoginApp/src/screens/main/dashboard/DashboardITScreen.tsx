@@ -14,20 +14,40 @@ import { LineChart } from 'react-native-gifted-charts';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { PieChart } from 'react-native-gifted-charts';
 
+import ApplicationOverviewSection from '../../../components/dashboard/CardApp';
+import AvailabilityGauge from '../../../components/dashboard/AvailabilityGauge';
+import SystemOverviewDashboard from '../../../components/dashboard/NewComp';
+import COBAnalyticsCard from '../../../components/dashboard/CobGrafik';
+
 export default function DashboardITScreen() {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [cobMonthly, setCobMonthly] = useState<any>(null);
   const [cobStage, setCobStage] = useState<any[]>([]);
+  const [rsdSummary, setRsdSummary] = useState<any>(null);
+  const [rsdMonthly, setRsdMonthly] = useState<any[]>([]);
+  const [rsdCategory, setRsdCategory] = useState<RsdCategory[]>([]);
 
   const loadDashboard = async () => {
     try {
       setLoading(true);
 
-      const { data } = await API.get('/dashboard-it');
+      const [dashboardRes, rsdSummaryRes, rsdMonthlyRes, rsdCategoryRes] =
+        await Promise.all([
+          API.get('/dashboard-it'),
+          API.get('/dashboard-it/rsd-summary'),
+          API.get('/dashboard-it/rsd-monthly'),
+          API.get('/dashboard-it/rsd-category'),
+        ]);
 
-      setDashboard(data);
+      setDashboard(dashboardRes.data);
+
+      setRsdSummary(rsdSummaryRes.data);
+
+      setRsdMonthly(rsdMonthlyRes.data);
+
+      setRsdCategory(rsdCategoryRes.data);
     } catch (error) {
       console.log('Dashboard Error', error);
     } finally {
@@ -55,7 +75,7 @@ export default function DashboardITScreen() {
 
   const applicationPieData =
     dashboard?.application?.chart?.map((item: any) => ({
-      value: item.total,
+      value: Number(item.total),
       color: item.dbmak_color || '#2563EB',
       text: String(item.total),
       label: item.dbmak_nama,
@@ -89,26 +109,36 @@ export default function DashboardITScreen() {
       value: Number((item.trx / 1000000).toFixed(2)),
     })) ?? [];
 
-  const applicationData = cobStage.map((item: any) => ({
-    value: item.application,
-    label: item.tanggal.substring(5),
+  const applicationData = (cobStage || []).map((item: any) => ({
+    value: (Number(item.application) || 0) * 60,
+    label: item.tanggal ? item.tanggal.substring(5) : '',
   }));
 
-  const systemWideData = cobStage.map((item: any) => ({
-    value: item.system_wide,
+  const systemWideData = (cobStage || []).map((item: any) => ({
+    value: (Number(item.system_wide) || 0) * 60,
   }));
 
-  const reportingData = cobStage.map((item: any) => ({
-    value: item.reporting,
+  const reportingData = (cobStage || []).map((item: any) => ({
+    value: (Number(item.reporting) || 0) * 60,
   }));
 
-  const sodData = cobStage.map((item: any) => ({
-    value: item.sod,
+  const sodData = (cobStage || []).map((item: any) => ({
+    value: (Number(item.sod) || 0) * 60,
   }));
 
-  const onlineData = cobStage.map((item: any) => ({
-    value: item.online,
+  const onlineData = (cobStage || []).map((item: any) => ({
+    value: (Number(item.online) || 0) * 60,
   }));
+
+  interface RsdCategoryPoint {
+    bulan: string;
+    durasi_hour: number;
+  }
+
+  interface RsdCategory {
+    category: string;
+    data: RsdCategoryPoint[];
+  }
 
   useEffect(() => {
     setTitle('Dashboard IT');
@@ -139,285 +169,25 @@ export default function DashboardITScreen() {
           <Text style={styles.subtitle}>Business Continuity Monitoring</Text>
         </View>
 
-        <View style={styles.grid}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Application</Text>
+        <SystemOverviewDashboard
+          percentage={dashboard?.availability?.percentage ?? 0}
+          downtime={dashboard?.availability?.downtime_hour ?? 0}
+          tat={dashboard?.availability?.tat_hour ?? 0}
+          applicationPieData={applicationPieData}
+          onLegendItemPress={item => console.log('Legend ditekan:', item.label)}
+        />
 
-            <Text style={styles.cardValue}>
-              {dashboard?.application?.total ?? 0}
-            </Text>
-
-            <Text style={styles.cardFooter}>Total Application</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Availability</Text>
-
-            <Text style={styles.cardValue}>
-              {dashboard?.availability?.percentage ?? 0}%
-            </Text>
-
-            <Text style={styles.cardFooter}>Current Availability</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>DRP</Text>
-
-            <Text style={styles.cardValue}>
-              {dashboard?.drp?.summary?.completed ?? 0}
-            </Text>
-
-            <Text style={styles.cardFooter}>Completed DRP</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>COB</Text>
-
-            <Text style={styles.cardValue}>
-              {dashboard?.cob?.trend?.length ?? 0}
-            </Text>
-
-            <Text style={styles.cardFooter}>Latest COB</Text>
-          </View>
-        </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Application Overview</Text>
-
-          <View style={styles.chartCard}>
-            <PieChart
-              data={applicationPieData}
-              donut
-              radius={90}
-              innerRadius={45}
-              showText
-              textColor="white"
-              textSize={12}
-              focusOnPress
-            />
-
-            <View style={{ marginTop: 20 }}>
-              {applicationPieData.map((item: any, index: number) => (
-                <View key={index} style={styles.legendItem}>
-                  <View
-                    style={[
-                      styles.legendDot,
-                      {
-                        backgroundColor: item.color,
-                      },
-                    ]}
-                  />
-
-                  <Text style={styles.legendLabel}>{item.label}</Text>
-
-                  <Text style={styles.legendValue}>{item.value}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Availability</Text>
-
-          <View style={styles.availabilityCard}>
-            <Text style={styles.availabilityValue}>
-              {dashboard?.availability?.percentage ?? 0}%
-            </Text>
-
-            <Text style={styles.availabilityLabel}>System Availability</Text>
-
-            <View style={styles.rowStats}>
-              <View style={styles.smallCard}>
-                <Text style={styles.smallValue}>
-                  {dashboard?.availability?.downtime_hour ?? 0}
-                </Text>
-
-                <Text style={styles.smallLabel}>Downtime</Text>
-              </View>
-
-              <View style={styles.smallCard}>
-                <Text style={styles.smallValue}>
-                  {dashboard?.availability?.incident ?? 0}
-                </Text>
-
-                <Text style={styles.smallLabel}>Incident</Text>
-              </View>
-
-              <View style={styles.smallCard}>
-                <Text style={styles.smallValue}>
-                  {dashboard?.availability?.tat_hour ?? 0}
-                </Text>
-
-                <Text style={styles.smallLabel}>Avg TAT</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COB Trend</Text>
-
-          <View style={styles.chartCard}>
-            <LineChart
-              areaChart
-              curved
-              data={cobTransactionData}
-              data2={cobDurationData}
-              color1="#2563EB"
-              color2="#10B981"
-              startFillColor1="#93C5FD"
-              endFillColor1="#FFFFFF"
-              startOpacity={0.25}
-              endOpacity={0}
-              thickness1={3}
-              thickness2={3}
-              hideDataPoints={false}
-              spacing={45}
-              initialSpacing={10}
-              yAxisThickness={0}
-              xAxisThickness={0}
-              hideRules
-              hideYAxisText
-            />
-          </View>
-          <View style={styles.chartLegend}>
-            <View style={styles.legendBox}>
-              <View
-                style={[styles.legendColor, { backgroundColor: '#2563EB' }]}
-              />
-
-              <Text>Transaction</Text>
-            </View>
-
-            <View style={styles.legendBox}>
-              <View
-                style={[styles.legendColor, { backgroundColor: '#10B981' }]}
-              />
-
-              <Text>Duration</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COB Monthly</Text>
-
-          <View style={styles.chartCard}>
-            <LineChart
-              curved
-              areaChart
-              data={monthStartData}
-              data2={monthEndData}
-              color1="#F59E0B"
-              color2="#EF4444"
-              startFillColor1="#FDE68A"
-              startFillColor2="#FCA5A5"
-              endFillColor1="#FFFFFF"
-              endFillColor2="#FFFFFF"
-              thickness1={3}
-              thickness2={3}
-              hideRules
-              hideYAxisText
-              yAxisThickness={0}
-              xAxisThickness={0}
-            />
-
-            <View style={styles.chartLegend}>
-              <View style={styles.legendBox}>
-                <View
-                  style={[
-                    styles.legendColor,
-                    {
-                      backgroundColor: '#F59E0B',
-                    },
-                  ]}
-                />
-                <Text>Beginning</Text>
-              </View>
-
-              <View style={styles.legendBox}>
-                <View
-                  style={[
-                    styles.legendColor,
-                    {
-                      backgroundColor: '#EF4444',
-                    },
-                  ]}
-                />
-                <Text>End</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COB Stage</Text>
-
-          <View style={styles.chartCard}>
-            <LineChart
-              data={applicationData}
-              data2={systemWideData}
-              data3={reportingData}
-              data4={sodData}
-              data5={onlineData}
-              curved
-              color1="#2563EB"
-              color2="#10B981"
-              color3="#F59E0B"
-              color4="#EF4444"
-              color5="#8B5CF6"
-              thickness1={3}
-              thickness2={3}
-              thickness3={3}
-              thickness4={3}
-              thickness5={3}
-              hideDataPoints={false}
-              hideRules
-              yAxisThickness={0}
-              xAxisThickness={0}
-              hideYAxisText
-              spacing={38}
-              initialSpacing={10}
-            />
-
-            <View style={styles.stageLegend}>
-              <View style={styles.legendRow}>
-                <View
-                  style={[styles.legendColor, { backgroundColor: '#2563EB' }]}
-                />
-                <Text style={styles.legendText}>Application</Text>
-              </View>
-
-              <View style={styles.legendRow}>
-                <View
-                  style={[styles.legendColor, { backgroundColor: '#10B981' }]}
-                />
-                <Text style={styles.legendText}>System Wide</Text>
-              </View>
-
-              <View style={styles.legendRow}>
-                <View
-                  style={[styles.legendColor, { backgroundColor: '#F59E0B' }]}
-                />
-                <Text style={styles.legendText}>Reporting</Text>
-              </View>
-
-              <View style={styles.legendRow}>
-                <View
-                  style={[styles.legendColor, { backgroundColor: '#EF4444' }]}
-                />
-                <Text style={styles.legendText}>SOD</Text>
-              </View>
-
-              <View style={styles.legendRow}>
-                <View
-                  style={[styles.legendColor, { backgroundColor: '#8B5CF6' }]}
-                />
-                <Text style={styles.legendText}>Online</Text>
-              </View>
-            </View>
-          </View>
-        </View>
+        <COBAnalyticsCard
+          cobTransactionData={cobTransactionData}
+          cobDurationData={cobDurationData}
+          monthStartData={monthStartData}
+          monthEndData={monthEndData}
+          applicationData={applicationData}
+          systemWideData={systemWideData}
+          reportingData={reportingData}
+          sodData={sodData}
+          onlineData={onlineData}
+        />
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>DRP Summary</Text>
@@ -458,36 +228,53 @@ export default function DashboardITScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Outstanding DRP</Text>
+          <Text style={styles.sectionTitle}>RSD Summary</Text>
 
-          <View style={styles.chartCard}>
-            {dashboard?.drp?.outstanding_list?.length ? (
-              dashboard.drp.outstanding_list.map((item: any) => (
-                <View key={item.dr_id} style={styles.drpItem}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.drpTitle}>{item.dbma_nama}</Text>
+          <View style={styles.grid}>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Month</Text>
 
-                    <Text style={styles.drpSubtitle}>
-                      {item.target_dc} → {item.target_drc}
-                    </Text>
-                  </View>
+              <Text style={styles.cardValue}>
+                {rsdSummary?.total_month ?? 0}
+              </Text>
+            </View>
 
-                  <Text style={styles.drpDate}>{item.dr_tgl_new_propose}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>Tidak ada Outstanding DRP</Text>
-            )}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Recovery Hour</Text>
+
+              <Text style={styles.cardValue}>
+                {rsdSummary?.total_hour ?? 0}
+              </Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RSD</Text>
+          <Text style={styles.sectionTitle}>Monthly Recovery</Text>
 
-          <View style={styles.placeholderCard}>
-            <Text style={styles.placeholderText}>RSD Summary & Monthly</Text>
+          <View style={styles.chartCard}>
+            {rsdMonthly.map(item => (
+              <View key={item.bulan} style={styles.row}>
+                <Text style={styles.rowTitle}>{item.bulan}</Text>
+
+                <Text style={styles.rowValue}>{item.durasi_hour} h</Text>
+              </View>
+            ))}
           </View>
         </View>
+
+        {rsdCategory.map(item => (
+          <View key={item.category} style={styles.chartCard}>
+            <Text style={styles.categoryTitle}>{item.category}</Text>
+
+            {item.data.map(point => (
+              <View key={point.bulan} style={styles.row}>
+                <Text>{point.bulan}</Text>
+                <Text>{point.durasi_hour} h</Text>
+              </View>
+            ))}
+          </View>
+        ))}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>History</Text>
@@ -748,5 +535,130 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#9CA3AF',
     paddingVertical: 20,
+  },
+
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+
+  rowTitle: {
+    fontSize: 14,
+    color: '#111827',
+  },
+
+  rowValue: {
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+
+  categoryTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+
+  // --- STYLES BARU UNTUK APPLICATION OVERVIEW ---
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  badgePro: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeProText: {
+    color: '#10B981',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  modernChartCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(229, 231, 235, 0.5)', // Subtle border
+    shadowColor: '#9CA3AF',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  chartLayout: {
+    flexDirection: 'row', // Side-by-side layout
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  chartWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 0.45, // Mengambil 45% lebar card
+  },
+  centerLabelContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerLabelValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#111827',
+  },
+  centerLabelText: {
+    fontSize: 10,
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  legendWrapper: {
+    flex: 0.55, // Mengambil 55% lebar card
+    height: 160, // Membatasi tinggi agar rata dengan chart
+    paddingLeft: 10,
+  },
+  legendScrollContent: {
+    paddingRight: 5,
+  },
+  modernLegendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  legendLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modernLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  modernLegendLabel: {
+    fontSize: 13,
+    color: '#374151',
+    fontWeight: '500',
+    flexShrink: 1,
+    paddingRight: 8,
+  },
+  modernLegendValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
   },
 });
