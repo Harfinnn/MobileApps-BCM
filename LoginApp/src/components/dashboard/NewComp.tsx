@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,20 +8,21 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  Animated as RNAnimated, // Alias untuk mencegah bentrok
 } from 'react-native';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import AnimatedNumbers from 'react-native-animated-numbers';
 import { PieChart } from 'react-native-gifted-charts';
-import Animated, { // Reanimated
+import Animated, {
   FadeInDown,
   FadeInRight,
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedProps, // Tambahan untuk optimasi SVG
   withSpring,
   withTiming,
   withDelay,
   Easing,
+  interpolate,
 } from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
 
@@ -33,8 +34,8 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// --- Komponen yang Dianimasikan ---
-const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
+// --- Komponen yang Dianimasikan menggunakan Reanimated (UI Thread) ---
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 // --- Tipe Data & Props ---
@@ -46,20 +47,18 @@ export interface ApplicationPieDataItem {
 }
 
 interface SystemDashboardProps {
-  // Props Availability
   percentage: number;
   downtime: number;
   tat: number;
   minValue?: number;
   maxValue?: number;
-  // Props Application Overview
   applicationPieData: ApplicationPieDataItem[];
   onLegendItemPress?: (item: ApplicationPieDataItem) => void;
 }
 
 type StatusKey = 'excellent' | 'good' | 'warning' | 'critical';
 
-// --- Utility Functions (TIDAK DIUBAH) ---
+// --- Utility Functions ---
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -106,7 +105,7 @@ function getStatus(percentage: number): StatusKey {
   return 'critical';
 }
 
-// --- Hook Kustom (TIDAK DIUBAH) ---
+// --- Hook Kustom ---
 function useCountUp(target: number, duration = 800) {
   const [value, setValue] = useState(0);
 
@@ -127,8 +126,8 @@ function useCountUp(target: number, duration = 800) {
   return value;
 }
 
-// --- Sub-Komponen ---
-function CenterLabel({ total }: { total: number }) {
+// --- Sub-Komponen yang Dioptimasi dengan React.memo ---
+const CenterLabel = React.memo(({ total }: { total: number }) => {
   const animatedTotal = useCountUp(total);
   return (
     <View style={styles.centerLabelContainer}>
@@ -136,24 +135,9 @@ function CenterLabel({ total }: { total: number }) {
       <Text style={styles.centerLabelText}>Total</Text>
     </View>
   );
-}
+});
 
-// Pill statistik horizontal (pengganti 2 kartu berwarna yang ditumpuk)
-function StatPill({
-  icon,
-  label,
-  value,
-  color,
-  bg,
-  delay,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  color: string;
-  bg: string;
-  delay: number;
-}) {
+const StatPill = React.memo(({ icon, label, value, color, bg, delay }: any) => {
   return (
     <Animated.View
       entering={FadeInDown.delay(delay).duration(350)}
@@ -168,20 +152,9 @@ function StatPill({
       </View>
     </Animated.View>
   );
-}
+});
 
-// Chip ranking ringkas untuk 3 aplikasi teratas (selalu terlihat, tanpa toggle)
-function RankChip({
-  item,
-  rank,
-  share,
-  onPress,
-}: {
-  item: ApplicationPieDataItem;
-  rank: number;
-  share: number;
-  onPress?: (item: ApplicationPieDataItem) => void;
-}) {
+const RankChip = React.memo(({ item, rank, share, onPress }: any) => {
   return (
     <AnimatedPressable
       entering={FadeInRight.delay(rank * 90).duration(300)}
@@ -196,19 +169,9 @@ function RankChip({
       <Text style={styles.rankChipShare}>{share}%</Text>
     </AnimatedPressable>
   );
-}
+});
 
-function LegendRow({
-  item,
-  index,
-  percentage,
-  onPress,
-}: {
-  item: ApplicationPieDataItem;
-  index: number;
-  percentage: number;
-  onPress?: (item: ApplicationPieDataItem) => void;
-}) {
+const LegendRow = React.memo(({ item, index, percentage, onPress }: any) => {
   const pressScale = useSharedValue(1);
   const barWidth = useSharedValue(0);
 
@@ -220,7 +183,7 @@ function LegendRow({
         easing: Easing.out(Easing.cubic),
       }),
     );
-  }, [percentage]);
+  }, [percentage, index, barWidth]);
 
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pressScale.value }],
@@ -256,10 +219,9 @@ function LegendRow({
       </View>
     </AnimatedPressable>
   );
-}
+});
 
-// Icon SVG Minimalis
-const IconClock = ({ color }: { color: string }) => (
+const IconClock = React.memo(({ color }: { color: string }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
     <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={2} />
     <Path
@@ -270,8 +232,9 @@ const IconClock = ({ color }: { color: string }) => (
       strokeLinejoin="round"
     />
   </Svg>
-);
-const IconBolt = ({ color }: { color: string }) => (
+));
+
+const IconBolt = React.memo(({ color }: { color: string }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
     <Path
       d="M13 3L5 14H11L10 21L19 10H13L13 3Z"
@@ -281,7 +244,7 @@ const IconBolt = ({ color }: { color: string }) => (
       strokeLinecap="round"
     />
   </Svg>
-);
+));
 
 // --- KOMPONEN UTAMA ---
 export default function SystemOverviewDashboard({
@@ -300,45 +263,64 @@ export default function SystemOverviewDashboard({
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = clamp(percentage, minValue, maxValue);
-  const statusKey = getStatus(percentage);
+
+  // Menggunakan useMemo agar tidak menghitung ulang saat render
+  const statusKey = useMemo(() => getStatus(percentage), [percentage]);
   const status = STATUS[statusKey];
 
-  const animatedValue = useRef(new RNAnimated.Value(minValue)).current;
   const [intPart, decPart] = percentage.toFixed(2).split('.');
   const decimalNumber = Number(decPart);
-
-  // Hitungan Aplikasi
-  const totalApps = applicationPieData.reduce(
-    (acc, curr) => acc + Number(curr.value),
-    0,
-  );
-  const sortedApps = [...applicationPieData].sort((a, b) => b.value - a.value);
-  const topThree = sortedApps.slice(0, 3);
-  const remainingCount = sortedApps.length - topThree.length;
   const [showAppDetails, setShowAppDetails] = useState(false);
 
-  useEffect(() => {
-    RNAnimated.timing(animatedValue, {
-      toValue: progress,
-      duration: 1200,
-      useNativeDriver: false,
-    }).start();
-  }, [progress]);
+  // OPTIMASI: Pindahkan logika perhitungan array ke useMemo
+  const { totalApps, sortedApps, topThree, remainingCount } = useMemo(() => {
+    const total = applicationPieData.reduce(
+      (acc, curr) => acc + Number(curr.value),
+      0,
+    );
+    const sorted = [...applicationPieData].sort((a, b) => b.value - a.value);
+    const top = sorted.slice(0, 3);
+    const remaining = sorted.length - top.length;
 
-  const strokeDashoffset = animatedValue.interpolate({
-    inputRange: [minValue, maxValue],
-    outputRange: [circumference, 0],
+    return {
+      totalApps: total,
+      sortedApps: sorted,
+      topThree: top,
+      remainingCount: remaining,
+    };
+  }, [applicationPieData]);
+
+  // OPTIMASI: Animasi SVG dipindah ke UI Thread dengan Reanimated
+  const animatedProgress = useSharedValue(minValue);
+
+  useEffect(() => {
+    animatedProgress.value = withTiming(progress, {
+      duration: 1200,
+      easing: Easing.out(Easing.ease),
+    });
+  }, [progress, animatedProgress]);
+
+  const animatedCircleProps = useAnimatedProps(() => {
+    const strokeDashoffset = interpolate(
+      animatedProgress.value,
+      [minValue, maxValue],
+      [circumference, 0],
+    );
+    return { strokeDashoffset };
   });
 
-  const toggleDetails = () => {
+  // OPTIMASI: Cegah PieChart re-render karena fungsi inline
+  const renderCenterLabel = useCallback(() => {
+    return <CenterLabel total={totalApps} />;
+  }, [totalApps]);
+
+  const toggleDetails = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowAppDetails(prev => !prev);
-  };
+  }, []);
 
   return (
     <View style={styles.masterCard}>
-      {/* Aksen tipis di atas kartu, warnanya mengikuti status kesehatan sistem */}
-
       <View style={styles.cardInner}>
         {/* ======================================= */}
         {/* BAGIAN 1: SYSTEM AVAILABILITY (HERO)      */}
@@ -358,7 +340,6 @@ export default function SystemOverviewDashboard({
           </View>
         </View>
 
-        {/* Gauge sebagai centerpiece tunggal, bukan bagian dari grid kotak */}
         <View style={styles.gaugeHero}>
           <Svg width={size} height={size}>
             <G rotation="-90" origin={`${center}, ${center}`}>
@@ -379,7 +360,7 @@ export default function SystemOverviewDashboard({
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
+                animatedProps={animatedCircleProps}
               />
             </G>
           </Svg>
@@ -404,7 +385,6 @@ export default function SystemOverviewDashboard({
           </View>
         </View>
 
-        {/* Pill statistik horizontal, menggantikan 2 kartu berwarna yang ditumpuk */}
         <View style={styles.statPillRow}>
           <StatPill
             icon={<IconClock color="#EA580C" />}
@@ -425,7 +405,6 @@ export default function SystemOverviewDashboard({
           />
         </View>
 
-        {/* Pembatas Elegan */}
         <View style={styles.divider} />
 
         {/* ======================================= */}
@@ -454,7 +433,6 @@ export default function SystemOverviewDashboard({
           </Pressable>
         </View>
 
-        {/* Donut + ranking top 3 berdampingan, keduanya langsung terlihat tanpa toggle */}
         <View style={styles.distributionHero}>
           <View style={styles.chartWrapper}>
             <PieChart
@@ -466,7 +444,7 @@ export default function SystemOverviewDashboard({
               focusOnPress
               isAnimated
               animationDuration={900}
-              centerLabelComponent={() => <CenterLabel total={totalApps} />}
+              centerLabelComponent={renderCenterLabel}
             />
           </View>
 
@@ -521,10 +499,9 @@ export default function SystemOverviewDashboard({
 }
 
 const styles = StyleSheet.create({
-  // Global Card Style
   masterCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 28,
+    borderRadius: 20,
     shadowColor: '#0B0F19',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.05,
@@ -534,10 +511,6 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
     marginBottom: 24,
     overflow: 'hidden',
-  },
-  topAccent: {
-    height: 4,
-    width: '100%',
   },
   cardInner: {
     padding: 20,
@@ -571,8 +544,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-
-  // Status Badge (Health)
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -582,8 +553,6 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
   statusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
-
-  // Gauge Hero (centerpiece tunggal, bukan bento grid)
   gaugeHero: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -608,8 +577,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     marginLeft: 2,
   },
-
-  // Stat Pill Row (pengganti 2 kartu berwarna yang ditumpuk vertikal)
   statPillRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
@@ -649,8 +616,6 @@ const styles = StyleSheet.create({
     height: '70%',
     backgroundColor: '#E5E7EB',
   },
-
-  // Toggle button (pengganti icon-only button)
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -665,8 +630,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#6B7280',
   },
-
-  // Application Distribution Hero
   distributionHero: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -681,8 +644,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-
-  // Rank chips (top 3 selalu terlihat, menggantikan single highlight text)
   rankChipsColumn: { flex: 1, gap: 8 },
   rankChip: {
     flexDirection: 'row',
@@ -718,8 +679,6 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     paddingTop: 2,
   },
-
-  // Legends (daftar lengkap, muncul saat "Lihat Semua" ditekan)
   legendScroll: { maxHeight: 220, marginTop: 4 },
   legendScrollContent: { paddingRight: 4, paddingBottom: 10 },
   legendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },

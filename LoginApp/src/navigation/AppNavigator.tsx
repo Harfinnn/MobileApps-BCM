@@ -1,5 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import HomeScreen from '../screens/main/home/HomeScreen';
 import FileScreen from '../screens/main/FileScreen';
 import MapScreen from '../screens/main/map/MapScreen';
@@ -36,6 +38,7 @@ import BookViewScreen from '../screens/main/playbook/BookViewScreen';
 import ChatBetaScreen from '../screens/main/ChatBetaScreen';
 import TsunamiHistoryScreen from '../screens/main/gempa/TsunamiHistoryScreen';
 import TsunamiDetailScreen from '../screens/main/gempa/TsunamiDetailScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -116,9 +119,14 @@ function MainStackScreen() {
 
         <MainStack.Screen name="ChatBeta" component={ChatBetaScreen} />
 
-        <MainStack.Screen name="TsunamiHistory" component={TsunamiHistoryScreen} />
-        <MainStack.Screen name="TsunamiDetail" component={TsunamiDetailScreen} />
-        
+        <MainStack.Screen
+          name="TsunamiHistory"
+          component={TsunamiHistoryScreen}
+        />
+        <MainStack.Screen
+          name="TsunamiDetail"
+          component={TsunamiDetailScreen}
+        />
       </MainStack.Navigator>
     </MainLayout>
   );
@@ -127,18 +135,36 @@ function MainStackScreen() {
 export default function AppNavigator() {
   const { user, loading } = useUser();
   const [ready, setReady] = useState(false);
+  const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!loading) {
+    async function checkFirstLaunch() {
+      try {
+        const hasLaunched = await AsyncStorage.getItem('hasLaunched');
+        if (hasLaunched === null) {
+          setIsFirstLaunch(true);
+        } else {
+          setIsFirstLaunch(false);
+        }
+      } catch (error) {
+        console.log('Error checking first launch:', error);
+        setIsFirstLaunch(false);
+      }
+    }
+    checkFirstLaunch();
+  }, []);
+
+  useEffect(() => {
+    if (!loading && isFirstLaunch !== null) {
       const timer = setTimeout(() => {
         setReady(true);
-      }, 3000); // 🔥 splash 5 detik
+      }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [loading]);
+  }, [loading, isFirstLaunch]);
 
-  if (loading || !ready) {
+  if (loading || !ready || isFirstLaunch === null) {
     return <LoadingScreen />;
   }
 
@@ -152,6 +178,12 @@ export default function AppNavigator() {
           <RootStack.Screen name="Main" component={MainStackScreen} />
         ) : (
           <>
+            {isFirstLaunch && (
+              <RootStack.Screen
+                name="Onboarding"
+                component={OnboardingScreen}
+              />
+            )}
             <RootStack.Screen name="Login" component={LoginScreen} />
             <RootStack.Screen
               name="ForgotPassword"

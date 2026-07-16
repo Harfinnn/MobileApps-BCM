@@ -113,7 +113,7 @@ const AboutScreen = () => {
 
           {/* ================= FITUR: FLOATING CHIPS ================= */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>// CORE_FEATURES</Text>
+            <Text style={styles.sectionLabel}>CORE_FEATURES</Text>
             <View style={styles.chipsContainer}>
               {fiturList.map((feature, index) => (
                 <View
@@ -134,7 +134,7 @@ const AboutScreen = () => {
 
           {/* ================= DATA SISTEM (BLUEPRINT TERMINAL) ================= */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>// SYSTEM_DATA</Text>
+            <Text style={styles.sectionLabel}>SYSTEM_DATA</Text>
             <View style={styles.terminalBox}>
               <View style={styles.terminalRow}>
                 <Text style={styles.terminalKey}>PROVIDER</Text>
@@ -153,7 +153,7 @@ const AboutScreen = () => {
 
           {/* ================= INTEGRATION PARTNERS ================= */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>// INTEGRATIONS</Text>
+            <Text style={styles.sectionLabel}>INTEGRATIONS</Text>
             <View style={styles.partnerContainer}>
               {config?.mla_logo_perusahaan && (
                 <Image

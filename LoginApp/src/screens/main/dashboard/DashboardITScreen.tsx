@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -6,18 +6,28 @@ import {
   StyleSheet,
   View,
   Text,
+  ActivityIndicator,
 } from 'react-native';
 import axios from 'axios';
 import API from '../../../services/api';
-import { LineChart } from 'react-native-gifted-charts';
 
 import { useLayout } from '../../../contexts/LayoutContext';
-import { PieChart } from 'react-native-gifted-charts';
 
-import ApplicationOverviewSection from '../../../components/dashboard/CardApp';
-import AvailabilityGauge from '../../../components/dashboard/AvailabilityGauge';
 import SystemOverviewDashboard from '../../../components/dashboard/NewComp';
 import COBAnalyticsCard from '../../../components/dashboard/CobGrafik';
+import DRPRSDSummaryCard from '../../../components/dashboard/DrpRsdSummary';
+import RiskHeatmapCard from '../../../components/dashboard/HeatMap';
+import RSDAnalyticsCard from '../../../components/dashboard/Rsdanalyticscard';
+
+interface RsdCategoryPoint {
+  bulan: string;
+  durasi_hour: number;
+}
+
+interface RsdCategory {
+  category: string;
+  data: RsdCategoryPoint[];
+}
 
 export default function DashboardITScreen() {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
@@ -29,25 +39,33 @@ export default function DashboardITScreen() {
   const [rsdMonthly, setRsdMonthly] = useState<any[]>([]);
   const [rsdCategory, setRsdCategory] = useState<RsdCategory[]>([]);
 
-  const loadDashboard = async () => {
+  // 1. Optimasi API: Gabungkan semua fetch ke dalam satu Promise.all
+  const loadAllData = async () => {
     try {
       setLoading(true);
 
-      const [dashboardRes, rsdSummaryRes, rsdMonthlyRes, rsdCategoryRes] =
-        await Promise.all([
-          API.get('/dashboard-it'),
-          API.get('/dashboard-it/rsd-summary'),
-          API.get('/dashboard-it/rsd-monthly'),
-          API.get('/dashboard-it/rsd-category'),
-        ]);
+      const [
+        dashboardRes,
+        rsdSummaryRes,
+        rsdMonthlyRes,
+        rsdCategoryRes,
+        cobMonthlyRes,
+        cobStageRes,
+      ] = await Promise.all([
+        API.get('/dashboard-it'),
+        API.get('/dashboard-it/rsd-summary'),
+        API.get('/dashboard-it/rsd-monthly'),
+        API.get('/dashboard-it/rsd-category'),
+        API.get('/dashboard-it/cob-monthly'),
+        API.get('/dashboard-it/cob-stage'),
+      ]);
 
       setDashboard(dashboardRes.data);
-
       setRsdSummary(rsdSummaryRes.data);
-
       setRsdMonthly(rsdMonthlyRes.data);
-
       setRsdCategory(rsdCategoryRes.data);
+      setCobMonthly(cobMonthlyRes.data);
+      setCobStage(cobStageRes.data);
     } catch (error) {
       console.log('Dashboard Error', error);
     } finally {
@@ -55,99 +73,12 @@ export default function DashboardITScreen() {
     }
   };
 
-  const loadCobMonthly = async () => {
-    try {
-      const { data } = await API.get('/dashboard-it/cob-monthly');
-      setCobMonthly(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  const loadCobStage = async () => {
-    try {
-      const { data } = await API.get('/dashboard-it/cob-stage');
-      setCobStage(data);
-    } catch (error) {
-      console.log('COB Stage Error', error);
-    }
-  };
-
-  const applicationPieData =
-    dashboard?.application?.chart?.map((item: any) => ({
-      value: Number(item.total),
-      color: item.dbmak_color || '#2563EB',
-      text: String(item.total),
-      label: item.dbmak_nama,
-    })) ?? [];
-
-  const cobTrendData =
-    dashboard?.cob?.trend?.map((item: any) => ({
-      value: Math.round(item.trx / 1000000),
-      label: item.tanggal.substring(5),
-    })) ?? [];
-
-  const cobTransactionData =
-    dashboard?.cob?.trend?.map((item: any) => ({
-      value: Number((item.trx / 1000000).toFixed(2)),
-      label: item.tanggal.substring(5),
-    })) ?? [];
-
-  const cobDurationData =
-    dashboard?.cob?.trend?.map((item: any) => ({
-      value: item.durasi_hour,
-    })) ?? [];
-
-  const monthStartData =
-    cobMonthly?.month_start?.map((item: any) => ({
-      value: Number((item.trx / 1000000).toFixed(2)),
-      label: item.tanggal.substring(5, 7),
-    })) ?? [];
-
-  const monthEndData =
-    cobMonthly?.month_end?.map((item: any) => ({
-      value: Number((item.trx / 1000000).toFixed(2)),
-    })) ?? [];
-
-  const applicationData = (cobStage || []).map((item: any) => ({
-    value: (Number(item.application) || 0) * 60,
-    label: item.tanggal ? item.tanggal.substring(5) : '',
-  }));
-
-  const systemWideData = (cobStage || []).map((item: any) => ({
-    value: (Number(item.system_wide) || 0) * 60,
-  }));
-
-  const reportingData = (cobStage || []).map((item: any) => ({
-    value: (Number(item.reporting) || 0) * 60,
-  }));
-
-  const sodData = (cobStage || []).map((item: any) => ({
-    value: (Number(item.sod) || 0) * 60,
-  }));
-
-  const onlineData = (cobStage || []).map((item: any) => ({
-    value: (Number(item.online) || 0) * 60,
-  }));
-
-  interface RsdCategoryPoint {
-    bulan: string;
-    durasi_hour: number;
-  }
-
-  interface RsdCategory {
-    category: string;
-    data: RsdCategoryPoint[];
-  }
-
   useEffect(() => {
     setTitle('Dashboard IT');
     setHideNavbar(true);
     setShowBack(true);
 
-    loadDashboard();
-    loadCobMonthly();
-    loadCobStage();
+    loadAllData();
 
     return () => {
       setHideNavbar(false);
@@ -155,135 +86,150 @@ export default function DashboardITScreen() {
     };
   }, [setTitle, setHideNavbar, setShowBack]);
 
+  // 2. Optimasi Render: Gunakan useMemo untuk mencegah kalkulasi berulang
+  const applicationPieData = useMemo(
+    () =>
+      dashboard?.application?.chart?.map((item: any) => ({
+        value: Number(item.total),
+        color: item.dbmak_color || '#2563EB',
+        text: String(item.total),
+        label: item.dbmak_nama,
+      })) ?? [],
+    [dashboard],
+  );
+
+  const cobTransactionData = useMemo(
+    () =>
+      dashboard?.cob?.trend?.map((item: any) => ({
+        value: Number((item.trx / 1000000).toFixed(2)),
+        label: item.tanggal.substring(5),
+      })) ?? [],
+    [dashboard],
+  );
+
+  const cobDurationData = useMemo(
+    () =>
+      dashboard?.cob?.trend?.map((item: any) => ({
+        value: item.durasi_hour,
+      })) ?? [],
+    [dashboard],
+  );
+
+  const monthTransactionData = useMemo(
+    () =>
+      cobMonthly?.monthly?.map((item: any) => ({
+        value: Number((item.trx / 1000000).toFixed(2)),
+        label: item.bulan,
+      })) ?? [],
+    [cobMonthly],
+  );
+
+  const monthDurationData = useMemo(
+    () =>
+      cobMonthly?.monthly?.map((item: any) => ({
+        value: Number(item.durasi_hour) || 0,
+      })) ?? [],
+    [cobMonthly],
+  );
+
+  const monthlyKeterangan = useMemo(
+    () => cobMonthly?.monthly?.map((item: any) => item.keterangan ?? '') ?? [],
+    [cobMonthly],
+  );
+
+  const applicationData = useMemo(
+    () =>
+      (cobStage || []).map((item: any) => ({
+        value: (Number(item.application) || 0) * 60,
+        label: item.tanggal ? item.tanggal.substring(5) : '',
+      })),
+    [cobStage],
+  );
+
+  const systemWideData = useMemo(
+    () =>
+      (cobStage || []).map((item: any) => ({
+        value: (Number(item.system_wide) || 0) * 60,
+      })),
+    [cobStage],
+  );
+
+  const reportingData = useMemo(
+    () =>
+      (cobStage || []).map((item: any) => ({
+        value: (Number(item.reporting) || 0) * 60,
+      })),
+    [cobStage],
+  );
+
+  const sodData = useMemo(
+    () =>
+      (cobStage || []).map((item: any) => ({
+        value: (Number(item.sod) || 0) * 60,
+      })),
+    [cobStage],
+  );
+
+  const onlineData = useMemo(
+    () =>
+      (cobStage || []).map((item: any) => ({
+        value: (Number(item.online) || 0) * 60,
+      })),
+    [cobStage],
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Dashboard IT</Text>
-
-          <Text style={styles.subtitle}>Business Continuity Monitoring</Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Memuat Dashboard...</Text>
         </View>
-
-        <SystemOverviewDashboard
-          percentage={dashboard?.availability?.percentage ?? 0}
-          downtime={dashboard?.availability?.downtime_hour ?? 0}
-          tat={dashboard?.availability?.tat_hour ?? 0}
-          applicationPieData={applicationPieData}
-          onLegendItemPress={item => console.log('Legend ditekan:', item.label)}
-        />
-
-        <COBAnalyticsCard
-          cobTransactionData={cobTransactionData}
-          cobDurationData={cobDurationData}
-          monthStartData={monthStartData}
-          monthEndData={monthEndData}
-          applicationData={applicationData}
-          systemWideData={systemWideData}
-          reportingData={reportingData}
-          sodData={sodData}
-          onlineData={onlineData}
-        />
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DRP Summary</Text>
-
-          <View style={styles.grid}>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Total</Text>
-
-              <Text style={styles.cardValue}>
-                {dashboard?.drp?.summary?.total ?? 0}
-              </Text>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Completed</Text>
-
-              <Text style={styles.cardValue}>
-                {dashboard?.drp?.summary?.completed ?? 0}
-              </Text>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Outstanding</Text>
-
-              <Text style={styles.cardValue}>
-                {dashboard?.drp?.summary?.outstanding ?? 0}
-              </Text>
-            </View>
-
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>This Month</Text>
-
-              <Text style={styles.cardValue}>
-                {dashboard?.drp?.summary?.this_month ?? 0}
-              </Text>
-            </View>
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.content}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Dashboard IT</Text>
+            <Text style={styles.subtitle}>Business Continuity Monitoring</Text>
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RSD Summary</Text>
+          <SystemOverviewDashboard
+            percentage={dashboard?.availability?.percentage ?? 0}
+            downtime={dashboard?.availability?.downtime_hour ?? 0}
+            tat={dashboard?.availability?.tat_hour ?? 0}
+            applicationPieData={applicationPieData}
+            onLegendItemPress={(item: any) =>
+              console.log('Legend ditekan:', item.label)
+            }
+          />
 
-          <View style={styles.grid}>
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Month</Text>
+          <COBAnalyticsCard
+            cobTransactionData={cobTransactionData}
+            cobDurationData={cobDurationData}
+            monthTransactionData={monthTransactionData}
+            monthDurationData={monthDurationData}
+            monthlyKeterangan={monthlyKeterangan}
+            applicationData={applicationData}
+            systemWideData={systemWideData}
+            reportingData={reportingData}
+            sodData={sodData}
+            onlineData={onlineData}
+          />
 
-              <Text style={styles.cardValue}>
-                {rsdSummary?.total_month ?? 0}
-              </Text>
-            </View>
+          <DRPRSDSummaryCard
+            drpSummary={dashboard?.drp?.summary}
+            rsdSummary={rsdSummary}
+          />
 
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Recovery Hour</Text>
+          {/* <RiskHeatmapCard tahun={2026} /> */}
 
-              <Text style={styles.cardValue}>
-                {rsdSummary?.total_hour ?? 0}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Monthly Recovery</Text>
-
-          <View style={styles.chartCard}>
-            {rsdMonthly.map(item => (
-              <View key={item.bulan} style={styles.row}>
-                <Text style={styles.rowTitle}>{item.bulan}</Text>
-
-                <Text style={styles.rowValue}>{item.durasi_hour} h</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {rsdCategory.map(item => (
-          <View key={item.category} style={styles.chartCard}>
-            <Text style={styles.categoryTitle}>{item.category}</Text>
-
-            {item.data.map(point => (
-              <View key={point.bulan} style={styles.row}>
-                <Text>{point.bulan}</Text>
-                <Text>{point.durasi_hour} h</Text>
-              </View>
-            ))}
-          </View>
-        ))}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>History</Text>
-
-          <View style={styles.placeholderCard}>
-            <Text style={styles.placeholderText}>List History</Text>
-          </View>
-        </View>
-      </ScrollView>
+          {/* <RSDAnalyticsCard rsdMonthly={rsdMonthly} rsdCategory={rsdCategory} /> */}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -293,34 +239,38 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#6B7280',
+    fontSize: 14,
+  },
   content: {
     padding: 16,
     paddingBottom: 30,
   },
-
   header: {
     marginTop: 70,
     marginBottom: 20,
   },
-
   title: {
     fontSize: 26,
     fontWeight: '700',
     color: '#111827',
   },
-
   subtitle: {
     marginTop: 4,
     color: '#6B7280',
   },
-
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-
   card: {
     width: '48%',
     backgroundColor: '#fff',
@@ -329,36 +279,30 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     elevation: 2,
   },
-
   cardTitle: {
     color: '#6B7280',
     fontSize: 13,
   },
-
   cardValue: {
     marginTop: 10,
     fontSize: 28,
     fontWeight: '700',
     color: '#111827',
   },
-
   cardFooter: {
     marginTop: 8,
     fontSize: 12,
     color: '#6B7280',
   },
-
   section: {
     marginTop: 24,
   },
-
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
     marginBottom: 12,
   },
-
   placeholderCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
@@ -366,146 +310,122 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-
   placeholderText: {
     color: '#9CA3AF',
     textAlign: 'center',
   },
-
   chartCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 18,
     elevation: 2,
   },
-
   chartItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
   },
-
   colorDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
     marginRight: 12,
   },
-
   chartLabel: {
     flex: 1,
     fontSize: 15,
     color: '#111827',
   },
-
   chartValue: {
     fontSize: 16,
     fontWeight: '700',
     color: '#111827',
   },
-
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
   },
-
   legendDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
     marginRight: 10,
   },
-
   legendLabel: {
     flex: 1,
     fontSize: 14,
     color: '#374151',
   },
-
   legendValue: {
     fontWeight: '700',
     fontSize: 15,
     color: '#111827',
   },
-
   availabilityCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     elevation: 2,
   },
-
   availabilityValue: {
     fontSize: 42,
     fontWeight: '800',
     color: '#10B981',
     textAlign: 'center',
   },
-
   availabilityLabel: {
     textAlign: 'center',
     color: '#6B7280',
     marginTop: 4,
     marginBottom: 20,
   },
-
   rowStats: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-
   smallCard: {
     flex: 1,
     alignItems: 'center',
   },
-
   smallValue: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
   },
-
   smallLabel: {
     marginTop: 4,
     color: '#6B7280',
     fontSize: 12,
   },
-
   chartLegend: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 18,
   },
-
   legendBox: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 12,
   },
-
   legendColor: {
     width: 12,
     height: 12,
     borderRadius: 6,
     marginRight: 8,
   },
-
   stageLegend: {
     marginTop: 20,
   },
-
   legendRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
-
   legendText: {
     fontSize: 13,
     color: '#374151',
   },
-
   drpItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -513,30 +433,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-
   drpTitle: {
     fontSize: 15,
     fontWeight: '600',
     color: '#111827',
   },
-
   drpSubtitle: {
     marginTop: 4,
     fontSize: 12,
     color: '#6B7280',
   },
-
   drpDate: {
     fontSize: 12,
     color: '#9CA3AF',
   },
-
   emptyText: {
     textAlign: 'center',
     color: '#9CA3AF',
     paddingVertical: 20,
   },
-
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -545,25 +460,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-
   rowTitle: {
     fontSize: 14,
     color: '#111827',
   },
-
   rowValue: {
     fontWeight: '700',
     color: '#2563EB',
   },
-
   categoryTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 12,
   },
-
-  // --- STYLES BARU UNTUK APPLICATION OVERVIEW ---
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -588,7 +498,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(229, 231, 235, 0.5)', // Subtle border
+    borderColor: 'rgba(229, 231, 235, 0.5)',
     shadowColor: '#9CA3AF',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
@@ -596,14 +506,14 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   chartLayout: {
-    flexDirection: 'row', // Side-by-side layout
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   chartWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 0.45, // Mengambil 45% lebar card
+    flex: 0.45,
   },
   centerLabelContainer: {
     justifyContent: 'center',
@@ -621,8 +531,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   legendWrapper: {
-    flex: 0.55, // Mengambil 55% lebar card
-    height: 160, // Membatasi tinggi agar rata dengan chart
+    flex: 0.55,
+    height: 160,
     paddingLeft: 10,
   },
   legendScrollContent: {

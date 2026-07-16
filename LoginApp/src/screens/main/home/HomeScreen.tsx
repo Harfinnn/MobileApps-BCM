@@ -11,7 +11,11 @@ import {
 } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 
 import ImageSlider from '../../../components/common/ImageSlider';
 import SmallBanner from '../../../components/common/SmallBanner';
@@ -21,15 +25,17 @@ import NewsSection from '../../../components/common/NewsSection';
 import HomeSkeleton from '../../../components/skeleton/HomeSkeleton';
 import TsunamiWarningCard from '../../../components/common/TsunamiWarningCard';
 import GempaWarningCard from '../../../components/common/GempaWarningCard';
+import WalkthroughOverlay from '../../../components/common/WalkthroughOverlay';
 
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import API from '../../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useWalkthrough } from '../../../hooks/useWalkthrough';
 
 import styles from '../../../styles/dashboard/homeStyle';
 
-import { useRoute } from '@react-navigation/native';
+const WALKTHROUGH_TESTING_MODE = false;
 
 const HomeScreen = () => {
   const navigation = useNavigation<any>();
@@ -48,7 +54,6 @@ const HomeScreen = () => {
   const [showTsunamiWarning, setShowTsunamiWarning] = useState(true);
   const [tsunamiData, setTsunamiData] = useState<any>(null);
 
-  // State untuk management card gempa (Disederhanakan tanpa status unread)
   const [showGempaCard, setShowGempaCard] = useState(true);
   const [latestGempaInfo, setLatestGempaInfo] = useState<any>(null);
 
@@ -58,15 +63,23 @@ const HomeScreen = () => {
   const backPressedOnce = useRef(false);
   const { setHideHeader } = useLayout();
 
+  const sliderRef = useRef(null);
+  const disasterCTARef = useRef(null);
+  const menuRef = useRef(null);
+  const gempaCardRef = useRef(null);
+  const tsunamiCardRef = useRef(null);
+  const bannerRef = useRef(null);
+  const newsRef = useRef(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const contentWrapperRef = useRef<View>(null);
+
   /* ================= FETCH DATA FUNCTIONS ================= */
   const fetchNews = async () => {
     try {
       const res = await API.get('/berita');
-
       const beritaArray = Array.isArray(res.data)
         ? res.data
         : res.data?.data ?? [];
-
       setNewsData(beritaArray);
     } catch (error) {
       console.log('Error fetch berita:', error);
@@ -79,7 +92,6 @@ const HomeScreen = () => {
   const fetchTsunami = async () => {
     try {
       const res = await API.get('/tsunami/latest');
-
       if (res.data?.status) {
         setTsunamiData(res.data.data);
       }
@@ -91,10 +103,9 @@ const HomeScreen = () => {
   const fetchLatestGempa = async () => {
     try {
       const res = await API.get('/gempa/latest');
-
       if (res.data?.status && res.data.data) {
         setLatestGempaInfo(res.data.data);
-        setShowGempaCard(true); // Selalu munculkan kembali jika data berhasil dimuat/di-refresh
+        setShowGempaCard(true);
       }
     } catch (error) {
       console.log('ERROR FETCH LATEST GEMPA', error);
@@ -111,26 +122,21 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (!showGempaPopup) return;
-
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
-      () => true, // 🚫 BLOCK
+      () => true,
     );
-
     return () => backHandler.remove();
   }, [showGempaPopup]);
 
   useEffect(() => {
     const checkStatus = async () => {
       const status = await AsyncStorage.getItem('GEMPA_REPORT_STATUS');
-
       if (status === 'done') {
         setShowGempaPopup(false);
       }
     };
-
     const unsubscribe = navigation.addListener('focus', checkStatus);
-
     return unsubscribe;
   }, []);
 
@@ -138,19 +144,13 @@ const HomeScreen = () => {
     if (route.params?.fromGempaNotif) {
       setGempaData(route.params.gempaData);
       setShowGempaPopup(true);
-
-      // 🔥 reset param supaya tidak muncul lagi saat re-render
-      navigation.setParams({
-        fromGempaNotif: false,
-        gempaData: null,
-      });
+      navigation.setParams({ fromGempaNotif: false, gempaData: null });
     }
   }, [route.params]);
 
   useEffect(() => {
     if (route.params?.reportDone) {
       setShowGempaPopup(false);
-
       navigation.setParams({ reportDone: false });
     }
   }, [route.params]);
@@ -165,7 +165,6 @@ const HomeScreen = () => {
 
         if (stored && status === 'pending') {
           const data = JSON.parse(stored);
-
           if (data.type === 'gempa' && Number(data.user_jabatan) !== 1) {
             setGempaData(data);
             setShowGempaPopup(true);
@@ -191,7 +190,6 @@ const HomeScreen = () => {
         console.log(err);
       }
     };
-
     fetchPanduan();
   }, []);
 
@@ -207,17 +205,14 @@ const HomeScreen = () => {
             BackHandler.exitApp();
             return true;
           }
-
           backPressedOnce.current = true;
           ToastAndroid.show(
             'Tekan sekali lagi untuk keluar',
             ToastAndroid.SHORT,
           );
-
           setTimeout(() => {
             backPressedOnce.current = false;
           }, 2000);
-
           return true;
         },
       );
@@ -245,14 +240,11 @@ const HomeScreen = () => {
       fetchLatestGempa();
 
       const interval = setInterval(() => {
-        console.log('REFRESH TSUNAMI & GEMPA...');
         fetchTsunami();
         fetchLatestGempa();
       }, 60000);
 
-      return () => {
-        clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     }, []),
   );
 
@@ -283,12 +275,9 @@ const HomeScreen = () => {
 
   const formatTsunamiDate = (dateString: string) => {
     if (!dateString) return '-';
-
     try {
       const cleanDate = dateString.replace('WIB', '');
-
       const date = new Date(cleanDate);
-
       return (
         date.toLocaleDateString('id-ID', {
           day: '2-digit',
@@ -318,19 +307,107 @@ const HomeScreen = () => {
       Dirasakan: gempa.dirasakan || null,
       Potensi: gempa.potensi || null,
     };
-
-    navigation.navigate('GempaDetail', {
-      gempa: mappedGempa,
-    });
+    navigation.navigate('GempaDetail', { gempa: mappedGempa });
   };
 
   const handleCloseGempaCard = () => {
-    setShowGempaCard(false); // Hanya menyembunyikan card secara lokal sampai di-refresh kembali
+    setShowGempaCard(false);
   };
+
+  /* ================= WALKTHROUGH ================= */
+  const steps = React.useMemo(() => {
+    const s = [
+      {
+        key: 'slider',
+        ref: sliderRef,
+        text: 'Info & promo terbaru dari SIMPEL BCM ada di sini.',
+      },
+    ];
+    if (isSuperAdmin) {
+      s.push({
+        key: 'disasterCTA',
+        ref: disasterCTARef,
+        text: 'Pantau & kelola situasi bencana terkini melalui tombol ini.',
+      });
+    }
+    s.push({
+      key: 'menu',
+      ref: menuRef,
+      text: 'Akses cepat ke semua fitur utama SIMPEL BCM ada di menu ini.',
+    });
+    if (showGempaCard && latestGempaInfo) {
+      s.push({
+        key: 'gempaCard',
+        ref: gempaCardRef,
+        text: 'Informasi gempa terkini otomatis muncul di sini.',
+      });
+    }
+    if (showTsunamiWarning && tsunamiData?.is_active) {
+      s.push({
+        key: 'tsunamiCard',
+        ref: tsunamiCardRef,
+        text: 'Peringatan tsunami aktif akan tampil di kartu ini.',
+      });
+    }
+    s.push({
+      key: 'banner',
+      ref: bannerRef,
+      text: 'Panduan keselamatan bencana bisa dibuka dari sini.',
+    });
+    s.push({
+      key: 'news',
+      ref: newsRef,
+      text: 'Berita & informasi terbaru seputar bencana ada di bagian ini.',
+    });
+    return s;
+  }, [
+    isSuperAdmin,
+    showGempaCard,
+    latestGempaInfo,
+    showTsunamiWarning,
+    tsunamiData,
+  ]);
+
+  const walkthrough = useWalkthrough(
+    steps,
+    'hasSeenHomeWalkthrough',
+    WALKTHROUGH_TESTING_MODE,
+  );
+
+  useEffect(() => {
+    if (loading) return;
+    const t = setTimeout(() => walkthrough.start(), 700);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!walkthrough.visible) return;
+
+    const step = walkthrough.currentStep;
+    const node = step?.ref?.current;
+    const scrollNode = scrollViewRef.current;
+    const wrapperNode = contentWrapperRef.current;
+    if (!node || !scrollNode || !wrapperNode) return;
+
+    walkthrough.clearTarget();
+
+    node.measureLayout(
+      wrapperNode, // 🔥 ref langsung, bukan angka dari findNodeHandle
+      (x: number, y: number) => {
+        scrollNode.scrollTo({ y: Math.max(y - 100, 0), animated: true });
+        setTimeout(() => walkthrough.remeasure(), 450);
+      },
+      () => {
+        console.log('[WALKTHROUGH] measureLayout gagal untuk step:', step?.key);
+        walkthrough.remeasure();
+      },
+    );
+  }, [walkthrough.visible, walkthrough.stepIndex]);
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         bounces={false}
         overScrollMode="never"
@@ -351,12 +428,14 @@ const HomeScreen = () => {
         {loading ? (
           <HomeSkeleton />
         ) : (
-          <>
-            <ImageSlider />
+          <View ref={contentWrapperRef}>
+            <View ref={sliderRef}>
+              <ImageSlider />
+            </View>
 
-            {/* ================= FLOATING DISASTER CTA ================= */}
             {isSuperAdmin && (
               <Pressable
+                ref={disasterCTARef}
                 style={styles.disasterCTA}
                 onPress={() => navigation.navigate('DashboardBencana')}
               >
@@ -366,47 +445,51 @@ const HomeScreen = () => {
             )}
 
             <View style={styles.whiteContainer}>
-              <View style={styles.section}>
+              <View style={styles.section} ref={menuRef}>
                 <HomeMenu onDashboardPress={handleDashboardPress} />
               </View>
 
-              {/* ================= BANNER RINGKASAN GEMPA TERKINI ================= */}
               {showGempaCard && latestGempaInfo && (
-                <GempaWarningCard
-                  Magnitude={latestGempaInfo.magnitude}
-                  Wilayah={latestGempaInfo.wilayah}
-                  Jam={latestGempaInfo.jam}
-                  Kedalaman={latestGempaInfo.kedalaman}
-                  onPress={() => handleGempaPress(latestGempaInfo)}
-                  onClose={handleCloseGempaCard}
-                />
+                <View ref={gempaCardRef}>
+                  <GempaWarningCard
+                    Magnitude={latestGempaInfo.magnitude}
+                    Wilayah={latestGempaInfo.wilayah}
+                    Jam={latestGempaInfo.jam}
+                    Kedalaman={latestGempaInfo.kedalaman}
+                    onPress={() => handleGempaPress(latestGempaInfo)}
+                    onClose={handleCloseGempaCard}
+                  />
+                </View>
               )}
 
-              {/* ================= TSUNAMI WARNING CARD ================= */}
               {showTsunamiWarning && tsunamiData && tsunamiData.is_active && (
-                <TsunamiWarningCard
-                  magnitude={tsunamiData.magnitude}
-                  area={tsunamiData.area}
-                  potential={tsunamiData.potential}
-                  sent={formatTsunamiDate(tsunamiData.sent)}
-                  onPress={() =>
-                    navigation.navigate('TsunamiDetail', {
-                      tsunamiData,
-                    })
-                  }
-                  onClose={() => setShowTsunamiWarning(false)}
-                />
+                <View ref={tsunamiCardRef}>
+                  <TsunamiWarningCard
+                    magnitude={tsunamiData.magnitude}
+                    area={tsunamiData.area}
+                    potential={tsunamiData.potential}
+                    sent={formatTsunamiDate(tsunamiData.sent)}
+                    onPress={() =>
+                      navigation.navigate('TsunamiDetail', { tsunamiData })
+                    }
+                    onClose={() => setShowTsunamiWarning(false)}
+                  />
+                </View>
               )}
 
-              <SmallBanner panduan={panduan} />
+              <View ref={bannerRef}>
+                <SmallBanner panduan={panduan} />
+              </View>
 
-              <NewsSection
-                data={newsData}
-                onItemPress={handleNewsPress}
-                onPressAll={handleSeeAllNews}
-              />
+              <View ref={newsRef}>
+                <NewsSection
+                  data={newsData}
+                  onItemPress={handleNewsPress}
+                  onPressAll={handleSeeAllNews}
+                />
+              </View>
             </View>
-          </>
+          </View>
         )}
       </ScrollView>
 
@@ -440,7 +523,6 @@ const HomeScreen = () => {
               width: '100%',
             }}
           >
-            {/* HEADER */}
             <Text
               style={{
                 fontSize: 18,
@@ -451,8 +533,6 @@ const HomeScreen = () => {
             >
               ⚠️ Gempa Terdeteksi
             </Text>
-
-            {/* INFO GEMPA */}
             <Text style={{ marginBottom: 5 }}>
               📍 Wilayah: {gempaData?.wilayah}
             </Text>
@@ -460,8 +540,6 @@ const HomeScreen = () => {
               📊 Magnitude: {gempaData?.magnitude}
             </Text>
             <Text style={{ marginBottom: 10 }}>🕒 Jam: {gempaData?.jam}</Text>
-
-            {/* PESAN WAJIB */}
             <Text
               style={{
                 marginTop: 10,
@@ -474,8 +552,6 @@ const HomeScreen = () => {
               kirim laporan untuk membantu pemantauan situasi dan respon cepat
               dari tim terkait.
             </Text>
-
-            {/* BUTTON WAJIB */}
             <Pressable
               onPress={async () => {
                 navigation.reset({
@@ -483,10 +559,7 @@ const HomeScreen = () => {
                   routes: [
                     {
                       name: 'LaporGempa',
-                      params: {
-                        fromGempa: true,
-                        gempaData,
-                      },
+                      params: { fromGempa: true, gempaData },
                     },
                   ],
                 });
@@ -511,8 +584,19 @@ const HomeScreen = () => {
           </View>
         </View>
       </Modal>
+
+      <WalkthroughOverlay
+        visible={walkthrough.visible}
+        target={walkthrough.target}
+        text={walkthrough.currentStep?.text}
+        isFirst={walkthrough.isFirst}
+        isLast={walkthrough.isLast}
+        onNext={walkthrough.next}
+        onPrev={walkthrough.prev}
+        onSkip={walkthrough.stop}
+      />
     </SafeAreaView>
   );
 };
 
-export default React.memo(HomeScreen);
+export default HomeScreen;

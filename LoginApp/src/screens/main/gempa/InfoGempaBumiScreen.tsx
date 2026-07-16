@@ -216,7 +216,6 @@ const InfoGempaBumiScreen = () => {
   `;
 
     if (faultsGeoJson) {
-
       webviewRef.current.injectJavaScript(`
         document.dispatchEvent(
           new MessageEvent('message', {
@@ -281,17 +280,11 @@ const InfoGempaBumiScreen = () => {
   };
 
   const calculateRadius = (magnitude: number, rules: any[]): number => {
-    if (!rules || rules.length === 0) return 50;
     const mag = Number(magnitude);
 
-    if (mag >= 4 && mag <= 4.9)
-      return rules.find(r => r.vig_keterangan.includes('4'))?.vig_radius || 50;
-    if (mag >= 5 && mag <= 5.9)
-      return rules.find(r => r.vig_keterangan.includes('5'))?.vig_radius || 100;
-    if (mag >= 6 && mag <= 6.9)
-      return rules.find(r => r.vig_keterangan.includes('6'))?.vig_radius || 150;
-    if (mag >= 7)
-      return rules.find(r => r.vig_keterangan.includes('>'))?.vig_radius || 200;
+    if (mag >= 7) {
+      return 100;
+    }
 
     return 50;
   };

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,8 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  Dimensions,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { LineChart, BarChart } from 'react-native-gifted-charts';
 
@@ -28,16 +28,12 @@ type ChartPoint = { value: number; label?: string; [key: string]: any };
 type TabKey = 'daily' | 'monthly' | 'stage';
 
 interface COBAnalyticsCardProps {
-  // COB Harian — Transaction (bar, dalam Jt) & Duration (line, dalam jam desimal)
   cobTransactionData: ChartPoint[];
   cobDurationData: ChartPoint[];
-  // Catatan operasional opsional per titik harian (index harus sejajar
-  // dengan cobTransactionData), contoh: ["", "Gangguan jaringan", ""]
   dailyKeterangan?: string[];
-  // COB Monthly — Awal Bulan vs Akhir Bulan
-  monthStartData: ChartPoint[];
-  monthEndData: ChartPoint[];
-  // COB Stage
+  monthTransactionData: ChartPoint[];
+  monthDurationData: ChartPoint[];
+  monthlyKeterangan?: string[];
   applicationData: ChartPoint[];
   systemWideData: ChartPoint[];
   reportingData: ChartPoint[];
@@ -68,7 +64,6 @@ function summarize(data: ChartPoint[]) {
   };
 }
 
-// Palet warna yang lebih modern & kontras untuk tema gelap
 const STAGE_COLORS = ['#38BDF8', '#34D399', '#FBBF24', '#F87171', '#C084FC'];
 
 const formatMinutesToHHMM = (minutes: number) => {
@@ -88,198 +83,221 @@ const formatMinutesToHHMM = (minutes: number) => {
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'daily', label: 'Harian' },
   { key: 'monthly', label: 'Bulanan' },
-  { key: 'stage', label: 'Tahapan' },
+  { key: 'stage', label: 'Stage' },
 ];
 
 // ============================================================
-// Small subcomponents (dipakai di tab Bulanan & Tahapan / tema terang)
+// Small subcomponents (Optimized with React.memo)
 // ============================================================
 
-const StatBadge = ({
-  label,
-  value,
-  color,
-  suffix,
-}: {
-  label: string;
-  value: number;
-  color: string;
-  suffix?: string;
-}) => (
-  <View style={styles.statBadge}>
-    <View style={[styles.statDot, { backgroundColor: color }]} />
-    <View>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>
+const TrendArrow = React.memo(({ up }: { up: boolean | null }) => {
+  if (up === null) return <Text style={styles.trendNeutral}>—</Text>;
+  return (
+    <Text style={[styles.trendArrow, up ? styles.trendUp : styles.trendDown]}>
+      {up ? '▲' : '▼'}
+    </Text>
+  );
+});
+
+const SummaryStatCard = React.memo(
+  ({
+    label,
+    value,
+    color,
+    suffix,
+    diffLabel,
+    trendUp,
+  }: {
+    label: string;
+    value: number;
+    color: string;
+    suffix?: string;
+    diffLabel?: string;
+    trendUp?: boolean | null;
+  }) => (
+    <View style={styles.monthlyStatCard}>
+      <View style={styles.monthlyStatHeader}>
+        <View style={[styles.statDot, { backgroundColor: color }]} />
+        <Text style={styles.monthlyStatLabel}>{label}</Text>
+      </View>
+      <Text style={styles.monthlyStatValue}>
         {value}
         {suffix ?? ''}
       </Text>
+      {diffLabel !== undefined && (
+        <View style={styles.monthlyStatDeltaRow}>
+          <TrendArrow up={trendUp ?? null} />
+          <Text
+            style={[
+              styles.monthlyStatDelta,
+              trendUp === null
+                ? styles.trendNeutral
+                : trendUp
+                ? styles.trendUp
+                : styles.trendDown,
+            ]}
+          >
+            {diffLabel}
+          </Text>
+        </View>
+      )}
     </View>
-  </View>
+  ),
 );
 
-const LegendItem = ({ color, label }: { color: string; label: string }) => (
-  <View style={styles.legendItem}>
-    <View style={[styles.legendDot, { backgroundColor: color }]} />
-    <Text style={styles.legendText}>{label}</Text>
-  </View>
+const DarkLegendItem = React.memo(
+  ({
+    color,
+    label,
+    circle,
+  }: {
+    color: string;
+    label: string;
+    circle?: boolean;
+  }) => (
+    <View style={styles.darkLegendItem}>
+      <View
+        style={[
+          styles.darkLegendDot,
+          { backgroundColor: color, borderRadius: circle ? 6 : 4 },
+        ]}
+      />
+      <Text style={styles.darkLegendText}>{label}</Text>
+    </View>
+  ),
 );
 
-// Legend versi gelap (kotak = bar, lingkaran = line) — dipakai di tab Harian & Stage
-const DarkLegendItem = ({
-  color,
-  label,
-  circle,
-}: {
-  color: string;
-  label: string;
-  circle?: boolean;
-}) => (
-  <View style={styles.darkLegendItem}>
-    <View
-      style={[
-        styles.darkLegendDot,
-        { backgroundColor: color, borderRadius: circle ? 6 : 4 },
-      ]}
-    />
-    <Text style={styles.darkLegendText}>{label}</Text>
-  </View>
-);
-
-const EmptyState = ({ dark }: { dark?: boolean } = {}) => (
+const EmptyState = React.memo(({ dark }: { dark?: boolean } = {}) => (
   <View style={styles.emptyState}>
     <Text style={dark ? styles.emptyStateTextDark : styles.emptyStateText}>
       Belum ada data untuk ditampilkan
     </Text>
   </View>
-);
-
-// Shared pointer/tooltip config untuk grafik tema terang (Monthly)
-const pointerConfig = {
-  pointerStripHeight: 120,
-  pointerStripColor: '#94A3B8',
-  pointerStripWidth: 1,
-  pointerColor: '#1E293B',
-  radius: 5,
-  pointerLabelWidth: 90,
-  pointerLabelHeight: 40,
-  activatePointersOnLongPress: false,
-  autoAdjustPointerLabelPosition: true,
-  pointerLabelComponent: (items: any[]) => (
-    <View style={styles.tooltip}>
-      {items.map((item, idx) => (
-        <Text key={idx} style={styles.tooltipText}>
-          {item.value}
-        </Text>
-      ))}
-    </View>
-  ),
-};
+));
 
 // ============================================================
-// DailyCOBChart — bar (Transaction, Jt) + line (Duration, HH:MM)
+// TransactionDurationChart (Optimized calculations)
 // ============================================================
 
-function DailyCOBChart({
-  cobTransactionData,
-  cobDurationData,
-  dailyKeterangan,
+const TransactionDurationChart = React.memo(function TransactionDurationChart({
+  transactionData,
+  durationData,
+  keterangan,
+  transactionLabel = 'Transaction',
+  durationLabel = 'Duration',
+  noteTitle = 'Catatan Operasional:',
 }: {
-  cobTransactionData: ChartPoint[];
-  cobDurationData: ChartPoint[];
-  dailyKeterangan?: string[];
+  transactionData: ChartPoint[];
+  durationData: ChartPoint[];
+  keterangan?: string[];
+  transactionLabel?: string;
+  durationLabel?: string;
+  noteTitle?: string;
 }) {
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth } = useWindowDimensions();
 
-  const trxValues = cobTransactionData.map(d => Number(d.value) || 0);
-  const durationMinutes = cobDurationData.map(d => (Number(d.value) || 0) * 60);
+  // Membungkus semua kalkulasi chart di dalam useMemo
+  const chartData = useMemo(() => {
+    const trxValues = transactionData.map(d => Number(d.value) || 0);
+    const durationMinutes = durationData.map(d => (Number(d.value) || 0) * 60);
 
-  const maxTrx = trxValues.length > 0 ? Math.max(...trxValues) : 0;
-  let leftStep = Math.ceil(maxTrx / 3.5);
-  if (leftStep < 1) leftStep = 1;
-  const chartMaxValue = leftStep * 4;
+    const maxTrx = trxValues.length > 0 ? Math.max(...trxValues) : 0;
+    let leftStep = Math.ceil(maxTrx / 3.5);
+    if (leftStep < 1) leftStep = 1;
+    const chartMaxValue = leftStep * 4;
 
-  const leftYAxisLabels = [
-    '0',
-    `${leftStep} Jt`,
-    `${leftStep * 2} Jt`,
-    `${leftStep * 3} Jt`,
-    `${chartMaxValue} Jt`,
-  ];
+    const leftYAxisLabels = [
+      '0',
+      `${leftStep} Jt`,
+      `${leftStep * 2} Jt`,
+      `${leftStep * 3} Jt`,
+      `${chartMaxValue} Jt`,
+    ];
 
-  const safeDurationMinutes =
-    durationMinutes.length > 0 ? durationMinutes : [0];
-  const maxLineMinutes = Math.max(...safeDurationMinutes);
-  const minLineMinutes = Math.min(...safeDurationMinutes);
+    const safeDurationMinutes =
+      durationMinutes.length > 0 ? durationMinutes : [0];
+    const maxLineMinutes = Math.max(...safeDurationMinutes);
+    const minLineMinutes = Math.min(...safeDurationMinutes);
 
-  const baseOffset = Math.max(0, Math.floor((minLineMinutes - 30) / 30) * 30);
-  let spread = maxLineMinutes - baseOffset;
-  if (spread <= 0) spread = 60;
-  const virtualTotalRange = spread / 0.6;
+    const baseOffset = Math.max(0, Math.floor((minLineMinutes - 30) / 30) * 30);
+    let spread = maxLineMinutes - baseOffset;
+    if (spread <= 0) spread = 60;
+    const virtualTotalRange = spread / 0.6;
 
-  let niceInterval = Math.ceil(virtualTotalRange / 4 / 30) * 30;
-  if (niceInterval < 30) niceInterval = 30;
-  const virtualMaxLine = baseOffset + niceInterval * 4;
-  const scaleRatio = chartMaxValue / (virtualMaxLine - baseOffset);
+    let niceInterval = Math.ceil(virtualTotalRange / 4 / 30) * 30;
+    if (niceInterval < 30) niceInterval = 30;
+    const virtualMaxLine = baseOffset + niceInterval * 4;
+    const scaleRatio = chartMaxValue / (virtualMaxLine - baseOffset);
 
-  const rightYAxisLabels = [
-    formatMinutesToHHMM(baseOffset),
-    formatMinutesToHHMM(baseOffset + niceInterval),
-    formatMinutesToHHMM(baseOffset + niceInterval * 2),
-    formatMinutesToHHMM(baseOffset + niceInterval * 3),
-    formatMinutesToHHMM(virtualMaxLine),
-  ];
+    const rightYAxisLabels = [
+      formatMinutesToHHMM(baseOffset),
+      formatMinutesToHHMM(baseOffset + niceInterval),
+      formatMinutesToHHMM(baseOffset + niceInterval * 2),
+      formatMinutesToHHMM(baseOffset + niceInterval * 3),
+      formatMinutesToHHMM(virtualMaxLine),
+    ];
 
-  const notesData = cobTransactionData
-    .map((item, i) => ({
-      label: item.label ?? `${i + 1}`,
-      ket: dailyKeterangan?.[i] ?? '',
-    }))
-    .filter(n => n.ket && n.ket.trim() !== '');
+    const notesData = transactionData
+      .map((item, i) => ({
+        label: item.label ?? `${i + 1}`,
+        ket: keterangan?.[i] ?? '',
+      }))
+      .filter(n => n.ket && n.ket.trim() !== '');
 
-  const barData = cobTransactionData.map((item, index) => {
-    const val = Number(item.value) || 0;
-    const ket = dailyKeterangan?.[index] ?? '';
-    const hasKet = ket.trim().length > 0;
+    const barData = transactionData.map((item, index) => {
+      const val = Number(item.value) || 0;
+      const ket = keterangan?.[index] ?? '';
+      const hasKet = ket.trim().length > 0;
+
+      return {
+        value: val,
+        label: item.label ?? `${index + 1}`,
+        labelTextStyle: {
+          color: hasKet ? '#FFC107' : '#9CA3AF',
+          fontSize: 9,
+          marginTop: 20,
+        },
+        frontColor: '#20A090',
+        topLabelComponent: () => (
+          <Text style={styles.dailyBarTopLabel}>
+            {round(val)} Jt{hasKet ? '*' : ''}
+          </Text>
+        ),
+      };
+    });
+
+    const lineData = durationMinutes.map(minutes => ({
+      value: Math.max(0, (minutes - baseOffset) * scaleRatio),
+      customDataPoint: () => (
+        <View style={styles.customPointWrap}>
+          <View style={styles.customPointDot} />
+          <Text style={styles.customPointLabel}>
+            {formatMinutesToHHMM(minutes)}
+          </Text>
+        </View>
+      ),
+    }));
 
     return {
-      value: val,
-      label: item.label ?? `${index + 1}`,
-      labelTextStyle: {
-        color: hasKet ? '#FFC107' : '#9CA3AF',
-        fontSize: 9,
-      },
-      frontColor: '#20A090',
-      topLabelComponent: () => (
-        <Text style={styles.dailyBarTopLabel}>
-          {round(val)} Jt{hasKet ? '*' : ''}
-        </Text>
-      ),
+      barData,
+      lineData,
+      leftYAxisLabels,
+      rightYAxisLabels,
+      chartMaxValue,
+      notesData,
     };
-  });
-
-  const lineData = durationMinutes.map(minutes => ({
-    value: Math.max(0, (minutes - baseOffset) * scaleRatio),
-    customDataPoint: () => (
-      <View style={styles.customPointWrap}>
-        <View style={styles.customPointDot} />
-        <Text style={styles.customPointLabel}>
-          {formatMinutesToHHMM(minutes)}
-        </Text>
-      </View>
-    ),
-  }));
+  }, [transactionData, durationData, keterangan]);
 
   return (
     <View style={styles.darkCard}>
       <View style={styles.darkLegendRow}>
-        <DarkLegendItem color="#20A090" label="Transaction" />
-        <DarkLegendItem color="#7B61FF" label="Duration" circle />
+        <DarkLegendItem color="#20A090" label={transactionLabel} />
+        <DarkLegendItem color="#7B61FF" label={durationLabel} circle />
       </View>
 
       <View style={styles.dualAxisWrap}>
         <View pointerEvents="none" style={styles.rightAxisDaily}>
-          {rightYAxisLabels.map((l: string, i: number) => (
+          {chartData.rightYAxisLabels.map((l: string, i: number) => (
             <Text
               key={i}
               style={[styles.rightAxisLabel, { top: 200 - (i / 4) * 200 - 7 }]}
@@ -291,8 +309,8 @@ function DailyCOBChart({
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <BarChart
-            data={barData}
-            width={Math.max(screenWidth * 0.8, barData.length * 60)}
+            data={chartData.barData}
+            width={Math.max(screenWidth * 0.8, chartData.barData.length * 60)}
             height={200}
             isAnimated={false}
             barWidth={24}
@@ -300,26 +318,27 @@ function DailyCOBChart({
             initialSpacing={30}
             endSpacing={30}
             noOfSections={4}
-            maxValue={chartMaxValue}
-            yAxisLabelTexts={leftYAxisLabels}
+            maxValue={chartData.chartMaxValue}
+            yAxisLabelTexts={chartData.leftYAxisLabels}
             yAxisThickness={0}
             xAxisColor="#374151"
             yAxisLabelWidth={35}
-            xAxisLabelsHeight={30}
+            xAxisLabelsHeight={40}
+            xAxisLabelsVerticalShift={15}
             yAxisTextStyle={styles.darkAxisLabel}
             rulesType="dashed"
             rulesColor="#333"
             showLine
-            lineData={lineData}
+            lineData={chartData.lineData}
             lineConfig={{ color: '#7B61FF', thickness: 2, curved: true }}
           />
         </ScrollView>
       </View>
 
-      {notesData.length > 0 && (
+      {chartData.notesData.length > 0 && (
         <View style={styles.footnoteWrap}>
-          <Text style={styles.footnoteTitle}>Catatan Operasional:</Text>
-          {notesData.map((n, i) => (
+          <Text style={styles.footnoteTitle}>{noteTitle}</Text>
+          {chartData.notesData.map((n, i) => (
             <Text key={i} style={styles.footnoteText}>
               <Text style={styles.footnoteLabel}>{n.label} * : </Text>
               {n.ket}
@@ -329,13 +348,13 @@ function DailyCOBChart({
       )}
     </View>
   );
-}
+});
 
 // ============================================================
-// StageProcessChart — Diperbarui (Lebih Rapi & Modern)
+// StageProcessChart (Optimized calculations)
 // ============================================================
 
-function StageProcessChart({
+const StageProcessChart = React.memo(function StageProcessChart({
   applicationData,
   systemWideData,
   reportingData,
@@ -348,112 +367,129 @@ function StageProcessChart({
   sodData: ChartPoint[];
   onlineData: ChartPoint[];
 }) {
-  const screenWidth = Dimensions.get('window').width;
+  const { width: screenWidth } = useWindowDimensions();
 
-  const datasets = [
-    { name: 'App', data: applicationData },
-    { name: 'Sys', data: systemWideData },
-    { name: 'Rep', data: reportingData },
-    { name: 'SOD', data: sodData },
-    { name: 'Onl', data: onlineData },
-  ];
+  const chartData = useMemo(() => {
+    const datasets = [
+      { name: 'App', data: applicationData },
+      { name: 'Sys', data: systemWideData },
+      { name: 'Rep', data: reportingData },
+      { name: 'SOD', data: sodData },
+      { name: 'Onl', data: onlineData },
+    ];
 
-  const labels = applicationData.map(d => d.label ?? '');
-  const numDays = labels.length;
-  const isBarChart = numDays <= 3;
+    const labels = applicationData.map(d => d.label ?? '');
+    const numDays = labels.length;
+    const isBarChart = numDays <= 3;
 
-  let maxValue = 0;
-  datasets.forEach(ds => {
-    ds.data.forEach(x => {
-      if (x.value > maxValue) maxValue = x.value;
-    });
-  });
-  maxValue = Math.ceil(maxValue / 30) * 30 + 30;
-
-  // Pointer config sleek untuk multiple lines
-  const stagePointerConfig = {
-    pointerStripHeight: 200,
-    pointerStripColor: '#64748B',
-    pointerStripWidth: 1,
-    pointerColor: '#FFFFFF',
-    radius: 4,
-    pointerLabelWidth: 80,
-    pointerLabelHeight: 110,
-    activatePointersOnLongPress: false,
-    autoAdjustPointerLabelPosition: true,
-    pointerLabelComponent: (items: any[]) => {
-      return (
-        <View style={styles.stageTooltip}>
-          {items.map((item, idx) => (
-            <View key={idx} style={styles.stageTooltipRow}>
-              <View
-                style={[
-                  styles.stageTooltipDot,
-                  { backgroundColor: STAGE_COLORS[idx] },
-                ]}
-              />
-              <Text style={styles.stageTooltipText}>
-                {formatMinutesToHHMM(item.value)}
-              </Text>
-            </View>
-          ))}
-        </View>
-      );
-    },
-  };
-
-  const buildLineData = (data: ChartPoint[]) =>
-    data.map(item => ({
-      value: item.value,
-    }));
-
-  const buildGroupedBarData = () => {
-    const barData: any[] = [];
-    datasets.forEach((dataset, stageIdx) => {
-      dataset.data.forEach((item, dateIdx) => {
-        const isLastGroup = dateIdx === numDays - 1;
-        barData.push({
-          value: item.value,
-          frontColor: STAGE_COLORS[stageIdx],
-          // Beri jarak antar grup harian
-          spacing: isLastGroup ? 20 : 6,
-          // Label hanya muncul di bar tengah setiap grup untuk mewakili tanggal
-          label: stageIdx === 2 ? labels[dateIdx] : '',
-          labelTextStyle: {
-            color: '#9CA3AF',
-            fontSize: 10,
-            textAlign: 'center',
-          },
-        });
+    let maxValue = 0;
+    datasets.forEach(ds => {
+      ds.data.forEach(x => {
+        if (x.value > maxValue) maxValue = x.value;
       });
     });
-    return barData;
-  };
+    maxValue = Math.ceil(maxValue / 30) * 30 + 30;
+
+    const buildLineData = (data: ChartPoint[]) =>
+      data.map(item => ({
+        value: item.value,
+      }));
+
+    const barData: any[] = [];
+    if (isBarChart) {
+      datasets.forEach((dataset, stageIdx) => {
+        dataset.data.forEach((item, dateIdx) => {
+          const isLastGroup = dateIdx === numDays - 1;
+          barData.push({
+            value: item.value,
+            frontColor: STAGE_COLORS[stageIdx],
+            spacing: isLastGroup ? 20 : 6,
+            label: stageIdx === 2 ? labels[dateIdx] : '',
+            labelTextStyle: {
+              color: '#9CA3AF',
+              fontSize: 10,
+              textAlign: 'center',
+            },
+          });
+        });
+      });
+    }
+
+    return {
+      datasets,
+      labels,
+      isBarChart,
+      maxValue,
+      numDays,
+      barData,
+      buildLineData,
+    };
+  }, [applicationData, systemWideData, reportingData, sodData, onlineData]);
+
+  // Pointer config dipisahkan agar referensi tidak terus menerus baru
+  const stagePointerConfig = useMemo(
+    () => ({
+      pointerStripHeight: 200,
+      pointerStripColor: '#64748B',
+      pointerStripWidth: 1,
+      pointerColor: '#FFFFFF',
+      radius: 4,
+      pointerLabelWidth: 80,
+      pointerLabelHeight: 110,
+      activatePointersOnLongPress: false,
+      autoAdjustPointerLabelPosition: true,
+      pointerLabelComponent: (items: any[]) => {
+        return (
+          <View style={styles.stageTooltip}>
+            {items.map((item, idx) => (
+              <View key={idx} style={styles.stageTooltipRow}>
+                <View
+                  style={[
+                    styles.stageTooltipDot,
+                    { backgroundColor: STAGE_COLORS[idx] },
+                  ]}
+                />
+                <Text style={styles.stageTooltipText}>
+                  {formatMinutesToHHMM(item.value)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        );
+      },
+    }),
+    [],
+  );
+
+  const formatLabelStr = useCallback(
+    (label: string) => formatMinutesToHHMM(Number(label)),
+    [],
+  );
 
   return (
     <View style={styles.darkCard}>
       <View style={styles.darkLegendRow}>
-        {datasets.map((item, idx) => (
+        {chartData.datasets.map((item, idx) => (
           <DarkLegendItem
             key={idx}
             color={STAGE_COLORS[idx]}
             label={item.name}
-            circle={!isBarChart}
+            circle={!chartData.isBarChart}
           />
         ))}
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {isBarChart ? (
+        {chartData.isBarChart ? (
           <BarChart
-            data={buildGroupedBarData()}
+            data={chartData.barData}
             barWidth={18}
             barBorderRadius={3}
             height={220}
-            width={Math.max(screenWidth * 0.75, numDays * 150)}
+            width={Math.max(screenWidth * 0.75, chartData.numDays * 150)}
             initialSpacing={15}
             endSpacing={40}
-            maxValue={maxValue}
+            maxValue={chartData.maxValue}
             noOfSections={5}
             yAxisThickness={0}
             xAxisColor="#374151"
@@ -464,17 +500,17 @@ function StageProcessChart({
               color: '#9CA3AF',
               fontSize: 10,
             }}
-            formatYLabel={label => formatMinutesToHHMM(Number(label))}
+            formatYLabel={formatLabelStr}
             isAnimated={false}
           />
         ) : (
           <LineChart
             curved
-            data={buildLineData(applicationData)}
-            data2={buildLineData(systemWideData)}
-            data3={buildLineData(reportingData)}
-            data4={buildLineData(sodData)}
-            data5={buildLineData(onlineData)}
+            data={chartData.buildLineData(applicationData)}
+            data2={chartData.buildLineData(systemWideData)}
+            data3={chartData.buildLineData(reportingData)}
+            data4={chartData.buildLineData(sodData)}
+            data5={chartData.buildLineData(onlineData)}
             color1={STAGE_COLORS[0]}
             color2={STAGE_COLORS[1]}
             color3={STAGE_COLORS[2]}
@@ -492,15 +528,15 @@ function StageProcessChart({
             dataPointsRadius5={3}
             thickness={3}
             height={220}
-            width={Math.max(screenWidth * 0.75, numDays * 60)}
+            width={Math.max(screenWidth * 0.75, chartData.numDays * 60)}
             spacing={60}
             initialSpacing={20}
             endSpacing={40}
             adjustToWidth={false}
             focusEnabled
-            maxValue={maxValue}
+            maxValue={chartData.maxValue}
             noOfSections={5}
-            xAxisLabelTexts={labels}
+            xAxisLabelTexts={chartData.labels}
             xAxisLabelTextStyle={{
               color: '#9CA3AF',
               fontSize: 10,
@@ -519,7 +555,7 @@ function StageProcessChart({
             xAxisColor="#374151"
             rulesType="dashed"
             rulesColor="#333"
-            formatYLabel={label => formatMinutesToHHMM(Number(label))}
+            formatYLabel={formatLabelStr}
             pointerConfig={stagePointerConfig}
             isAnimated={false}
           />
@@ -527,7 +563,7 @@ function StageProcessChart({
       </ScrollView>
     </View>
   );
-}
+});
 
 // ============================================================
 // Main component
@@ -537,8 +573,9 @@ export default function COBAnalyticsCard({
   cobTransactionData,
   cobDurationData,
   dailyKeterangan,
-  monthStartData,
-  monthEndData,
+  monthTransactionData,
+  monthDurationData,
+  monthlyKeterangan,
   applicationData,
   systemWideData,
   reportingData,
@@ -547,31 +584,42 @@ export default function COBAnalyticsCard({
 }: COBAnalyticsCardProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('daily');
 
-  const handleTabChange = (tab: TabKey) => {
+  const handleTabChange = useCallback((tab: TabKey) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveTab(tab);
-  };
+  }, []);
 
-  const monthlyStats = useMemo(
+  const monthlyStats = useMemo(() => {
+    const trx = summarize(monthTransactionData);
+    const dur = summarize(monthDurationData);
+    return { trx, dur };
+  }, [monthTransactionData, monthDurationData]);
+
+  // Memoize pengecekan kosong agar tidak diulang setiap render
+  const { isDailyEmpty, isMonthlyEmpty, isStageEmpty } = useMemo(
     () => ({
-      start: summarize(monthStartData),
-      end: summarize(monthEndData),
+      isDailyEmpty: !cobTransactionData?.length && !cobDurationData?.length,
+      isMonthlyEmpty:
+        !monthTransactionData?.length && !monthDurationData?.length,
+      isStageEmpty:
+        !applicationData?.length &&
+        !systemWideData?.length &&
+        !reportingData?.length &&
+        !sodData?.length &&
+        !onlineData?.length,
     }),
-    [monthStartData, monthEndData],
+    [
+      cobTransactionData,
+      cobDurationData,
+      monthTransactionData,
+      monthDurationData,
+      applicationData,
+      systemWideData,
+      reportingData,
+      sodData,
+      onlineData,
+    ],
   );
-
-  const isDailyEmpty =
-    (!cobTransactionData || cobTransactionData.length === 0) &&
-    (!cobDurationData || cobDurationData.length === 0);
-  const isMonthlyEmpty =
-    (!monthStartData || monthStartData.length === 0) &&
-    (!monthEndData || monthEndData.length === 0);
-  const isStageEmpty =
-    !applicationData?.length &&
-    !systemWideData?.length &&
-    !reportingData?.length &&
-    !sodData?.length &&
-    !onlineData?.length;
 
   return (
     <View style={styles.card}>
@@ -608,86 +656,60 @@ export default function COBAnalyticsCard({
           {isDailyEmpty ? (
             <EmptyState dark />
           ) : (
-            <DailyCOBChart
-              cobTransactionData={cobTransactionData}
-              cobDurationData={cobDurationData}
-              dailyKeterangan={dailyKeterangan}
+            <TransactionDurationChart
+              transactionData={cobTransactionData}
+              durationData={cobDurationData}
+              keterangan={dailyKeterangan}
             />
           )}
         </View>
       )}
 
-      {/* ============= TAB: MONTHLY ============= */}
+      {/* ============= TAB: BULANAN ============= */}
       {activeTab === 'monthly' && (
-        <View style={styles.section}>
+        <View style={styles.darkSection}>
           {isMonthlyEmpty ? (
-            <EmptyState />
+            <EmptyState dark />
           ) : (
             <>
-              <View style={styles.statsRow}>
-                <StatBadge
-                  label="Awal bulan (avg)"
-                  value={monthlyStats.start.avg}
-                  color="#F59E0B"
+              <Text style={styles.monthlyCaptionDark}>
+                Total transaksi & durasi COB per bulan. Perhatikan tren durasi
+                makin pendek makin baik.
+              </Text>
+
+              <View style={styles.monthlyStatsRow}>
+                <SummaryStatCard
+                  label="Rata-rata Transaksi"
+                  value={monthlyStats.trx.avg}
+                  suffix=" Jt"
+                  color="#20A090"
                 />
-                <StatBadge
-                  label="Akhir bulan (avg)"
-                  value={monthlyStats.end.avg}
-                  color="#EF4444"
+                <SummaryStatCard
+                  label="Rata-rata Durasi"
+                  value={monthlyStats.dur.avg}
+                  suffix=" jam"
+                  color="#7B61FF"
                 />
-                <StatBadge
-                  label="Selisih terakhir"
-                  value={round(
-                    monthlyStats.end.latest - monthlyStats.start.latest,
-                  )}
-                  color={
-                    monthlyStats.end.latest - monthlyStats.start.latest >= 0
-                      ? '#10B981'
-                      : '#EF4444'
+                <SummaryStatCard
+                  label="Durasi Bulan Ini"
+                  value={monthlyStats.dur.latest}
+                  suffix=" jam"
+                  color={monthlyStats.dur.trendUp ? '#F87171' : '#34D399'}
+                  trendUp={monthlyStats.dur.trendUp}
+                  diffLabel={
+                    monthlyStats.dur.trendUp === null
+                      ? 'Tidak berubah vs bulan lalu'
+                      : 'vs bulan lalu'
                   }
                 />
               </View>
 
-              <View style={styles.chartCard}>
-                <LineChart
-                  curved
-                  areaChart
-                  data={monthStartData}
-                  data2={monthEndData}
-                  color1="#F59E0B"
-                  color2="#EF4444"
-                  startFillColor1="#FDE68A"
-                  startFillColor2="#FCA5A5"
-                  endFillColor1="#FFFFFF"
-                  endFillColor2="#FFFFFF"
-                  startOpacity={0.3}
-                  endOpacity={0}
-                  thickness1={3}
-                  thickness2={3}
-                  hideDataPoints={false}
-                  dataPointsRadius1={4}
-                  dataPointsRadius2={4}
-                  dataPointsColor1="#F59E0B"
-                  dataPointsColor2="#EF4444"
-                  hideRules
-                  rulesType="dashed"
-                  rulesColor="#F1F5F9"
-                  hideYAxisText
-                  yAxisThickness={0}
-                  xAxisThickness={0.5}
-                  xAxisColor="#E2E8F0"
-                  spacing={45}
-                  initialSpacing={10}
-                  pointerConfig={pointerConfig}
-                  isAnimated
-                  animationDuration={600}
-                />
-              </View>
-
-              <View style={styles.chartLegend}>
-                <LegendItem color="#F59E0B" label="Awal Bulan" />
-                <LegendItem color="#EF4444" label="Akhir Bulan" />
-              </View>
+              <TransactionDurationChart
+                transactionData={monthTransactionData}
+                durationData={monthDurationData}
+                keterangan={monthlyKeterangan}
+                noteTitle="Catatan Operasional Bulanan:"
+              />
             </>
           )}
         </View>
@@ -727,6 +749,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+    marginBottom: 24,
   },
   header: {
     marginBottom: 14,
@@ -773,46 +796,6 @@ const styles = StyleSheet.create({
   section: {
     width: '100%',
   },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 14,
-  },
-  statBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    gap: 8,
-    minWidth: '30%',
-  },
-  statDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: '#94A3B8',
-  },
-  statValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  chartCard: {
-    borderRadius: 12,
-    paddingVertical: 8,
-  },
-  chartLegend: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-    marginTop: 10,
-  },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -840,18 +823,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9CA3AF',
   },
-  tooltip: {
-    backgroundColor: '#1E293B',
-    borderRadius: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  tooltipText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  // ---- Gaya gelap untuk tab Harian & Stage ----
   darkSection: {
     width: '100%',
   },
@@ -986,5 +957,65 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     fontSize: 11,
     fontWeight: '600',
+  },
+  monthlyCaptionDark: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginBottom: 12,
+    lineHeight: 16,
+  },
+  monthlyStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  monthlyStatCard: {
+    flex: 1,
+    backgroundColor: '#161B22',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  monthlyStatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  statDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  monthlyStatLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+  },
+  monthlyStatValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#F9FAFB',
+  },
+  monthlyStatDeltaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  monthlyStatDelta: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  trendArrow: {
+    fontSize: 10,
+  },
+  trendUp: {
+    color: '#F87171',
+  },
+  trendDown: {
+    color: '#34D399',
+  },
+  trendNeutral: {
+    color: '#9CA3AF',
   },
 });

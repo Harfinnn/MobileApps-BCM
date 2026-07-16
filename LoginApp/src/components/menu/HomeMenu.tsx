@@ -182,7 +182,6 @@ export default function HomeMenu({ onDashboardPress }: Props) {
         )}
       />
 
-      {/* ✅ ALWAYS RENDERED (FIX DOUBLE CLICK ISSUE) */}
       <BottomSheetModal
         ref={bottomSheetRef}
         snapPoints={['45%', '75%']}
