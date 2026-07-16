@@ -11,6 +11,8 @@ export type WalkthroughStep = {
   key: string;
   ref: React.RefObject<any>;
   text: string;
+  scrollable?: boolean;
+  tooltipOffsetY?: number;
 };
 
 export function useWalkthrough(
@@ -67,6 +69,7 @@ export function useWalkthrough(
     target,
     currentStep: steps[stepIndex],
     stepIndex,
+    totalSteps: steps.length,
     isFirst: stepIndex === 0,
     isLast: stepIndex === steps.length - 1,
     start,

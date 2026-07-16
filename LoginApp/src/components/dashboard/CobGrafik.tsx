@@ -10,14 +10,13 @@ import {
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
+import Animated, {
+  FadeInDown,
+  FadeInRight,
+  FadeOutUp,
+  LinearTransition,
+} from 'react-native-reanimated';
 import { LineChart, BarChart } from 'react-native-gifted-charts';
-
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================
 // Types
@@ -585,7 +584,6 @@ export default function COBAnalyticsCard({
   const [activeTab, setActiveTab] = useState<TabKey>('daily');
 
   const handleTabChange = useCallback((tab: TabKey) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveTab(tab);
   }, []);
 
@@ -622,7 +620,7 @@ export default function COBAnalyticsCard({
   );
 
   return (
-    <View style={styles.card}>
+    <Animated.View style={styles.card} layout={LinearTransition.duration(250)}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Analitik COB</Text>
@@ -652,7 +650,11 @@ export default function COBAnalyticsCard({
 
       {/* ============= TAB: HARIAN ============= */}
       {activeTab === 'daily' && (
-        <View style={styles.darkSection}>
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
           {isDailyEmpty ? (
             <EmptyState dark />
           ) : (
@@ -662,12 +664,16 @@ export default function COBAnalyticsCard({
               keterangan={dailyKeterangan}
             />
           )}
-        </View>
+        </Animated.View>
       )}
 
       {/* ============= TAB: BULANAN ============= */}
       {activeTab === 'monthly' && (
-        <View style={styles.darkSection}>
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
           {isMonthlyEmpty ? (
             <EmptyState dark />
           ) : (
@@ -712,12 +718,16 @@ export default function COBAnalyticsCard({
               />
             </>
           )}
-        </View>
+        </Animated.View>
       )}
 
       {/* ============= TAB: STAGE ============= */}
       {activeTab === 'stage' && (
-        <View style={styles.darkSection}>
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
           {isStageEmpty ? (
             <EmptyState dark />
           ) : (
@@ -729,9 +739,9 @@ export default function COBAnalyticsCard({
               onlineData={onlineData}
             />
           )}
-        </View>
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

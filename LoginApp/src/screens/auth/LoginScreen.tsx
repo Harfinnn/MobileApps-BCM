@@ -56,7 +56,6 @@ const LoginScreen: React.FC = () => {
           user_id: res.data.user_id,
           username,
         });
-
         return;
       }
 
@@ -64,33 +63,22 @@ const LoginScreen: React.FC = () => {
 
       console.log('LOGIN SUCCESS', user);
 
-      // simpan token
       await AsyncStorage.setItem('token', token);
-
-      // 🔥 set token ke axios
       setAuthToken(token);
 
-      // simpan user ke context
+      // simpan user ke context — AppNavigator otomatis switch ke MainStackScreen
       await setUser(user);
 
       // kirim fcm token ke backend
       await registerFcmToken(user);
 
-      // masuk ke aplikasi
-      navigation.replace('Main');
+      // 🔥 navigation.replace('Main') DIHAPUS — tidak perlu navigasi manual
     } catch (err: any) {
       console.log('LOGIN ERROR FULL', {
         message: err.message,
         status: err.response?.status,
         data: err.response?.data,
       });
-
-      console.log('LOGIN REQUEST', {
-        url: API.defaults.baseURL + '/login',
-        username,
-        password,
-      });
-
       setError(err.response?.data?.message || 'Login gagal');
     } finally {
       setLoading(false);

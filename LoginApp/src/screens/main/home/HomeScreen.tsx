@@ -31,7 +31,8 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { useUser } from '../../../contexts/UserContext';
 import API from '../../../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useWalkthrough } from '../../../hooks/useWalkthrough';
+import { useWalkthrough, WalkthroughStep } from '../../../hooks/useWalkthrough';
+import { navbarRef } from '../../../utils/navbarRef';
 
 import styles from '../../../styles/dashboard/homeStyle';
 
@@ -315,12 +316,12 @@ const HomeScreen = () => {
   };
 
   /* ================= WALKTHROUGH ================= */
-  const steps = React.useMemo(() => {
-    const s = [
+  const steps: WalkthroughStep[] = React.useMemo(() => {
+    const s: WalkthroughStep[] = [
       {
         key: 'slider',
         ref: sliderRef,
-        text: 'Info & promo terbaru dari SIMPEL BCM ada di sini.',
+        text: 'Banner ini menampilkan informasi dan pengumuman terbaru dari BCM24.',
       },
     ];
     if (isSuperAdmin) {
@@ -333,7 +334,7 @@ const HomeScreen = () => {
     s.push({
       key: 'menu',
       ref: menuRef,
-      text: 'Akses cepat ke semua fitur utama SIMPEL BCM ada di menu ini.',
+      text: 'Akses cepat ke semua fitur utama BCM24 ada di menu ini.',
     });
     if (showGempaCard && latestGempaInfo) {
       s.push({
@@ -358,6 +359,13 @@ const HomeScreen = () => {
       key: 'news',
       ref: newsRef,
       text: 'Berita & informasi terbaru seputar bencana ada di bagian ini.',
+    });
+    s.push({
+      key: 'navbar',
+      ref: navbarRef,
+      text: 'Navigasi cepat ke Home, KCP, Playbook, dan Akbar AI ada di bar bawah ini.',
+      scrollable: false,
+      tooltipOffsetY: -30,
     });
     return s;
   }, [
@@ -385,14 +393,21 @@ const HomeScreen = () => {
 
     const step = walkthrough.currentStep;
     const node = step?.ref?.current;
-    const scrollNode = scrollViewRef.current;
-    const wrapperNode = contentWrapperRef.current;
-    if (!node || !scrollNode || !wrapperNode) return;
+    if (!node) return;
 
     walkthrough.clearTarget();
 
+    if (step.scrollable === false) {
+      setTimeout(() => walkthrough.remeasure(), 150);
+      return;
+    }
+
+    const scrollNode = scrollViewRef.current;
+    const wrapperNode = contentWrapperRef.current;
+    if (!scrollNode || !wrapperNode) return;
+
     node.measureLayout(
-      wrapperNode, // 🔥 ref langsung, bukan angka dari findNodeHandle
+      wrapperNode,
       (x: number, y: number) => {
         scrollNode.scrollTo({ y: Math.max(y - 100, 0), animated: true });
         setTimeout(() => walkthrough.remeasure(), 450);
@@ -589,8 +604,11 @@ const HomeScreen = () => {
         visible={walkthrough.visible}
         target={walkthrough.target}
         text={walkthrough.currentStep?.text}
+        stepIndex={walkthrough.stepIndex}
+        totalSteps={walkthrough.totalSteps}
         isFirst={walkthrough.isFirst}
         isLast={walkthrough.isLast}
+        tooltipOffsetY={walkthrough.currentStep?.tooltipOffsetY}
         onNext={walkthrough.next}
         onPrev={walkthrough.prev}
         onSkip={walkthrough.stop}

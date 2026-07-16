@@ -18,6 +18,7 @@ import { useNavigation, useNavigationState } from '@react-navigation/native';
 import { useLayout } from '../../contexts/LayoutContext';
 import LottieView from 'lottie-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { navbarRef } from '../../utils/navbarRef';
 
 import {
   BottomSheetModal,
@@ -216,6 +217,7 @@ function NavigationBar() {
   return (
     <>
       <Animated.View
+        ref={navbarRef}
         style={[
           styles.wrapper,
           wrapperAnimated,

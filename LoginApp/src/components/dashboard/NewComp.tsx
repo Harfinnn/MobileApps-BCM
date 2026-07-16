@@ -15,9 +15,11 @@ import { PieChart } from 'react-native-gifted-charts';
 import Animated, {
   FadeInDown,
   FadeInRight,
+  FadeOutUp,
+  LinearTransition,
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedProps, // Tambahan untuk optimasi SVG
+  useAnimatedProps,
   withSpring,
   withTiming,
   withDelay,
@@ -25,14 +27,6 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Eye, EyeOff } from 'lucide-react-native';
-
-// --- Konfigurasi LayoutAnimation Android ---
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // --- Komponen yang Dianimasikan menggunakan Reanimated (UI Thread) ---
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -106,32 +100,15 @@ function getStatus(percentage: number): StatusKey {
 }
 
 // --- Hook Kustom ---
-function useCountUp(target: number, duration = 800) {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    let start: number | null = null;
-    let frame: number;
-    const step = (timestamp: number) => {
-      if (start === null) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(Math.round(eased * target));
-      if (progress < 1) frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [target, duration]);
-
-  return value;
-}
-
-// --- Sub-Komponen yang Dioptimasi dengan React.memo ---
 const CenterLabel = React.memo(({ total }: { total: number }) => {
-  const animatedTotal = useCountUp(total);
   return (
     <View style={styles.centerLabelContainer}>
-      <Text style={styles.centerLabelValue}>{animatedTotal}</Text>
+      <AnimatedNumbers
+        includeComma={false}
+        animateToNumber={total}
+        fontStyle={styles.centerLabelValue}
+        animationDuration={800}
+      />
       <Text style={styles.centerLabelText}>Total</Text>
     </View>
   );
@@ -315,13 +292,15 @@ export default function SystemOverviewDashboard({
   }, [totalApps]);
 
   const toggleDetails = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowAppDetails(prev => !prev);
   }, []);
 
   return (
     <View style={styles.masterCard}>
-      <View style={styles.cardInner}>
+      <Animated.View
+        style={styles.cardInner}
+        layout={LinearTransition.duration(250)}
+      >
         {/* ======================================= */}
         {/* BAGIAN 1: SYSTEM AVAILABILITY (HERO)      */}
         {/* ======================================= */}
@@ -471,7 +450,10 @@ export default function SystemOverviewDashboard({
         </View>
 
         {showAppDetails && (
-          <Animated.View entering={FadeInDown.duration(250).springify()}>
+          <Animated.View
+            entering={FadeInDown.duration(250).springify()}
+            exiting={FadeOutUp.duration(200)}
+          >
             <View style={styles.innerDivider} />
             <ScrollView
               nestedScrollEnabled
@@ -493,7 +475,7 @@ export default function SystemOverviewDashboard({
             </ScrollView>
           </Animated.View>
         )}
-      </View>
+      </Animated.View>
     </View>
   );
 }
