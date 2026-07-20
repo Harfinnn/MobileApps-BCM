@@ -24,11 +24,23 @@ import { LineChart, BarChart } from 'react-native-gifted-charts';
 
 type ChartPoint = { value: number; label?: string; [key: string]: any };
 
-type TabKey = 'daily' | 'monthly' | 'stage';
+type TabKey = 'daily' | 'monthly' | 'stage' | 'bom' | 'boy' | 'eom' | 'eoy';
 
 interface COBAnalyticsCardProps {
   cobTransactionData: ChartPoint[];
   cobDurationData: ChartPoint[];
+  bomTransactionData: ChartPoint[];
+  bomDurationData: ChartPoint[];
+  bomKeterangan?: string[];
+  eomDurationData: ChartPoint[];
+  eomTransactionData: ChartPoint[];
+  eomKeterangan?: string[];
+  boyTransactionData: ChartPoint[];
+  boyDurationData: ChartPoint[];
+  eoyTransactionData: ChartPoint[];
+  eoyDurationData: ChartPoint[];
+  eoyKeterangan?: string[];
+  boyKeterangan?: string[];
   dailyKeterangan?: string[];
   monthTransactionData: ChartPoint[];
   monthDurationData: ChartPoint[];
@@ -80,9 +92,13 @@ const formatMinutesToHHMM = (minutes: number) => {
 };
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'daily', label: 'Harian' },
-  { key: 'monthly', label: 'Bulanan' },
+  { key: 'daily', label: 'COB' },
   { key: 'stage', label: 'Stage' },
+  { key: 'bom', label: 'BOM' },
+  { key: 'boy', label: 'BOY' },
+  { key: 'eom', label: 'EOM' },
+  { key: 'eoy', label: 'EOY' },
+  // { key: 'monthly', label: 'Bulanan' },
 ];
 
 // ============================================================
@@ -571,6 +587,18 @@ const StageProcessChart = React.memo(function StageProcessChart({
 export default function COBAnalyticsCard({
   cobTransactionData,
   cobDurationData,
+  bomTransactionData,
+  bomDurationData,
+  bomKeterangan,
+  eomTransactionData,
+  eomDurationData,
+  eomKeterangan,
+  boyTransactionData,
+  boyDurationData,
+  boyKeterangan,
+  eoyTransactionData,
+  eoyDurationData,
+  eoyKeterangan,
   dailyKeterangan,
   monthTransactionData,
   monthDurationData,
@@ -594,7 +622,15 @@ export default function COBAnalyticsCard({
   }, [monthTransactionData, monthDurationData]);
 
   // Memoize pengecekan kosong agar tidak diulang setiap render
-  const { isDailyEmpty, isMonthlyEmpty, isStageEmpty } = useMemo(
+  const {
+    isDailyEmpty,
+    isMonthlyEmpty,
+    isStageEmpty,
+    isBomEmpty,
+    isBoyEmpty,
+    isEomEmpty,
+    isEoyEmpty,
+  } = useMemo(
     () => ({
       isDailyEmpty: !cobTransactionData?.length && !cobDurationData?.length,
       isMonthlyEmpty:
@@ -605,10 +641,23 @@ export default function COBAnalyticsCard({
         !reportingData?.length &&
         !sodData?.length &&
         !onlineData?.length,
+      isBomEmpty: !bomTransactionData?.length && !bomDurationData?.length,
+      isBoyEmpty: !boyTransactionData?.length && !boyDurationData?.length,
+      isEomEmpty: !eomTransactionData?.length && !eomDurationData?.length,
+      isEoyEmpty: !eoyTransactionData?.length && !eoyDurationData?.length,
     }),
     [
       cobTransactionData,
       cobDurationData,
+      bomTransactionData,
+      bomDurationData,
+      eomTransactionData,
+      eomDurationData,
+      boyTransactionData,
+      boyDurationData,
+      eoyTransactionData,
+      eoyDurationData,
+
       monthTransactionData,
       monthDurationData,
       applicationData,
@@ -625,14 +674,19 @@ export default function COBAnalyticsCard({
       <View style={styles.header}>
         <Text style={styles.title}>Analitik COB</Text>
         <Text style={styles.subtitle}>
-          Pantau harian, siklus bulanan, dan tahapan proses Close of Business
+          Pantau harian, siklus tahunan, dan tahapan proses Close of Business
         </Text>
       </View>
 
       {/* Tab selector */}
-      <View style={styles.tabBar}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabBar}
+      >
         {TABS.map(tab => {
           const isActive = tab.key === activeTab;
+
           return (
             <TouchableOpacity
               key={tab.key}
@@ -646,7 +700,7 @@ export default function COBAnalyticsCard({
             </TouchableOpacity>
           );
         })}
-      </View>
+      </ScrollView>
 
       {/* ============= TAB: HARIAN ============= */}
       {activeTab === 'daily' && (
@@ -741,6 +795,90 @@ export default function COBAnalyticsCard({
           )}
         </Animated.View>
       )}
+
+      {activeTab === 'bom' && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
+          {isBomEmpty ? (
+            <EmptyState dark />
+          ) : (
+            <TransactionDurationChart
+              transactionData={bomTransactionData}
+              durationData={bomDurationData}
+              keterangan={bomKeterangan}
+              transactionLabel="Beginning Transaction"
+              durationLabel="Beginning Duration"
+              noteTitle="Beginning of Month (BOM):"
+            />
+          )}
+        </Animated.View>
+      )}
+
+      {activeTab === 'boy' && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
+          {isBoyEmpty ? (
+            <EmptyState dark />
+          ) : (
+            <TransactionDurationChart
+              transactionData={boyTransactionData}
+              durationData={boyDurationData}
+              keterangan={boyKeterangan}
+              transactionLabel="Beginning Transaction"
+              durationLabel="Beginning Duration"
+              noteTitle="Beginning of Year (BOY):"
+            />
+          )}
+        </Animated.View>
+      )}
+
+      {activeTab === 'eom' && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
+          {isEomEmpty ? (
+            <EmptyState dark />
+          ) : (
+            <TransactionDurationChart
+              transactionData={eomTransactionData}
+              durationData={eomDurationData}
+              keterangan={eomKeterangan}
+              transactionLabel="End Transaction"
+              durationLabel="End Duration"
+              noteTitle="End of Month (EOM):"
+            />
+          )}
+        </Animated.View>
+      )}
+
+      {activeTab === 'eoy' && (
+        <Animated.View
+          entering={FadeInDown.duration(200)}
+          exiting={FadeOutUp.duration(150)}
+          style={styles.darkSection}
+        >
+          {isEoyEmpty ? (
+            <EmptyState dark />
+          ) : (
+            <TransactionDurationChart
+              transactionData={eoyTransactionData}
+              durationData={eoyDurationData}
+              keterangan={eoyKeterangan}
+              transactionLabel="Ending Transaction"
+              durationLabel="Ending Duration"
+              noteTitle="End of Year (EOY):"
+            />
+          )}
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }
@@ -780,13 +918,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 4,
     marginBottom: 16,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 9,
     alignItems: 'center',
   },
+
+  tabButton: {
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+
   tabButtonActive: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#0F172A',

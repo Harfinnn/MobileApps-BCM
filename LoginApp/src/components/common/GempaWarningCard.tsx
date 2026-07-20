@@ -6,6 +6,7 @@ type GempaCardProps = {
   Magnitude: string;
   Wilayah: string;
   Jam: string;
+  Tanggal?: string;
   Kedalaman?: string;
   onPress: () => void;
   onClose: () => void;
@@ -15,6 +16,7 @@ export const GempaWarningCard = ({
   Magnitude,
   Wilayah,
   Jam,
+  Tanggal,
   Kedalaman,
   onPress,
   onClose,
@@ -50,7 +52,10 @@ export const GempaWarningCard = ({
             {Wilayah}
           </Text>
           <View style={styles.metaRow}>
-            <Text style={styles.metaText}>🕒 {Jam}</Text>
+            <Text style={styles.metaText}>
+              🕒 {Tanggal ? `${Tanggal} • ${Jam}` : Jam}
+            </Text>
+
             {Kedalaman ? (
               <Text style={styles.metaText}>📉 {Kedalaman}</Text>
             ) : null}
@@ -68,7 +73,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginHorizontal: 16,
     marginVertical: 8,
-   
+
     ...Platform.select({
       ios: {
         shadowColor: '#000',

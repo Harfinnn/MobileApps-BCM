@@ -37,24 +37,24 @@ const MenuItem = React.memo(
     boxed?: boolean;
     index?: number;
   }) => {
-    const scale = useSharedValue(0.8);
-    const opacity = useSharedValue(0);
-    const translateY = useSharedValue(12);
+    const scale = useSharedValue(1);
+    const opacity = useSharedValue(1);
+    const translateY = useSharedValue(0);
 
-    React.useEffect(() => {
-      const delay = index * 60;
+    // React.useEffect(() => {
+    //   const delay = index * 60;
 
-      scale.value = withDelay(
-        delay,
-        withTiming(1, {
-          duration: 400,
-          easing: Easing.out(Easing.exp),
-        }),
-      );
+    //   scale.value = withDelay(
+    //     delay,
+    //     withTiming(1, {
+    //       duration: 400,
+    //       easing: Easing.out(Easing.exp),
+    //     }),
+    //   );
 
-      opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
-      translateY.value = withDelay(delay, withTiming(0, { duration: 400 }));
-    }, []);
+    //   opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
+    //   translateY.value = withDelay(delay, withTiming(0, { duration: 400 }));
+    // }, []);
 
     const animatedStyle = useAnimatedStyle(() => ({
       opacity: opacity.value,

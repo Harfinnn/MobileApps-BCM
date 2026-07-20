@@ -15,6 +15,8 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import SystemOverviewDashboard from '../../../components/dashboard/NewComp';
 import COBAnalyticsCard from '../../../components/dashboard/CobGrafik';
 import DRPRSDSummaryCard from '../../../components/dashboard/DrpRsdSummary';
+import IncidentSummaryCard from '../../../components/dashboard/IncidentSummaryCard';
+import IncidentImpactSection from '../../../components/dashboard/IncidentImpactSection';
 
 // Import file styles yang sudah dipisahkan
 import { styles } from '../../../styles/dashboard/DashboardITStyle';
@@ -33,10 +35,22 @@ export default function DashboardITScreen() {
   const { setTitle, setHideNavbar, setShowBack } = useLayout();
 
   const [dashboard, setDashboard] = useState<any>(null);
-  const [loadingCore, setLoadingCore] = useState(true); // blok tampilan utama
+  const [loadingCore, setLoadingCore] = useState(true);
 
   const [cobMonthly, setCobMonthly] = useState<any>(null);
   const [cobStage, setCobStage] = useState<any[]>([]);
+
+  const [cobBom, setCobBom] = useState<any>(null);
+
+  const [cobBoy, setCobBoy] = useState<any>(null);
+
+  const [cobEom, setCobEom] = useState<any>(null);
+
+  const [cobEoy, setCobEoy] = useState<any>(null);
+
+  const [incidentSummary, setIncidentSummary] = useState<any>(null);
+
+  const [incidentImpact, setIncidentImpact] = useState([]);
 
   const [rsdSummary, setRsdSummary] = useState<any>(null);
   const [rsdLoading, setRsdLoading] = useState(true); // khusus DRPRSDSummaryCard
@@ -75,9 +89,37 @@ export default function DashboardITScreen() {
       .then(res => setCobMonthly(res.data))
       .catch(err => console.log('COB monthly error', err));
 
+    API.get('/dashboard-it/cob-bom')
+      .then(res => setCobBom(res.data))
+      .catch(err => console.log('COB BOM error', err));
+
+    API.get('/dashboard-it/cob-eom')
+      .then(res => setCobEom(res.data))
+      .catch(err => console.log('COB EOM error', err));
+
+    API.get('/dashboard-it/cob-boy')
+      .then(res => setCobBoy(res.data))
+      .catch(err => console.log('COB BOY error', err));
+
+    API.get('/dashboard-it/cob-eoy')
+      .then(res => setCobEoy(res.data))
+      .catch(err => console.log('COB EOY error', err));
+
     API.get('/dashboard-it/cob-stage')
       .then(res => setCobStage(res.data))
       .catch(err => console.log('COB stage error', err));
+
+    API.get('/dashboard-it/incidents/summary')
+      .then(res => setIncidentSummary(res.data))
+      .catch(err => console.log('Incident Summary error', err));
+
+    API.get('/dashboard-it/incidents/impact', {
+      params: {
+        tahun: new Date().getFullYear(),
+      },
+    })
+      .then(res => setIncidentImpact(res.data.impact))
+      .catch(err => console.log(err));
 
     return () => {
       setHideNavbar(false);
@@ -129,6 +171,90 @@ export default function DashboardITScreen() {
         value: Number(item.durasi_hour) || 0,
       })) ?? [],
     [cobMonthly],
+  );
+
+  const bomTransactionData = useMemo(
+    () =>
+      (
+        cobBom?.bom?.map((item: any) => ({
+          value: Number((item.trx / 1000000).toFixed(2)),
+          label: item.bulan,
+        })) ?? []
+      )
+        .slice()
+        .reverse(),
+    [cobBom],
+  );
+
+  const bomDurationData = useMemo(
+    () =>
+      (
+        cobBom?.bom?.map((item: any) => ({
+          value: Number(item.durasi_hour) || 0,
+        })) ?? []
+      )
+        .slice()
+        .reverse(),
+    [cobBom],
+  );
+
+  const eomTransactionData = useMemo(
+    () =>
+      (
+        cobEom?.eom?.map((item: any) => ({
+          value: Number((item.trx / 1000000).toFixed(2)),
+          label: item.bulan,
+        })) ?? []
+      )
+        .slice()
+        .reverse(),
+    [cobEom],
+  );
+
+  const eomDurationData = useMemo(
+    () =>
+      (
+        cobEom?.eom?.map((item: any) => ({
+          value: Number(item.durasi_hour),
+        })) ?? []
+      )
+        .slice()
+        .reverse(),
+    [cobEom],
+  );
+
+  const boyTransactionData = useMemo(
+    () =>
+      cobBoy?.boy?.map((item: any) => ({
+        value: Number((item.trx / 1000000).toFixed(2)),
+        label: item.tahun.toString(),
+      })) ?? [],
+    [cobBoy],
+  );
+
+  const boyDurationData = useMemo(
+    () =>
+      cobBoy?.boy?.map((item: any) => ({
+        value: Number(item.durasi_hour),
+      })) ?? [],
+    [cobBoy],
+  );
+
+  const eoyTransactionData = useMemo(
+    () =>
+      cobEoy?.eoy?.map((item: any) => ({
+        value: Number((item.trx / 1000000).toFixed(2)),
+        label: item.tahun.toString(),
+      })) ?? [],
+    [cobEoy],
+  );
+
+  const eoyDurationData = useMemo(
+    () =>
+      cobEoy?.eoy?.map((item: any) => ({
+        value: Number(item.durasi_hour),
+      })) ?? [],
+    [cobEoy],
   );
 
   const monthlyKeterangan = useMemo(
@@ -206,11 +332,29 @@ export default function DashboardITScreen() {
             }
           />
 
+          {rsdLoading ? (
+            <View style={styles.placeholderCard}>
+              <ActivityIndicator size="small" color="#2563EB" />
+            </View>
+          ) : (
+            <DRPRSDSummaryCard drpSummary={dashboard?.drp?.summary} />
+          )}
+
+          <IncidentSummaryCard data={incidentSummary} />
+
           <COBAnalyticsCard
             cobTransactionData={cobTransactionData}
             cobDurationData={cobDurationData}
             monthTransactionData={monthTransactionData}
             monthDurationData={monthDurationData}
+            bomTransactionData={bomTransactionData}
+            bomDurationData={bomDurationData}
+            eomDurationData={eomDurationData}
+            eomTransactionData={eomTransactionData}
+            boyTransactionData={boyTransactionData}
+            boyDurationData={boyDurationData}
+            eoyTransactionData={eoyTransactionData}
+            eoyDurationData={eoyDurationData}
             monthlyKeterangan={monthlyKeterangan}
             applicationData={applicationData}
             systemWideData={systemWideData}
@@ -218,17 +362,6 @@ export default function DashboardITScreen() {
             sodData={sodData}
             onlineData={onlineData}
           />
-
-          {rsdLoading ? (
-            <View style={styles.placeholderCard}>
-              <ActivityIndicator size="small" color="#2563EB" />
-            </View>
-          ) : (
-            <DRPRSDSummaryCard
-              drpSummary={dashboard?.drp?.summary}
-              rsdSummary={rsdSummary}
-            />
-          )}
         </ScrollView>
       )}
     </SafeAreaView>

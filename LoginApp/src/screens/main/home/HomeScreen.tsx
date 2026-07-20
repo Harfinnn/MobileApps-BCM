@@ -8,6 +8,7 @@ import {
   Pressable,
   Text,
   Modal,
+  InteractionManager,
 } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +37,7 @@ import { navbarRef } from '../../../utils/navbarRef';
 
 import styles from '../../../styles/dashboard/homeStyle';
 
+const AUTOGEMPA_URL = 'https://data.bmkg.go.id/DataMKG/TEWS/autogempa.json';
 const WALKTHROUGH_TESTING_MODE = false;
 
 const HomeScreen = () => {
@@ -46,7 +48,10 @@ const HomeScreen = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
-  const [loading, setLoading] = useState(true);
+
+  // const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(true);
+
   const [newsData, setNewsData] = useState<any[]>([]);
   const [panduan, setPanduan] = useState([]);
   const [showGempaPopup, setShowGempaPopup] = useState(false);
@@ -85,7 +90,7 @@ const HomeScreen = () => {
     } catch (error) {
       console.log('Error fetch berita:', error);
     } finally {
-      setLoading(false);
+      setNewsLoading(false);
       setRefreshing(false);
     }
   };
@@ -103,18 +108,36 @@ const HomeScreen = () => {
 
   const fetchLatestGempa = async () => {
     try {
-      const res = await API.get('/gempa/latest');
-      if (res.data?.status && res.data.data) {
-        setLatestGempaInfo(res.data.data);
-        setShowGempaCard(true);
-      }
+      const res = await fetch(`${AUTOGEMPA_URL}?t=${Date.now()}`);
+      const json = await res.json();
+
+      const gempa = json?.Infogempa?.gempa;
+
+      if (!gempa) return;
+
+      setLatestGempaInfo({
+        magnitude: gempa.Magnitude,
+        wilayah: gempa.Wilayah,
+        jam: gempa.Jam,
+        tanggal: gempa.Tanggal,
+        kedalaman: gempa.Kedalaman,
+        coordinates: gempa.Coordinates,
+        dirasakan: gempa.Dirasakan,
+        potensi: gempa.Potensi,
+        shakemap: gempa.Shakemap,
+      });
+
+      setShowGempaCard(true);
     } catch (error) {
-      console.log('ERROR FETCH LATEST GEMPA', error);
+      console.log('ERROR FETCH BMKG', error);
     }
   };
 
   useEffect(() => {
-    fetchNews();
+    const task = InteractionManager.runAfterInteractions(() => {
+      fetchNews();
+    });
+    return () => task.cancel();
   }, []);
 
   useEffect(() => {
@@ -191,7 +214,11 @@ const HomeScreen = () => {
         console.log(err);
       }
     };
-    fetchPanduan();
+
+    const task = InteractionManager.runAfterInteractions(() => {
+      fetchPanduan();
+    });
+    return () => task.cancel();
   }, []);
 
   /* ================= EXIT APP ================= */
@@ -237,15 +264,21 @@ const HomeScreen = () => {
   /* ================= BACKGROUND POLLING & FOCUS REFRESH ================= */
   useFocusEffect(
     useCallback(() => {
-      fetchTsunami();
-      fetchLatestGempa();
+      const task = InteractionManager.runAfterInteractions(() => {
+        fetchTsunami();
+        // beri jeda kecil supaya nggak numpuk bareng fetchTsunami
+        setTimeout(() => fetchLatestGempa(), 300);
+      });
 
       const interval = setInterval(() => {
         fetchTsunami();
-        fetchLatestGempa();
+        setTimeout(() => fetchLatestGempa(), 300);
       }, 60000);
 
-      return () => clearInterval(interval);
+      return () => {
+        task.cancel();
+        clearInterval(interval);
+      };
     }, []),
   );
 
@@ -383,10 +416,10 @@ const HomeScreen = () => {
   );
 
   useEffect(() => {
-    if (loading) return;
+    if (newsLoading) return;
     const t = setTimeout(() => walkthrough.start(), 700);
     return () => clearTimeout(t);
-  }, [loading]);
+  }, [newsLoading]);
 
   useEffect(() => {
     if (!walkthrough.visible) return;
@@ -440,7 +473,7 @@ const HomeScreen = () => {
         }
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {loading ? (
+        {newsLoading ? (
           <HomeSkeleton />
         ) : (
           <View ref={contentWrapperRef}>
@@ -470,6 +503,7 @@ const HomeScreen = () => {
                     Magnitude={latestGempaInfo.magnitude}
                     Wilayah={latestGempaInfo.wilayah}
                     Jam={latestGempaInfo.jam}
+                    Tanggal={latestGempaInfo.tanggal}
                     Kedalaman={latestGempaInfo.kedalaman}
                     onPress={() => handleGempaPress(latestGempaInfo)}
                     onClose={handleCloseGempaCard}
@@ -497,11 +531,13 @@ const HomeScreen = () => {
               </View>
 
               <View ref={newsRef}>
-                <NewsSection
-                  data={newsData}
-                  onItemPress={handleNewsPress}
-                  onPressAll={handleSeeAllNews}
-                />
+                {newsData.length > 0 && (
+                  <NewsSection
+                    data={newsData}
+                    onItemPress={handleNewsPress}
+                    onPressAll={handleSeeAllNews}
+                  />
+                )}
               </View>
             </View>
           </View>

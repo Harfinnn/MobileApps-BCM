@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import FastImage from 'react-native-fast-image';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { styles } from '../../../styles/news/newsStyle';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,17 +67,21 @@ const NewsScreen = () => {
       onPress={() => navigation.navigate('DetailBerita', { id: item.dbe_id })}
     >
       <View style={styles.imageContainer}>
-        <Image
+        <FastImage
           source={{
             uri: `https://simpel-bcm.com/img/berita/${item.dbe_gambar}`,
+            priority: FastImage.priority.normal,
+            cache: FastImage.cacheControl.immutable,
           }}
           style={styles.thumbnail}
-          resizeMode="cover"
+          resizeMode={FastImage.resizeMode.cover}
         />
       </View>
 
       <View style={styles.cardContent}>
-        <Text style={styles.category}>{item.dbe_tgl} • {item.dbe_viewer} kali dilihat</Text>
+        <Text style={styles.category}>
+          {item.dbe_tgl} • {item.dbe_viewer} kali dilihat
+        </Text>
         <Text style={styles.title} numberOfLines={2}>
           {item.dbe_judul}
         </Text>
@@ -98,6 +103,11 @@ const NewsScreen = () => {
         keyExtractor={item => item.dbe_id.toString()}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={50}
+        windowSize={7}
+        removeClippedSubviews
         contentContainerStyle={[
           styles.listContent,
           {

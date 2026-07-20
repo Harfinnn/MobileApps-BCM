@@ -22,14 +22,8 @@ interface DRPSummary {
   this_month?: number;
 }
 
-interface RSDSummary {
-  total_month?: number;
-  total_hour?: number;
-}
-
 interface RecoverySummaryCardProps {
   drpSummary?: DRPSummary;
-  rsdSummary?: RSDSummary;
 }
 
 // ---------------------------------------------------------------------------
@@ -51,24 +45,6 @@ const COLORS = {
   amber: '#D97706',
   amberSoft: '#FDF1DF',
 };
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Converts a decimal hour value (e.g. 15.98) into a readable "Xh Ym" string.
- * Examples: 15.98 -> "15h 59m", 2 -> "2h", 0.5 -> "30m", 0 -> "0m"
- */
-function formatDuration(decimalHours: number): string {
-  const totalMinutes = Math.round(decimalHours * 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-}
 
 // ---------------------------------------------------------------------------
 // Komponen Animasi
@@ -197,37 +173,12 @@ interface RSDPillProps {
   delay?: number;
 }
 
-const RSDPill = React.memo(function RSDPill({
-  label,
-  displayValue,
-  icon,
-  tint,
-  accent,
-  delay = 0,
-}: RSDPillProps) {
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(400)}
-      style={[styles.rsdPill, { backgroundColor: tint }]}
-    >
-      <View style={[styles.rsdIconWrap, { backgroundColor: '#FFFFFF' }]}>
-        {icon}
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.rsdValue, { color: accent }]}>{displayValue}</Text>
-        <Text style={styles.rsdLabel}>{label}</Text>
-      </View>
-    </Animated.View>
-  );
-});
-
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 export default function RecoverySummaryCard({
   drpSummary,
-  rsdSummary,
 }: RecoverySummaryCardProps) {
   // Menggunakan useMemo agar perhitungan hanya dilakukan saat props berubah
   const stats = useMemo(() => {
@@ -237,8 +188,6 @@ export default function RecoverySummaryCard({
     const thisMonth = drpSummary?.this_month ?? 0;
     const completionRate =
       total > 0 ? Math.round((completed / total) * 100) : 0;
-    const totalMonth = rsdSummary?.total_month ?? 0;
-    const totalHour = rsdSummary?.total_hour ?? 0;
 
     return {
       total,
@@ -246,22 +195,17 @@ export default function RecoverySummaryCard({
       outstanding,
       thisMonth,
       completionRate,
-      totalMonth,
-      totalHour,
     };
-  }, [drpSummary, rsdSummary]);
+  }, [drpSummary]);
 
   return (
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerIconWrap}>
-          <ShieldCheck size={18} color={COLORS.cyan} strokeWidth={2.2} />
-        </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Recovery Summary</Text>
+          <Text style={styles.headerTitle}>DRP Summary</Text>
           <Text style={styles.headerSubtitle}>
-            DRP status & recovery duration (RSD)
+            Disaster Recovery Plan summary
           </Text>
         </View>
         <View style={styles.headerBadge}>
@@ -297,38 +241,6 @@ export default function RecoverySummaryCard({
           />
         </View>
       </View>
-
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* RSD row */}
-      <View style={styles.rsdSectionLabel}>
-        <Clock size={13} color={COLORS.textSecondary} strokeWidth={2.2} />
-        <Text style={styles.rsdSectionLabelText}>
-          Recovery Service Duration
-        </Text>
-      </View>
-
-      <View style={styles.rsdRow}>
-        <RSDPill
-          label="Month"
-          displayValue={`${stats.totalMonth}`}
-          icon={
-            <CalendarClock size={15} color={COLORS.emerald} strokeWidth={2.2} />
-          }
-          tint={COLORS.emeraldSoft}
-          accent={COLORS.emerald}
-          delay={250}
-        />
-        <RSDPill
-          label="Recovery Hour"
-          displayValue={formatDuration(stats.totalHour)}
-          icon={<Clock size={15} color={COLORS.amber} strokeWidth={2.2} />}
-          tint={COLORS.amberSoft}
-          accent={COLORS.amber}
-          delay={350}
-        />
-      </View>
     </View>
   );
 }
@@ -349,6 +261,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 2,
+    marginBottom: 24
   },
 
   // Header
@@ -448,49 +361,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.divider,
     marginVertical: 16,
-  },
-
-  // RSD section
-  rsdSectionLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  rsdSectionLabelText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  rsdRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  rsdPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  rsdIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rsdValue: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  rsdLabel: {
-    fontSize: 10.5,
-    color: COLORS.textSecondary,
-    marginTop: 1,
   },
 });

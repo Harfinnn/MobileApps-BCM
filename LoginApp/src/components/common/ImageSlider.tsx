@@ -69,10 +69,7 @@ export default function ImageSlider() {
         snapToInterval={SCREEN_WIDTH}
         decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
-        initialNumToRender={1}
-        maxToRenderPerBatch={2}
-        windowSize={3}
-        removeClippedSubviews
+        initialNumToRender={DATA.length}
         getItemLayout={(_, index) => ({
           length: SCREEN_WIDTH,
           offset: SCREEN_WIDTH * index,
@@ -102,7 +99,12 @@ export default function ImageSlider() {
         }}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            <Image source={item.src} style={styles.image} resizeMode="cover" />
+            <Image
+              source={item.src}
+              style={styles.image}
+              resizeMode="cover"
+              fadeDuration={0}
+            />
           </View>
         )}
       />

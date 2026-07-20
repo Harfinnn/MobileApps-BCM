@@ -21,7 +21,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 1,
     title: 'Lapor Bencana',
-    image: require('../assets/newIcon/laporBencana.png'),
+    image: require('../assets/Icon/laporBencana.webp'),
     route: 'LaporBencana',
     color: 'rgba(44, 202, 188, 0.25)',
     iconWidth: 65,
@@ -32,7 +32,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 2,
     title: 'Gempa Bumi',
-    image: require('../assets/newIcon/infoGempa.png'),
+    image: require('../assets/Icon/infoGempa.webp'),
     route: 'InfoGempaBumi',
     iconWidth: 65,
     iconHeight: 65,
@@ -42,7 +42,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 3,
     title: 'RTA',
-    image: require('../assets/newIcon/rta.png'),
+    image: require('../assets/Icon/rta.webp'),
     route: 'RTA',
     iconWidth: 70,
     iconHeight: 70,
@@ -52,7 +52,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 4,
     title: 'Cuaca',
-    image: require('../assets/newIcon/weather.png'),
+    image: require('../assets/Icon/weather.webp'),
     route: 'F3d',
     iconWidth: 65,
     iconHeight: 65,
@@ -62,7 +62,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 5,
     title: 'Dashboard',
-    image: require('../assets/newIcon/dashboard.png'),
+    image: require('../assets/Icon/dashboard.webp'),
     type: 'dashboard',
     hideInMore: true,
     iconWidth: 65,
@@ -73,7 +73,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 6,
     title: 'Panduan Bencana',
-    image: require('../assets/newIcon/panduan.png'),
+    image: require('../assets/Icon/panduan.webp'),
     route: 'PanduanBencana',
     iconWidth: 65,
     iconHeight: 65,
@@ -83,7 +83,7 @@ export const MAIN_MENU: MenuItemType[] = [
   {
     id: 7,
     title: 'Berita',
-    image: require('../assets/newIcon/news.png'),
+    image: require('../assets/Icon/news.webp'),
     route: 'Berita',
     iconWidth: 65,
     iconHeight: 65,
@@ -102,7 +102,7 @@ export const MORE_MENU: MenuItemType[] = [
   {
     id: 8,
     title: 'Tsunami',
-    image: require('../assets/newIcon/tsunami.png'),
+    image: require('../assets/Icon/tsunami.webp'),
     route: 'TsunamiHistory',
     iconWidth: 80,
     iconHeight: 80,
@@ -112,7 +112,7 @@ export const MORE_MENU: MenuItemType[] = [
   {
     id: 9,
     title: 'Dashboard IT',
-    image: require('../assets/newIcon/dashboard1.png'),
+    image: require('../assets/Icon/dashboard1.webp'),
     route: 'DashboardIT',
     iconWidth: 120,
     iconHeight: 120,
@@ -122,7 +122,7 @@ export const MORE_MENU: MenuItemType[] = [
   {
     id: 10,
     title: 'Dashboard Non-IT',
-    image: require('../assets/newIcon/dashboard_2.png'),
+    image: require('../assets/Icon/dashboard_2.webp'),
     route: 'DashboardNonIT',
     color: 'rgba(0, 163, 157, 0.22)',
     iconWidth: 130,

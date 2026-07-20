@@ -211,10 +211,19 @@ const IconClock = React.memo(({ color }: { color: string }) => (
   </Svg>
 ));
 
-const IconBolt = React.memo(({ color }: { color: string }) => (
+const IconTATCycle = React.memo(({ color }: { color: string }) => (
   <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+    {/* Lingkaran panah (siklus) */}
     <Path
-      d="M13 3L5 14H11L10 21L19 10H13L13 3Z"
+      d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinejoin="round"
+      strokeLinecap="round"
+    />
+    {/* Kepala panah dan jarum jam */}
+    <Path
+      d="M3 3v5h5 M12 7v5l4 2"
       stroke={color}
       strokeWidth={2}
       strokeLinejoin="round"
@@ -255,7 +264,20 @@ export default function SystemOverviewDashboard({
       (acc, curr) => acc + Number(curr.value),
       0,
     );
-    const sorted = [...applicationPieData].sort((a, b) => b.value - a.value);
+    const categoryOrder: Record<string, number> = {
+      'Very Critical': 1,
+      Critical: 2,
+      'Critical Services': 3,
+      Moderate: 4,
+      'Non Critical': 5,
+    };
+
+    const sorted = [...applicationPieData].sort((a, b) => {
+      return (
+        (categoryOrder[a.label] ?? Number.MAX_SAFE_INTEGER) -
+        (categoryOrder[b.label] ?? Number.MAX_SAFE_INTEGER)
+      );
+    });
     const top = sorted.slice(0, 3);
     const remaining = sorted.length - top.length;
 
@@ -375,8 +397,8 @@ export default function SystemOverviewDashboard({
           />
           <View style={styles.pillDivider} />
           <StatPill
-            icon={<IconBolt color="#2563EB" />}
-            label="Avg TAT"
+            icon={<IconTATCycle color="#2563EB" />}
+            label="TAT"
             value={formatTime(tat)}
             color="#2563EB"
             bg="#EFF6FF"

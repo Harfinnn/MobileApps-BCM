@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, InteractionManager } from 'react-native';
 import styles from '../../styles/news/newsSectionStyle';
 import FastImage from 'react-native-fast-image';
 
@@ -23,11 +23,14 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
   const safeData = Array.isArray(data) ? data : [];
 
   useEffect(() => {
-    const images = safeData.map(item => ({
-      uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
-    }));
+    const task = InteractionManager.runAfterInteractions(() => {
+      const images = safeData.map(item => ({
+        uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
+      }));
+      FastImage.preload(images);
+    });
 
-    FastImage.preload(images);
+    return () => task.cancel();
   }, [safeData]);
 
   if (safeData.length === 0) return null;
