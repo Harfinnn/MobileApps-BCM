@@ -57,7 +57,7 @@ export default function ProfileMenu({ visible, onClose }: Props) {
         {/* Pointer Minimalis */}
         <View style={styles.arrowUp} />
 
-        {/* ITEM: PROFILE */}
+        {/* ITEM: PENGATURAN */}
         <TouchableOpacity
           activeOpacity={0.6}
           style={styles.menuItem}
@@ -71,7 +71,7 @@ export default function ProfileMenu({ visible, onClose }: Props) {
 
         <View style={styles.divider} />
 
-        {/* ITEM: LOGOUT */}
+        {/* ITEM: PANGGILAN DARURAT */}
         <TouchableOpacity
           activeOpacity={0.6}
           style={[styles.menuItem, { marginTop: 4 }]}
@@ -80,10 +80,11 @@ export default function ProfileMenu({ visible, onClose }: Props) {
             navigation.navigate('Main', { screen: 'PanggilanDarurat' });
           }}
         >
-          <View style={{ backgroundColor: '#EF4444' }} />
-          <Text style={[styles.menuLabel, styles.logoutLabel]}>Panggilan Darurat</Text>
+          <View style={[styles.dotIcon, { backgroundColor: '#EF4444' }]} />
+          <Text style={[styles.menuLabel, styles.logoutLabel]}>
+            Panggilan Darurat
+          </Text>
         </TouchableOpacity>
-
       </Animated.View>
     </Pressable>
   );
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 75,
     right: 25,
-    width: 170,
+    width: 190,
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     paddingVertical: 10,

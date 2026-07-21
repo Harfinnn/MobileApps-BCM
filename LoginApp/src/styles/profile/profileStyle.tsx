@@ -98,7 +98,7 @@ export const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#94A3B8',
     marginBottom: 12,
-    marginTop: 10,
+    marginTop: 13,
     letterSpacing: 1.2,
   },
 

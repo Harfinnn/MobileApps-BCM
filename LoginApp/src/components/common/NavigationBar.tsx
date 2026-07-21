@@ -30,16 +30,22 @@ import {
    CONFIG
 ======================= */
 const TABS = [
-  { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF' },
-  { icon: MapPinHouse, label: 'KCP', route: 'Maps', color: '#F8AD3CFF', size: 25 },
+  { icon: Home, label: 'Home', route: 'Home', color: '#F8AD3CFF', size: 23 },
+  {
+    icon: MapPinHouse,
+    label: 'KCP',
+    route: 'Maps',
+    color: '#F8AD3CFF',
+    size: 23,
+  },
   {
     icon: BookCopy,
     label: 'Book',
     route: 'Book',
     color: '#F8AD3CFF',
-    size: 25,
+    size: 23,
   },
-  { icon: Bot, label: 'AI', route: 'File', color: '#F8AD3CFF' },
+  { icon: Bot, label: 'AI', route: 'File', color: '#F8AD3CFF', size: 23 },
 ];
 
 const TAB_WIDTH = 90;
@@ -232,7 +238,10 @@ function NavigationBar() {
               color={TABS[activeIndexState].color}
               strokeWidth={2.4}
             />
-            <Animated.Text style={[styles.activeLabel, labelStyle]}>
+            <Animated.Text
+              style={[styles.activeLabel, labelStyle]}
+              allowFontScaling={false}
+            >
               {ActiveLabel}
             </Animated.Text>
           </Animated.View>

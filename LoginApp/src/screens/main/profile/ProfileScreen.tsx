@@ -6,7 +6,8 @@ import {
   BackHandler,
   Modal,
   TextInput,
-  Alert
+  Alert,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -17,6 +18,7 @@ import {
   Info,
   ChevronRight,
   LogOut,
+  HelpCircle,
 } from 'lucide-react-native';
 
 import ConfirmLogoutModal from '../../../components/modal/ConfirmLogoutModal';
@@ -91,7 +93,6 @@ export default function ProfileScreen() {
     () => user?.user_nama?.charAt(0).toUpperCase() ?? '',
     [user],
   );
-
 
   if (loading || !user) {
     return (
@@ -216,7 +217,11 @@ export default function ProfileScreen() {
         </View>
 
         {/* CONTENT */}
-        <View style={styles.content}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Text style={styles.sectionLabel}>AKUN & INFORMASI</Text>
 
           <MenuItem
@@ -255,12 +260,20 @@ export default function ProfileScreen() {
             onPress={() => navigation.navigate('About')}
           />
 
+          <MenuItem
+            icon={<HelpCircle size={18} color="#009B97" />}
+            label="Bantuan / FAQ"
+            onPress={() => {
+              navigation.navigate('Bantuan');
+            }}
+          />
+
           {/* LOGOUT */}
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <LogOut size={18} color="#EF4444" />
             <Text style={styles.logoutText}>Keluar Akun</Text>
           </TouchableOpacity>
-        </View>
+        </ScrollView>
       </LinearGradient>
 
       {/* LOGOUT MODAL */}

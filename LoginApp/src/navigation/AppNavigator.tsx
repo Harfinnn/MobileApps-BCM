@@ -39,6 +39,7 @@ import ChatBetaScreen from '../screens/main/ChatBetaScreen';
 import TsunamiHistoryScreen from '../screens/main/gempa/TsunamiHistoryScreen';
 import TsunamiDetailScreen from '../screens/main/gempa/TsunamiDetailScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import BantuanScreen from '../screens/main/emergency/BantuanScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -116,6 +117,11 @@ function MainStackScreen() {
           name="PanggilanDarurat"
           component={EmergencyCallScreen}
         />
+
+        <MainStack.Screen
+          name="Bantuan"
+          component={BantuanScreen}
+        />  
 
         <MainStack.Screen name="ChatBeta" component={ChatBetaScreen} />
 

@@ -23,7 +23,7 @@ type Props = {
 /* =======================
    MENU ITEM
 ======================= */
-const MORE_ICON = require('../../assets/newIcon/more2.png');
+const MORE_ICON = require('../../assets/Icon/more2.webp');
 
 const MenuItem = React.memo(
   ({
