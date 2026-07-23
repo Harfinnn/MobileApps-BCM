@@ -19,8 +19,7 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { styles } from '../../../styles/news/newsDetailStyle';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API from '../../../services/api';
-
-const BASE_IMAGE_URL = 'https://simpel-bcm.com/img/berita/';
+import { Url } from '../../../utils/url';
 
 const NewsDetailScreen = () => {
   const insets = useSafeAreaInsets();
@@ -111,7 +110,9 @@ const NewsDetailScreen = () => {
         {/* Gambar */}
         <View style={styles.imageWrapper}>
           <Image
-            source={{ uri: `${BASE_IMAGE_URL}${news.dbe_gambar}` }}
+            source={{
+              uri: Url.beritaImage(news.dbe_gambar),
+            }}
             style={styles.image}
             resizeMode="cover"
           />

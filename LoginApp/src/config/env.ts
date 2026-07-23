@@ -1,2 +1,3 @@
-export const BASE_URL =
-  'https://lensasyariah.com/simple_app/api/public';
+export const ENV = {
+  BASE_URL: 'https://lensasyariah.com/simple_app/api/public',
+};

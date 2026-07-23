@@ -30,6 +30,93 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Avatar from '../../../components/common/Avatar';
 import { styles } from '../../../styles/profile/profileStyle';
 
+type MenuItemProps = {
+  icon: React.ReactNode;
+  label: string;
+  onPress: () => void;
+};
+
+function MenuItem({ icon, label, onPress }: MenuItemProps) {
+  return (
+    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+      <View style={styles.menuLeft}>
+        <View style={styles.menuIconBg}>{icon}</View>
+        <Text style={styles.menuLabel}>{label}</Text>
+      </View>
+      <ChevronRight size={18} color="#CBD5E1" />
+    </TouchableOpacity>
+  );
+}
+
+type VerifyPasswordModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (password: string) => void | Promise<void>;
+};
+
+function VerifyPasswordModal({
+  visible,
+  onClose,
+  onSubmit,
+}: VerifyPasswordModalProps) {
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await onSubmit(password);
+    } finally {
+      setSubmitting(false);
+      setPassword('');
+    }
+  };
+
+  const handleClose = () => {
+    setPassword('');
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.verifyOverlay}>
+        <View style={styles.verifyCard}>
+          <Text style={styles.verifyTitle}>Verifikasi Password</Text>
+
+          <TextInput
+            secureTextEntry
+            placeholder="Masukkan password"
+            value={password}
+            onChangeText={setPassword}
+            style={styles.verifyInput}
+            autoFocus
+          />
+
+          <TouchableOpacity
+            onPress={handleSubmit}
+            disabled={submitting || password.length === 0}
+            style={[
+              styles.verifySubmitBtn,
+              (submitting || password.length === 0) && { opacity: 0.6 },
+            ]}
+          >
+            <Text style={styles.verifySubmitText}>
+              {submitting ? 'Memeriksa...' : 'Verifikasi'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleClose}
+            style={styles.verifyCancelBtn}
+          >
+            <Text style={styles.verifyCancelText}>Batal</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
@@ -46,42 +133,33 @@ export default function ProfileScreen() {
   const isAdmin = Number(user?.user_jabatan) === 1;
   const HARDCODE_PASSWORD = 'admin123';
 
+  const goHome = useCallback(() => {
+    navigation.navigate('Main', { screen: 'Home' });
+    return true;
+  }, [navigation]);
+
   useFocusEffect(
     useCallback(() => {
       setTitle('Profile');
       setHideNavbar(true);
       setShowBack(true);
       setShowSearch(false);
+      setOnBack(() => goHome);
 
-      setOnBack(() => () => {
-        navigation.navigate('Main', { screen: 'Home' });
-        return true;
-      });
+      const sub = BackHandler.addEventListener('hardwareBackPress', goHome);
 
       return () => {
         setOnBack(undefined);
+        sub.remove();
       };
     }, [
-      user,
-      loading,
-      navigation,
+      goHome,
       setHideNavbar,
       setOnBack,
       setShowBack,
       setShowSearch,
       setTitle,
     ]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-        navigation.navigate('Main', { screen: 'Home' });
-        return true;
-      });
-
-      return () => sub.remove();
-    }, [navigation]),
   );
 
   const avatarUri = useMemo(
@@ -103,19 +181,21 @@ export default function ProfileScreen() {
     );
   }
 
-  const handleLogout = () => {
-    setShowLogout(true);
-  };
+  const handleLogout = () => setShowLogout(true);
 
   const confirmLogout = async () => {
     setShowLogout(false);
     await setUser(null);
   };
 
-  const handleVerifyPassword = (password: string) => {
+  const handleOpenAbout = () => {
+    setPendingRoute('EditAbout');
+    setShowVerifyModal(true);
+  };
+
+  const handleVerifyPassword = async (password: string) => {
     if (password === HARDCODE_PASSWORD) {
       setShowVerifyModal(false);
-
       if (pendingRoute) {
         navigation.navigate(pendingRoute);
         setPendingRoute(null);
@@ -125,81 +205,12 @@ export default function ProfileScreen() {
     }
   };
 
-  const VerifyPasswordModal = ({ visible, onClose, onSubmit }: any) => {
-    const [password, setPassword] = useState('');
-
-    return (
-      <Modal visible={visible} transparent animationType="fade">
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            justifyContent: 'center',
-            padding: 20,
-          }}
-        >
-          <View
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: 16,
-              padding: 20,
-            }}
-          >
-            <Text style={{ fontWeight: '600', marginBottom: 10 }}>
-              Verifikasi Password
-            </Text>
-
-            <TextInput
-              secureTextEntry
-              placeholder="Masukkan password"
-              value={password}
-              onChangeText={setPassword}
-              style={{
-                borderWidth: 1,
-                borderColor: '#ddd',
-                borderRadius: 10,
-                padding: 10,
-                marginBottom: 15,
-              }}
-            />
-
-            <TouchableOpacity
-              onPress={() => {
-                onSubmit(password);
-                setPassword('');
-              }}
-              style={{
-                backgroundColor: '#009B97',
-                padding: 12,
-                borderRadius: 10,
-                alignItems: 'center',
-              }}
-            >
-              <Text style={{ color: '#fff' }}>Verifikasi</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setPassword('');
-                onClose();
-              }}
-              style={{ marginTop: 10 }}
-            >
-              <Text style={{ textAlign: 'center', color: '#999' }}>Batal</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
-
   return (
     <>
       <LinearGradient
         colors={['#009B97', '#007A77']}
         style={[styles.container, { paddingTop: insets.top }]}
       >
-        {/* HEADER */}
         <View style={[styles.header, { paddingTop: insets.top + 70 }]}>
           <View style={styles.avatarWrapper}>
             <View style={styles.avatarGlow}>
@@ -216,7 +227,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* CONTENT */}
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
@@ -234,10 +244,7 @@ export default function ProfileScreen() {
             <MenuItem
               icon={<Settings size={18} color="#009B97" />}
               label="Pengaturan Info Aplikasi"
-              onPress={() => {
-                setPendingRoute('EditAbout');
-                setShowVerifyModal(true);
-              }}
+              onPress={handleOpenAbout}
             />
           )}
 
@@ -263,12 +270,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<HelpCircle size={18} color="#009B97" />}
             label="Bantuan / FAQ"
-            onPress={() => {
-              navigation.navigate('Bantuan');
-            }}
+            onPress={() => navigation.navigate('Bantuan')}
           />
 
-          {/* LOGOUT */}
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <LogOut size={18} color="#EF4444" />
             <Text style={styles.logoutText}>Keluar Akun</Text>
@@ -276,7 +280,6 @@ export default function ProfileScreen() {
         </ScrollView>
       </LinearGradient>
 
-      {/* LOGOUT MODAL */}
       <ConfirmLogoutModal
         visible={showLogout}
         onCancel={() => setShowLogout(false)}
@@ -291,20 +294,3 @@ export default function ProfileScreen() {
     </>
   );
 }
-
-/*
-===============================
-MENU ITEM
-===============================
-*/
-
-const MenuItem = ({ icon, label, onPress }: any) => (
-  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <View style={styles.menuLeft}>
-      <View style={styles.menuIconBg}>{icon}</View>
-      <Text style={styles.menuLabel}>{label}</Text>
-    </View>
-
-    <ChevronRight size={18} color="#CBD5E1" />
-  </TouchableOpacity>
-);

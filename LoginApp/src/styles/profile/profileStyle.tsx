@@ -1,16 +1,29 @@
 import { StyleSheet } from 'react-native';
 
+// Design tokens — biar konsisten dan gampang diubah di satu tempat
+const COLORS = {
+  primary: '#00A39D', // Emerald Green
+  primaryDark: '#007A77', // Teal gelap
+  navy: '#0F172A', // Dark Navy
+  slate: '#334155',
+  muted: '#64748B',
+  border: '#E2E8F0',
+  bgLight: '#F8FAFC', // Light Gray
+  danger: '#EF4444',
+  dangerBg: '#FEF2F2',
+};
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#009B97',
+    backgroundColor: COLORS.primary,
   },
 
   header: {
     paddingTop: 90,
-    paddingBottom: 40,
-    borderBottomLeftRadius: 45,
-    borderBottomRightRadius: 45,
+    paddingBottom: 44,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
   },
 
   avatarWrapper: {
@@ -18,88 +31,54 @@ export const styles = StyleSheet.create({
   },
 
   avatarGlow: {
-    padding: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    padding: 5,
+    backgroundColor: 'rgba(255,255,255,0.22)',
     borderRadius: 60,
-    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    marginBottom: 16,
   },
 
   name: {
     fontSize: 22,
     fontWeight: '800',
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
 
   roleBadge: {
-    marginTop: 8,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    marginTop: 10,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
     borderRadius: 20,
   },
 
   roleText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#009B97',
+    color: COLORS.primaryDark,
     textTransform: 'uppercase',
-  },
-
-  content: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    padding: 20,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-  },
-
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    paddingVertical: 18,
-    marginBottom: 24,
+    letterSpacing: 0.6,
   },
 
   scrollContent: {
-    padding: 10,
+    padding: 16,
+    paddingTop: 22,
     paddingBottom: 40,
-    backgroundColor: '#F8FAFC',
-
+    backgroundColor: COLORS.bgLight,
     flexGrow: 1,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-  },
-
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  statDivider: {
-    width: 1,
-    backgroundColor: '#E5E7EB',
-  },
-
-  statValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1E293B',
-  },
-
-  statLabel: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 4,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
   },
 
   sectionLabel: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '800',
-    color: '#94A3B8',
+    color: COLORS.muted,
     marginBottom: 12,
-    marginTop: 13,
-    letterSpacing: 1.2,
+    marginTop: 14,
+    letterSpacing: 1.4,
   },
 
   menuItem: {
@@ -107,18 +86,17 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 20,
-    marginBottom: 12,
-
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-
-    // Android shadow
-    elevation: 3,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.navy,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
   },
 
   menuLeft: {
@@ -127,26 +105,28 @@ export const styles = StyleSheet.create({
   },
 
   menuIconBg: {
-    width: 44,
-    height: 44,
-    backgroundColor: '#F0FDFA',
-    borderRadius: 14,
+    width: 42,
+    height: 42,
+    backgroundColor: '#EBFBFA',
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
 
   menuLabel: {
-    fontSize: 16,
+    fontSize: 15.5,
     fontWeight: '600',
-    color: '#334155',
+    color: COLORS.slate,
   },
 
   logoutBtn: {
-    marginTop: 20,
-    padding: 18,
-    borderRadius: 20,
-    backgroundColor: '#FEF2F2',
+    marginTop: 22,
+    paddingVertical: 16,
+    borderRadius: 18,
+    backgroundColor: COLORS.dangerBg,
+    borderWidth: 1,
+    borderColor: '#FCE4E4',
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
@@ -154,8 +134,69 @@ export const styles = StyleSheet.create({
 
   logoutText: {
     marginLeft: 10,
-    color: '#EF4444',
+    color: COLORS.danger,
     fontWeight: '700',
+    fontSize: 15.5,
+  },
+
+  // Verify Password Modal
+  verifyOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.55)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+
+  verifyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 22,
+    shadowColor: COLORS.navy,
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
+
+  verifyTitle: {
+    fontWeight: '700',
+    marginBottom: 14,
     fontSize: 16,
+    color: COLORS.navy,
+  },
+
+  verifyInput: {
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    fontSize: 15,
+    color: COLORS.navy,
+  },
+
+  verifySubmitBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  verifySubmitText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  verifyCancelBtn: {
+    marginTop: 12,
+    paddingVertical: 6,
+  },
+
+  verifyCancelText: {
+    textAlign: 'center',
+    color: COLORS.muted,
+    fontWeight: '500',
   },
 });

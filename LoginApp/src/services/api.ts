@@ -1,10 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from '../config/env';
+import { ENV } from '../config/env';
 import { triggerLogout } from './authHandler';
 
 const API = axios.create({
-  baseURL: `${BASE_URL}/api`,
+  baseURL: `${ENV.BASE_URL}/api`,
   timeout: 30000,
   headers: {
     Accept: 'application/json',

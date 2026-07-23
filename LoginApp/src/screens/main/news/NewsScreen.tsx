@@ -14,6 +14,7 @@ import { useLayout } from '../../../contexts/LayoutContext';
 import { styles } from '../../../styles/news/newsStyle';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import API from '../../../services/api';
+import { Url } from '../../../utils/url';
 
 const NewsScreen = () => {
   const insets = useSafeAreaInsets();
@@ -69,7 +70,7 @@ const NewsScreen = () => {
       <View style={styles.imageContainer}>
         <FastImage
           source={{
-            uri: `https://simpel-bcm.com/img/berita/${item.dbe_gambar}`,
+            uri: Url.beritaImage(item.dbe_gambar),
             priority: FastImage.priority.normal,
             cache: FastImage.cacheControl.immutable,
           }}

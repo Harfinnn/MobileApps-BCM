@@ -1,11 +1,13 @@
-import { BASE_URL } from '../config/env';
+import { ENV } from '../config/env';
 
 export const resolveImageUri = (path?: string | null) => {
   if (!path) return null;
 
-  // kalau backend sudah kirim full URL
-  if (path.startsWith('http')) return path;
+  // Jika backend sudah mengirim URL lengkap
+  if (path.startsWith('http')) {
+    return path;
+  }
 
-  // path dari DB: profile/xxx.jpg
-  return `${BASE_URL}/storage/${path}`;
+  // Path relatif dari storage Laravel
+  return `${ENV.BASE_URL}/storage/${path}`;
 };

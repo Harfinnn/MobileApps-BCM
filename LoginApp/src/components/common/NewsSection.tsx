@@ -1,9 +1,15 @@
 import { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView, InteractionManager } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  InteractionManager,
+} from 'react-native';
 import styles from '../../styles/news/newsSectionStyle';
 import FastImage from 'react-native-fast-image';
-
-const BASE_IMAGE_URL = 'https://simpel-bcm.com/img/berita/';
+import { Url } from '../../utils/url';
 
 type NewsItem = {
   dbe_id: number;
@@ -25,7 +31,7 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
   useEffect(() => {
     const task = InteractionManager.runAfterInteractions(() => {
       const images = safeData.map(item => ({
-        uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
+        uri: Url.beritaImage(item.dbe_gambar),
       }));
       FastImage.preload(images);
     });
@@ -61,7 +67,7 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
       >
         <FastImage
           source={{
-            uri: `${BASE_IMAGE_URL}${featuredNews.dbe_gambar?.trim()}`,
+            uri: Url.beritaImage(featuredNews.dbe_gambar),
             priority: FastImage.priority.high,
           }}
           style={styles.heroImage}
@@ -99,7 +105,7 @@ const NewsSection = ({ data = [], onItemPress, onPressAll }: Props) => {
             >
               <FastImage
                 source={{
-                  uri: `${BASE_IMAGE_URL}${item.dbe_gambar?.trim()}`,
+                  uri: Url.beritaImage(item.dbe_gambar),
                   priority: FastImage.priority.normal,
                 }}
                 style={styles.miniThumbnail}

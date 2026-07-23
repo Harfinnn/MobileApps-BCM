@@ -49,6 +49,7 @@ export default function DashboardITScreen() {
   const [cobEoy, setCobEoy] = useState<any>(null);
 
   const [incidentSummary, setIncidentSummary] = useState<any>(null);
+  const [incidentList, setIncidentList] = useState<any[]>([]);
 
   const [incidentImpact, setIncidentImpact] = useState([]);
 
@@ -112,6 +113,10 @@ export default function DashboardITScreen() {
     API.get('/dashboard-it/incidents/summary')
       .then(res => setIncidentSummary(res.data))
       .catch(err => console.log('Incident Summary error', err));
+
+    API.get('/dashboard-it/incidents', {
+      params: { tahun: new Date().getFullYear() },
+    }).then(res => setIncidentList(res.data.data));
 
     API.get('/dashboard-it/incidents/impact', {
       params: {
@@ -340,7 +345,10 @@ export default function DashboardITScreen() {
             <DRPRSDSummaryCard drpSummary={dashboard?.drp?.summary} />
           )}
 
-          <IncidentSummaryCard data={incidentSummary} />
+          <IncidentSummaryCard
+            data={incidentSummary}
+            incidents={incidentList}
+          />
 
           <COBAnalyticsCard
             cobTransactionData={cobTransactionData}

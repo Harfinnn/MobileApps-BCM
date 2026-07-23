@@ -40,6 +40,7 @@ import TsunamiHistoryScreen from '../screens/main/gempa/TsunamiHistoryScreen';
 import TsunamiDetailScreen from '../screens/main/gempa/TsunamiDetailScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import BantuanScreen from '../screens/main/emergency/BantuanScreen';
+import IncidentDetailScreen from '../screens/main/incident/IncidentDetailScreen';
 
 const RootStack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -118,10 +119,7 @@ function MainStackScreen() {
           component={EmergencyCallScreen}
         />
 
-        <MainStack.Screen
-          name="Bantuan"
-          component={BantuanScreen}
-        />  
+        <MainStack.Screen name="Bantuan" component={BantuanScreen} />
 
         <MainStack.Screen name="ChatBeta" component={ChatBetaScreen} />
 
@@ -132,6 +130,11 @@ function MainStackScreen() {
         <MainStack.Screen
           name="TsunamiDetail"
           component={TsunamiDetailScreen}
+        />
+
+        <MainStack.Screen
+          name="IncidentDetail"
+          component={IncidentDetailScreen}
         />
       </MainStack.Navigator>
     </MainLayout>
